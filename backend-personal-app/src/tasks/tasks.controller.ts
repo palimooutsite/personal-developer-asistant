@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Delete,
   Param,
   Post,
   Patch,
@@ -57,6 +58,19 @@ export class TasksController {
       taskId,
       req.user.userId,
       body,
+    );
+  }
+
+  @Delete(':taskId')
+  async remove(
+    @Param('projectId') projectId: string,
+    @Param('taskId') taskId: string,
+    @Req() req: AuthRequest,
+  ): Promise<{ message: string }> {
+    return this.tasksService.remove(
+      projectId,
+      taskId,
+      req.user.userId,
     );
   }
 

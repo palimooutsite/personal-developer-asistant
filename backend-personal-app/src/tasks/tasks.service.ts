@@ -17,48 +17,6 @@ export interface TaskResponse {
   status: string;
   priority: string;
   dueDate: string | null;
-  async remove(
-    projectId: string,
-    taskId: string,
-    userId: string,
-  ): Promise<{ message: string }> {
-    const membership = await this.prisma.client.orm.public.ProjectMember
-      .where({ projectId, userId })
-      .select('projectId', 'userId', 'role')
-      .first();
-
-    if (!membership) {
-      throw new ForbiddenException('Anda bukan member project ini');
-    }
-
-    if (
-      membership.role !== 'OWNER' &&
-      membership.role !== 'ADMIN' &&
-      membership.role !== 'DEVELOPER'
-    ) {
-      throw new ForbiddenException(
-        'Anda tidak memiliki izin untuk menghapus task',
-      );
-    }
-
-    const task = await this.prisma.client.orm.public.Task
-      .where({ id: taskId, projectId })
-      .select('id')
-      .first();
-
-    if (!task) {
-      throw new NotFoundException(
-        'Task tidak ditemukan pada project ini',
-      );
-    }
-
-    await this.prisma.client.orm.public.Task
-      .where({ id: taskId, projectId })
-      .delete();
-
-    return { message: 'Task berhasil dihapus' };
-  }
-
 }
 
 @Injectable()
@@ -316,4 +274,46 @@ export class TasksService {
       dueDate: updatedTask.dueDate,
     };
   }
+  async remove(
+    projectId: string,
+    taskId: string,
+    userId: string,
+  ): Promise<{ message: string }> {
+    const membership = await this.prisma.client.orm.public.ProjectMember
+      .where({ projectId, userId })
+      .select('projectId', 'userId', 'role')
+      .first();
+
+    if (!membership) {
+      throw new ForbiddenException('Anda bukan member project ini');
+    }
+
+    if (
+      membership.role !== 'OWNER' &&
+      membership.role !== 'ADMIN' &&
+      membership.role !== 'DEVELOPER'
+    ) {
+      throw new ForbiddenException(
+        'Anda tidak memiliki izin untuk menghapus task',
+      );
+    }
+
+    const task = await this.prisma.client.orm.public.Task
+      .where({ id: taskId, projectId })
+      .select('id')
+      .first();
+
+    if (!task) {
+      throw new NotFoundException(
+        'Task tidak ditemukan pada project ini',
+      );
+    }
+
+    await this.prisma.client.orm.public.Task
+      .where({ id: taskId, projectId })
+      .delete();
+
+    return { message: 'Task berhasil dihapus' };
+  }
+
 }

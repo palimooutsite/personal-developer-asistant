@@ -6,6 +6,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
 import { HealthModule } from './health/health.module.js';
 import { UsersModule } from './users/user.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { ProjectsModule } from './projects/projects.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -21,7 +22,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     PrismaModule,
     HealthModule,
     UsersModule,
-    AuthModule
+    AuthModule,
+    ProjectsModule
   ],
   controllers: [AppController],
   providers: [AppService],

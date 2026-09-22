@@ -1,9 +1,18 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
-import { UsersService, UserResponse } from './user.service.js';
-
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard.js';
+import { UsersService } from './user.service.js';
 @Controller('users')
+@UseGuards(JwtAuthGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+  ) {}
 
   @Post()
   async createUser(
@@ -14,12 +23,12 @@ export class UsersController {
       passwordHash: string;
       name?: string;
     },
-  ): Promise<UserResponse> {
+  ) {
     return this.usersService.createUser(body);
   }
 
   @Get()
-  async findAll(): Promise<UserResponse[]> {
+  async findAll() {
     return this.usersService.findAll();
   }
 }

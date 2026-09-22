@@ -43,7 +43,6 @@ export class UsersService {
       'id',
       'username',
       'email',
-      'passwordHash',
       'name',
       'createdAt',
       'updatedAt',

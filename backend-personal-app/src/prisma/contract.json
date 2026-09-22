@@ -1644,6 +1644,10 @@
                 },
                 "status": {
                   "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "PLANNED"
+                  },
                   "nativeType": "text",
                   "nullable": false,
                   "valueSet": {
@@ -2313,7 +2317,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "173b7b3d49d756ead318ad3e2ada6f1aa42ac801f70827bb7b9713ce2a9523ed"
+    "storageHash": "782667759674a93826585b216c7198cc80bdb3f0df2c31cc19e105589c11c66f"
   },
   "execution": {
     "executionHash": "b70ef20c7d02393d1242f0ab802407ed2dd41af15136f9aa6a3adfc5a13e5924",

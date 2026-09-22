@@ -17,98 +17,6 @@ export interface TaskResponse {
   status: string;
   priority: string;
   dueDate: string | null;
-  async update(
-    projectId: string,
-    taskId: string,
-    userId: string,
-    data: UpdateTaskDto,
-  ): Promise<TaskResponse> {
-    const membership = await this.prisma.client.orm.public.ProjectMember
-      .where({
-        projectId,
-        userId,
-      })
-      .select('projectId', 'userId', 'role')
-      .first();
-
-    if (!membership) {
-      throw new ForbiddenException('Anda bukan member project ini');
-    }
-
-    if (
-      membership.role !== 'OWNER' &&
-      membership.role !== 'ADMIN' &&
-      membership.role !== 'DEVELOPER'
-    ) {
-      throw new ForbiddenException(
-        'Anda tidak memiliki izin untuk mengubah task',
-      );
-    }
-
-    const task = await this.prisma.client.orm.public.Task
-      .where({
-        id: taskId,
-        projectId,
-      })
-      .select(
-        'id',
-        'projectId',
-        'createdBy',
-        'title',
-        'description',
-        'status',
-        'priority',
-        'dueDate',
-      )
-      .first();
-
-    if (!task) {
-      throw new NotFoundException(
-        'Task tidak ditemukan pada project ini',
-      );
-    }
-
-    const updateData: {
-      title?: string;
-      description?: string | null;
-      status?: 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE' | 'CANCELLED';
-      priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-      dueDate?: string | null;
-    } = {};
-
-    if (data.title !== undefined) updateData.title = data.title;
-    if (data.description !== undefined) {
-      updateData.description = data.description;
-    }
-    if (data.status !== undefined) updateData.status = data.status;
-    if (data.priority !== undefined) updateData.priority = data.priority;
-    if (data.dueDate !== undefined) updateData.dueDate = data.dueDate;
-
-    const updatedTask = await this.prisma.client.orm.public.Task
-      .where({
-        id: taskId,
-        projectId,
-      })
-      .update(updateData);
-
-    if (!updatedTask) {
-      throw new NotFoundException(
-        'Task tidak ditemukan pada project ini',
-      );
-    }
-
-    return {
-      id: updatedTask.id,
-      projectId: updatedTask.projectId,
-      createdBy: updatedTask.createdBy,
-      title: updatedTask.title,
-      description: updatedTask.description,
-      status: updatedTask.status,
-      priority: updatedTask.priority,
-      dueDate: updatedTask.dueDate,
-    };
-  }
-
 }
 
 @Injectable()
@@ -272,6 +180,98 @@ export class TasksService {
       status: task.status,
       priority: task.priority,
       dueDate: task.dueDate,
+    };
+  }
+
+  async update(
+    projectId: string,
+    taskId: string,
+    userId: string,
+    data: UpdateTaskDto,
+  ): Promise<TaskResponse> {
+    const membership = await this.prisma.client.orm.public.ProjectMember
+      .where({
+        projectId,
+        userId,
+      })
+      .select('projectId', 'userId', 'role')
+      .first();
+
+    if (!membership) {
+      throw new ForbiddenException('Anda bukan member project ini');
+    }
+
+    if (
+      membership.role !== 'OWNER' &&
+      membership.role !== 'ADMIN' &&
+      membership.role !== 'DEVELOPER'
+    ) {
+      throw new ForbiddenException(
+        'Anda tidak memiliki izin untuk mengubah task',
+      );
+    }
+
+    const task = await this.prisma.client.orm.public.Task
+      .where({
+        id: taskId,
+        projectId,
+      })
+      .select(
+        'id',
+        'projectId',
+        'createdBy',
+        'title',
+        'description',
+        'status',
+        'priority',
+        'dueDate',
+      )
+      .first();
+
+    if (!task) {
+      throw new NotFoundException(
+        'Task tidak ditemukan pada project ini',
+      );
+    }
+
+    const updateData: {
+      title?: string;
+      description?: string | null;
+      status?: 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE' | 'CANCELLED';
+      priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+      dueDate?: string | null;
+    } = {};
+
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.description !== undefined) {
+      updateData.description = data.description;
+    }
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.priority !== undefined) updateData.priority = data.priority;
+    if (data.dueDate !== undefined) updateData.dueDate = data.dueDate;
+
+    const updatedTask = await this.prisma.client.orm.public.Task
+      .where({
+        id: taskId,
+        projectId,
+      })
+      .update(updateData);
+
+    if (!updatedTask) {
+      throw new NotFoundException(
+        'Task tidak ditemukan pada project ini',
+      );
+    }
+
+    return {
+      id: updatedTask.id,
+      projectId: updatedTask.projectId,
+      createdBy: updatedTask.createdBy,
+      title: updatedTask.title,
+      description: updatedTask.description,
+      status: updatedTask.status,
+      priority: updatedTask.priority,
+      dueDate: updatedTask.dueDate,
     };
   }
 }

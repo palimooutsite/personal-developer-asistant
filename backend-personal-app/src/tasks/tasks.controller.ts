@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import { TasksService, TaskResponse } from './tasks.service.js';
+import { TasksService, TaskResponse, TaskAssigneeResponse } from './tasks.service.js';
 import { CreateTaskDto } from './dto/create-task.dto.js';
 import { UpdateTaskDto } from './dto/update-task.dto.js';
 import { AddTaskAssigneeDto } from './dto/add-task-assignee.dto.js';
@@ -75,6 +75,20 @@ export class TasksController {
       taskId,
       req.user.userId,
       body,
+    );
+  }
+
+
+  @Get(':taskId/assignees')
+  async findAssignees(
+    @Param('projectId') projectId: string,
+    @Param('taskId') taskId: string,
+    @Req() req: AuthRequest,
+  ): Promise<TaskAssigneeResponse[]> {
+    return this.tasksService.findAssignees(
+      projectId,
+      taskId,
+      req.user.userId,
     );
   }
 

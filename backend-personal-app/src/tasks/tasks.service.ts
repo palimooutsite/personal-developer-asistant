@@ -129,4 +129,56 @@ export class TasksService {
       dueDate: task.dueDate,
     }));
   }
+
+  async findOne(
+    projectId: string,
+    taskId: string,
+    userId: string,
+  ): Promise<TaskResponse> {
+    const membership = await this.prisma.client.orm.public.ProjectMember
+      .where({
+        projectId,
+        userId,
+      })
+      .select('projectId', 'userId', 'role')
+      .first();
+
+    if (!membership) {
+      throw new ForbiddenException('Anda bukan member project ini');
+    }
+
+    const task = await this.prisma.client.orm.public.Task
+      .where({
+        id: taskId,
+        projectId,
+      })
+      .select(
+        'id',
+        'projectId',
+        'createdBy',
+        'title',
+        'description',
+        'status',
+        'priority',
+        'dueDate',
+      )
+      .first();
+
+    if (!task) {
+      throw new NotFoundException(
+        'Task tidak ditemukan pada project ini',
+      );
+    }
+
+    return {
+      id: task.id,
+      projectId: task.projectId,
+      createdBy: task.createdBy,
+      title: task.title,
+      description: task.description,
+      status: task.status,
+      priority: task.priority,
+      dueDate: task.dueDate,
+    };
+  }
 }

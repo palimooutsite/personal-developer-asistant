@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Param,
   Post,
   Req,
@@ -27,6 +28,17 @@ export class TasksController {
       projectId,
       req.user.userId,
       body,
+    );
+  }
+
+  @Get()
+  async findAll(
+    @Param('projectId') projectId: string,
+    @Req() req: AuthRequest,
+  ): Promise<TaskResponse[]> {
+    return this.tasksService.findAll(
+      projectId,
+      req.user.userId,
     );
   }
 }

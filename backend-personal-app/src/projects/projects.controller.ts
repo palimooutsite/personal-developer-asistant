@@ -10,7 +10,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import { ProjectListItem, ProjectsService } from './projects.service.js';
+import {
+  ProjectListItem,
+  ProjectMemberListItem,
+  ProjectsService,
+} from './projects.service.js';
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { AddProjectMemberDto } from './dto/add-project-member.dto.js';
@@ -50,6 +54,13 @@ export class ProjectsController {
     @Req() req: AuthRequest,
   ): Promise<{ message: string }> {
     return this.projectsService.remove(id, req.user.userId);
+  }
+  @Get(':id/members')
+  async findMembers(
+    @Param('id') id: string,
+    @Req() req: AuthRequest,
+  ): Promise<ProjectMemberListItem[]> {
+    return this.projectsService.findMembers(id, req.user.userId);
   }
   @Post(':id/members')
 async addMember(

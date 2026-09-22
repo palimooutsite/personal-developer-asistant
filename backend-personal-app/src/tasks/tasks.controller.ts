@@ -41,4 +41,17 @@ export class TasksController {
       req.user.userId,
     );
   }
+
+  @Get(':taskId')
+  async findOne(
+    @Param('projectId') projectId: string,
+    @Param('taskId') taskId: string,
+    @Req() req: AuthRequest,
+  ): Promise<TaskResponse> {
+    return this.tasksService.findOne(
+      projectId,
+      taskId,
+      req.user.userId,
+    );
+  }
 }

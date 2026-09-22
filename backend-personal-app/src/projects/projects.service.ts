@@ -29,6 +29,18 @@ export interface ProjectListItem {
   createdBy: string;
   role: string;
 }
+export interface ProjectMemberListItem {
+  id: string;
+  projectId: string;
+  userId: string;
+  role: string;
+  user: {
+    id: string;
+    username: string;
+    email: string;
+    name: string | null;
+  };
+}
 @Injectable()
 export class ProjectsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -225,6 +237,48 @@ export class ProjectsService {
 
     return membership;
   }
+  async findMembers(
+    projectId: string,
+    currentUserId: string,
+  ): Promise<ProjectMemberListItem[]> {
+    await this.getMembership(projectId, currentUserId);
+
+    const members =
+      await this.prisma.client.orm.public.ProjectMember
+        .where({ projectId })
+        .select('id', 'projectId', 'userId', 'role')
+        .all();
+
+    const results: ProjectMemberListItem[] = [];
+
+    for (const member of members) {
+      const user =
+        await this.prisma.client.orm.public.User
+          .where({ id: member.userId })
+          .select('id', 'username', 'email', 'name')
+          .first();
+
+      if (!user) {
+        continue;
+      }
+
+      results.push({
+        id: member.id,
+        projectId: member.projectId,
+        userId: member.userId,
+        role: member.role,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          name: user.name,
+        },
+      });
+    }
+
+    return results;
+  }
+
   async addMember(
   projectId: string,
   currentUserId: string,

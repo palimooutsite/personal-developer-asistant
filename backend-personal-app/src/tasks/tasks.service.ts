@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateTaskDto } from './dto/create-task.dto.js';
 import { UpdateTaskDto } from './dto/update-task.dto.js';
+import { AddTaskAssigneeDto } from './dto/add-task-assignee.dto.js';
 
 export interface TaskResponse {
   id: string;
@@ -274,6 +275,82 @@ export class TasksService {
       dueDate: updatedTask.dueDate,
     };
   }
+  async addAssignee(
+    projectId: string,
+    taskId: string,
+    userId: string,
+    data: AddTaskAssigneeDto,
+  ): Promise<{ taskId: string; userId: string }> {
+    const membership = await this.prisma.client.orm.public.ProjectMember
+      .where({ projectId, userId })
+      .select('projectId', 'userId', 'role')
+      .first();
+
+    if (!membership) {
+      throw new ForbiddenException('Anda bukan member project ini');
+    }
+
+    if (
+      membership.role !== 'OWNER' &&
+      membership.role !== 'ADMIN' &&
+      membership.role !== 'DEVELOPER'
+    ) {
+      throw new ForbiddenException(
+        'Anda tidak memiliki izin untuk mengatur assignee task',
+      );
+    }
+
+    const task = await this.prisma.client.orm.public.Task
+      .where({ id: taskId, projectId })
+      .select('id', 'projectId')
+      .first();
+
+    if (!task) {
+      throw new NotFoundException(
+        'Task tidak ditemukan pada project ini',
+      );
+    }
+
+    const assigneeMember = await this.prisma.client.orm.public.ProjectMember
+      .where({
+        projectId,
+        userId: data.userId,
+      })
+      .select('projectId', 'userId')
+      .first();
+
+    if (!assigneeMember) {
+      throw new NotFoundException(
+        'User bukan member project ini',
+      );
+    }
+
+    const existing = await this.prisma.client.orm.public.TaskAssignee
+      .where({
+        taskId,
+        userId: data.userId,
+      })
+      .select('id')
+      .first();
+
+    if (existing) {
+      throw new ForbiddenException(
+        'User sudah menjadi assignee task ini',
+      );
+    }
+
+    const assignee = await this.prisma.client.orm.public.TaskAssignee.create({
+      taskId,
+      projectId,
+      userId: data.userId,
+    });
+
+    return {
+      taskId: assignee.taskId,
+      userId: assignee.userId,
+    };
+  }
+
   async remove(
     projectId: string,
     taskId: string,

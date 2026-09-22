@@ -13,6 +13,7 @@ import {
 import { TasksService, TaskResponse } from './tasks.service.js';
 import { CreateTaskDto } from './dto/create-task.dto.js';
 import { UpdateTaskDto } from './dto/update-task.dto.js';
+import { AddTaskAssigneeDto } from './dto/add-task-assignee.dto.js';
 import type { AuthRequest } from '../auth/types/auth-request.js';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard.js';
 
@@ -45,6 +46,22 @@ export class TasksController {
     );
   }
 
+
+
+  @Post(':taskId/assignees')
+  async addAssignee(
+    @Param('projectId') projectId: string,
+    @Param('taskId') taskId: string,
+    @Body() body: AddTaskAssigneeDto,
+    @Req() req: AuthRequest,
+  ): Promise<{ taskId: string; userId: string }> {
+    return this.tasksService.addAssignee(
+      projectId,
+      taskId,
+      req.user.userId,
+      body,
+    );
+  }
 
   @Patch(':taskId')
   async update(

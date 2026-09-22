@@ -9,6 +9,17 @@ import { CreateTaskDto } from './dto/create-task.dto.js';
 import { UpdateTaskDto } from './dto/update-task.dto.js';
 import { AddTaskAssigneeDto } from './dto/add-task-assignee.dto.js';
 
+export interface TaskAssigneeResponse {
+  id: string;
+  taskId: string;
+  projectId: string;
+  userId: string;
+  username: string | null;
+  email: string | null;
+  name: string | null;
+  createdAt: string;
+}
+
 export interface TaskResponse {
   id: string;
   projectId: string;
@@ -349,6 +360,59 @@ export class TasksService {
       taskId: assignee.taskId,
       userId: assignee.userId,
     };
+  }
+
+  async findAssignees(
+    projectId: string,
+    taskId: string,
+    userId: string,
+  ): Promise<TaskAssigneeResponse[]> {
+    const membership = await this.prisma.client.orm.public.ProjectMember
+      .where({ projectId, userId })
+      .select('projectId', 'userId')
+      .first();
+
+    if (!membership) {
+      throw new ForbiddenException('Anda bukan member project ini');
+    }
+
+    const task = await this.prisma.client.orm.public.Task
+      .where({ id: taskId, projectId })
+      .select('id', 'projectId')
+      .first();
+
+    if (!task) {
+      throw new NotFoundException(
+        'Task tidak ditemukan pada project ini',
+      );
+    }
+
+    const assignees = await this.prisma.client.orm.public.TaskAssignee
+      .where({ taskId, projectId })
+      .select('id', 'taskId', 'projectId', 'userId', 'createdAt')
+      .all();
+
+    const result: TaskAssigneeResponse[] = [];
+
+    for (const assignee of assignees) {
+      const user = await this.prisma.client.orm.public.User
+        .where({ id: assignee.userId })
+        .select('id', 'username', 'email', 'name')
+        .first();
+
+      result.push({
+        id: assignee.id,
+        taskId: assignee.taskId,
+        projectId: assignee.projectId,
+        userId: assignee.userId,
+        username: user?.username ?? null,
+        email: user?.email ?? null,
+        name: user?.name ?? null,
+        createdAt: assignee.createdAt,
+      });
+    }
+
+    return result;
   }
 
   async remove(

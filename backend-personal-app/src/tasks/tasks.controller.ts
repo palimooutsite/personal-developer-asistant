@@ -4,12 +4,14 @@ import {
   Get,
   Param,
   Post,
+  Patch,
   Req,
   UseGuards,
 } from '@nestjs/common';
 
 import { TasksService, TaskResponse } from './tasks.service.js';
 import { CreateTaskDto } from './dto/create-task.dto.js';
+import { UpdateTaskDto } from './dto/update-task.dto.js';
 import type { AuthRequest } from '../auth/types/auth-request.js';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard.js';
 
@@ -39,6 +41,22 @@ export class TasksController {
     return this.tasksService.findAll(
       projectId,
       req.user.userId,
+    );
+  }
+
+
+  @Patch(':taskId')
+  async update(
+    @Param('projectId') projectId: string,
+    @Param('taskId') taskId: string,
+    @Body() body: UpdateTaskDto,
+    @Req() req: AuthRequest,
+  ): Promise<TaskResponse> {
+    return this.tasksService.update(
+      projectId,
+      taskId,
+      req.user.userId,
+      body,
     );
   }
 

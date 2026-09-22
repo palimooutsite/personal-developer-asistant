@@ -364,6 +364,64 @@ export class ProjectsService {
     };
   }
 
+  async removeMember(
+    projectId: string,
+    currentUserId: string,
+    targetUserId: string,
+  ): Promise<{ message: string }> {
+    const currentMembership = await this.getMembership(
+      projectId,
+      currentUserId,
+    );
+
+    if (
+      currentMembership.role !== 'OWNER' &&
+      currentMembership.role !== 'ADMIN'
+    ) {
+      throw new ForbiddenException(
+        'Anda tidak memiliki izin untuk menghapus member',
+      );
+    }
+
+    const targetMembership =
+      await this.prisma.client.orm.public.ProjectMember
+        .where({
+          projectId,
+          userId: targetUserId,
+        })
+        .select('id', 'projectId', 'userId', 'role')
+        .first();
+
+    if (!targetMembership) {
+      throw new NotFoundException(
+        'Member tidak ditemukan pada project ini',
+      );
+    }
+
+    if (targetMembership.role === 'OWNER') {
+      throw new ForbiddenException(
+        'OWNER tidak dapat dihapus dari project',
+      );
+    }
+
+    const deleted =
+      await this.prisma.client.orm.public.ProjectMember
+        .where({
+          id: targetMembership.id,
+        })
+        .delete();
+
+    if (!deleted) {
+      throw new NotFoundException(
+        'Member tidak ditemukan atau gagal dihapus',
+      );
+    }
+
+    return {
+      message: 'Member berhasil dihapus dari project',
+    };
+  }
+
   async addMember(
   projectId: string,
   currentUserId: string,

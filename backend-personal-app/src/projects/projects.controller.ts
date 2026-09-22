@@ -18,6 +18,7 @@ import {
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { AddProjectMemberDto } from './dto/add-project-member.dto.js';
+import { UpdateProjectMemberDto } from './dto/update-project-member.dto.js';
 import type { AuthRequest } from '../auth/types/auth-request.js';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard.js';
 
@@ -61,6 +62,20 @@ export class ProjectsController {
     @Req() req: AuthRequest,
   ): Promise<ProjectMemberListItem[]> {
     return this.projectsService.findMembers(id, req.user.userId);
+  }
+  @Patch(':id/members/:userId')
+  async updateMemberRole(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @Body() body: UpdateProjectMemberDto,
+    @Req() req: AuthRequest,
+  ): Promise<ProjectMemberListItem> {
+    return this.projectsService.updateMemberRole(
+      id,
+      req.user.userId,
+      userId,
+      body,
+    );
   }
   @Post(':id/members')
 async addMember(

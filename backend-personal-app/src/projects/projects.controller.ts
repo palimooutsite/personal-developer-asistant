@@ -77,6 +77,18 @@ export class ProjectsController {
       body,
     );
   }
+  @Delete(':id/members/:userId')
+  async removeMember(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @Req() req: AuthRequest,
+  ): Promise<{ message: string }> {
+    return this.projectsService.removeMember(
+      id,
+      req.user.userId,
+      userId,
+    );
+  }
   @Post(':id/members')
 async addMember(
   @Param('id') id: string,

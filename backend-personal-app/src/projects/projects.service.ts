@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { AddProjectMemberDto } from './dto/add-project-member.dto.js';
+import { UpdateProjectMemberDto } from './dto/update-project-member.dto.js';
 
 export interface ProjectResponse {
   id: string;
@@ -277,6 +278,90 @@ export class ProjectsService {
     }
 
     return results;
+  }
+
+  async updateMemberRole(
+    projectId: string,
+    currentUserId: string,
+    targetUserId: string,
+    data: UpdateProjectMemberDto,
+  ): Promise<ProjectMemberListItem> {
+    const currentMembership = await this.getMembership(
+      projectId,
+      currentUserId,
+    );
+
+    if (
+      currentMembership.role !== 'OWNER' &&
+      currentMembership.role !== 'ADMIN'
+    ) {
+      throw new ForbiddenException(
+        'Anda tidak memiliki izin untuk mengubah role member',
+      );
+    }
+
+    const targetMembership =
+      await this.prisma.client.orm.public.ProjectMember
+        .where({
+          projectId,
+          userId: targetUserId,
+        })
+        .select('id', 'projectId', 'userId', 'role')
+        .first();
+
+    if (!targetMembership) {
+      throw new NotFoundException(
+        'Member tidak ditemukan pada project ini',
+      );
+    }
+
+    if (targetMembership.role === 'OWNER') {
+      throw new ForbiddenException(
+        'Role OWNER tidak dapat diubah',
+      );
+    }
+
+    const updated =
+      await this.prisma.client.orm.public.ProjectMember
+        .where({
+          id: targetMembership.id,
+        })
+        .update({
+          role: data.role,
+        });
+
+    if (!updated) {
+      throw new NotFoundException(
+        'Member tidak ditemukan atau gagal diperbarui',
+      );
+    }
+
+    const user =
+      await this.prisma.client.orm.public.User
+        .where({
+          id: updated.userId,
+        })
+        .select('id', 'username', 'email', 'name')
+        .first();
+
+    if (!user) {
+      throw new NotFoundException(
+        'User tidak ditemukan',
+      );
+    }
+
+    return {
+      id: updated.id,
+      projectId: updated.projectId,
+      userId: updated.userId,
+      role: updated.role,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        name: user.name,
+      },
+    };
   }
 
   async addMember(

@@ -92,6 +92,22 @@ export class TasksController {
     );
   }
 
+
+  @Delete(':taskId/assignees/:assigneeUserId')
+  async removeAssignee(
+    @Param('projectId') projectId: string,
+    @Param('taskId') taskId: string,
+    @Param('assigneeUserId') assigneeUserId: string,
+    @Req() req: AuthRequest,
+  ): Promise<{ message: string }> {
+    return this.tasksService.removeAssignee(
+      projectId,
+      taskId,
+      assigneeUserId,
+      req.user.userId,
+    );
+  }
+
   @Delete(':taskId')
   async remove(
     @Param('projectId') projectId: string,

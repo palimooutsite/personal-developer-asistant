@@ -22,6 +22,7 @@ import { ProjectCard } from '../../components/projects/ProjectCard';
 import { ProjectForm } from '../../components/projects/ProjectForm';
 import { ProjectMembersModal } from '../../components/projects/ProjectMembersModal';
 import { ProjectStats } from '../../components/projects/ProjectStats';
+import { ModuleHeader } from '../../components/layout/ModuleHeader';
 
 type EditableRole = Exclude<ProjectRole, 'OWNER'>;
 
@@ -193,27 +194,14 @@ export default function ProjectsPage() {
   return (
     <main className="min-h-screen bg-[#f6f7fb] text-zinc-950">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
-        <header className="mb-8">
-          <button
-            type="button"
-            onClick={() => router.push('/')}
-            className="mb-4 inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
-          >
-            ← Kembali ke Menu
-          </button>
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-950 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm">
-                <span className="flex h-5 w-5 items-center justify-center rounded-md bg-white/15 text-[10px]">▦</span>
-                PROJECTS
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Projects</h1>
-              <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-zinc-400">Project Workspace</p>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500 sm:text-base">
-                Kelola seluruh project development kamu dalam satu tempat.
-                Pilih project untuk mulai mengatur pekerjaan dan progress.
-              </p>
-            </div>
+        <ModuleHeader
+          icon="▦"
+          label="PROJECTS"
+          title="Projects"
+          subtitle="Project Workspace"
+          description="Kelola seluruh project development kamu dalam satu tempat. Pilih project untuk mulai mengatur pekerjaan dan progress."
+          accent="indigo"
+          action={
             <button
               type="button"
               onClick={formOpen ? closeForm : openCreateForm}
@@ -222,8 +210,8 @@ export default function ProjectsPage() {
               <span className="text-xl leading-none">{formOpen ? '×' : '+'}</span>
               {formOpen ? 'Tutup Form' : 'Project Baru'}
             </button>
-          </div>
-        </header>
+          }
+        />
 
         {!loading && projects.length > 0 ? <ProjectStats projects={projects} /> : null}
 

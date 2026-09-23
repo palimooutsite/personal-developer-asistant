@@ -521,6 +521,13 @@ export default function ProjectsPage() {
                     <div className="flex gap-2">
                       <button
                         type="button"
+                        onClick={() => void openMembers(project)}
+                        className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100"
+                      >
+                        Members
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => startEdit(project)}
                         className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50"
                       >

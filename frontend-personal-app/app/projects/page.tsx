@@ -193,7 +193,7 @@ export default function ProjectsPage() {
 
   return (
     <main className="min-h-screen bg-[#f6f7fb] text-zinc-950">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-10">
         <ModuleHeader
           icon="▦"
           label="PROJECTS"
@@ -205,7 +205,7 @@ export default function ProjectsPage() {
             <button
               type="button"
               onClick={formOpen ? closeForm : openCreateForm}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-zinc-950 px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-md"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-zinc-950 px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-md sm:w-auto"
             >
               <span className="text-xl leading-none">{formOpen ? '×' : '+'}</span>
               {formOpen ? 'Tutup Form' : 'Project Baru'}

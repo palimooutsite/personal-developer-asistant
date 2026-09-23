@@ -36,7 +36,7 @@ export function ProjectForm({
       <form onSubmit={onSubmit} className="grid gap-5 p-6">
         <div>
           <label htmlFor="project-name" className="mb-2 block text-sm font-semibold">Nama Project <span className="text-red-500">*</span></label>
-          <input id="project-name" value={name} onChange={(event) => onNameChange(event.target.value)} maxLength={200} required autoFocus className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-zinc-400 focus:border-zinc-900 focus:ring-4 focus:ring-zinc-100" placeholder="Contoh: Personal Developer Assistant" />
+          <input id="project-name" value={name} onChange={(event) => onNameChange(event.target.value)} maxLength={200} required autoFocus className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-900 focus:ring-4 focus:ring-zinc-100" placeholder="Contoh: Personal Developer Assistant" />
         </div>
         <div>
           <label htmlFor="project-description" className="mb-2 block text-sm font-semibold">Deskripsi <span className="font-normal text-zinc-400">(opsional)</span></label>

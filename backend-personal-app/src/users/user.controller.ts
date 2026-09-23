@@ -38,11 +38,16 @@ export class UsersController {
     @Query('search') search?: string,
     @Query('page') page = '1',
     @Query('limit') limit = '5',
+    @Query('excludeUserIds') excludeUserIds = '',
   ) {
     return this.usersService.searchUsers(
       search,
       Number(page),
       Number(limit),
+      excludeUserIds
+        .split(',')
+        .map((id) => id.trim())
+        .filter(Boolean),
     );
   }
 }

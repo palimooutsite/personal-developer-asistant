@@ -46,8 +46,10 @@ export interface AddProjectMemberInput { userId: string; role: Exclude<ProjectRo
 export interface UpdateProjectMemberInput { role: Exclude<ProjectRole, 'OWNER'>; }
 
 export interface AddProjectMembersInput {
-  userIds: string[];
-  role: Exclude<ProjectRole, 'OWNER'>;
+  members: Array<{
+    userId: string;
+    role: Exclude<ProjectRole, 'OWNER'>;
+  }>;
 }
 
 export interface UpdateProjectInput {

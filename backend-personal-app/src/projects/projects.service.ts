@@ -425,8 +425,7 @@ export class ProjectsService {
   async addMembers(
     projectId: string,
     currentUserId: string,
-    userIds: string[],
-    role: AddProjectMemberDto['role'],
+    members: AddProjectMemberDto[],
   ): Promise<ProjectMemberListItem[]> {
     const membership = await this.getMembership(projectId, currentUserId);
 
@@ -436,7 +435,9 @@ export class ProjectsService {
       );
     }
 
-    const uniqueUserIds = [...new Set(userIds)];
+    const uniqueMembers = Array.from(
+      new Map(members.map((member) => [member.userId, member])).values(),
+    );
 
     return this.prisma.client.transaction(async (tx) => {
       const project = await tx.orm.public.Project.where({ id: projectId }).first();
@@ -447,7 +448,8 @@ export class ProjectsService {
 
       const results: ProjectMemberListItem[] = [];
 
-      for (const userId of uniqueUserIds) {
+      for (const memberInput of uniqueMembers) {
+        const userId = memberInput.userId;
         const user = await tx.orm.public.User.where({ id: userId })
           .select('id', 'username', 'email', 'name')
           .first();
@@ -470,7 +472,7 @@ export class ProjectsService {
         const member = await tx.orm.public.ProjectMember.create({
           projectId,
           userId,
-          role,
+          role: memberInput.role,
         });
 
         results.push({

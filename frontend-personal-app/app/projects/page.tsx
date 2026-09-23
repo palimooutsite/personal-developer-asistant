@@ -643,85 +643,87 @@ export default function ProjectsPage() {
                       </div>
 
                       {userSearchLoading ? (
-                        userResults.length === 0 ? (
-                          <div className="px-4 py-8 text-center text-sm text-zinc-400">
-                            User tidak ditemukan.
+                        <div className="px-4 py-8 text-center text-sm text-zinc-400">
+                          Memuat user...
+                        </div>
+                      ) : userResults.length === 0 ? (
+                        <div className="px-4 py-8 text-center text-sm text-zinc-400">
+                          User tidak ditemukan.
+                        </div>
+                      ) : (
+                        <>
+                          <div className="divide-y divide-zinc-100">
+                            {userResults.map(user => {
+                              const selected = selectedUsers.some(item => item.id === user.id);
+
+                              return (
+                                <label
+                                  key={user.id}
+                                  className={`flex cursor-pointer items-center gap-3 px-4 py-3 transition hover:bg-zinc-50 ${selected ? 'bg-blue-50/60' : ''}`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={selected}
+                                    onChange={() => {
+                                      setSelectedUsers(current =>
+                                        selected
+                                          ? current.filter(item => item.id !== user.id)
+                                          : [...current, user],
+                                      );
+                                      setSelectedUserRoles(current => {
+                                        if (selected) {
+                                          const next = { ...current };
+                                          delete next[user.id];
+                                          return next;
+                                        }
+                                        return {
+                                          ...current,
+                                          [user.id]: current[user.id] ?? 'DEVELOPER',
+                                        };
+                                      });
+                                    }}
+                                    className="h-4 w-4 rounded border-zinc-300"
+                                  />
+                                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-700">
+                                    {(user.name || user.username).charAt(0).toUpperCase()}
+                                  </span>
+                                  <span className="min-w-0 flex-1">
+                                    <span className="block truncate text-sm font-semibold text-zinc-800">
+                                      {user.name || user.username}
+                                    </span>
+                                    <span className="block truncate text-xs text-zinc-400">
+                                      @{user.username} · {user.email}
+                                    </span>
+                                  </span>
+                                </label>
+                              );
+                            })}
                           </div>
-                        ) : (
-                          <>
-                            <div className="divide-y divide-zinc-100">
-                              {userResults.map(user => {
-                                const selected = selectedUsers.some(item => item.id === user.id);
 
-                                return (
-                                  <label
-                                    key={user.id}
-                                    className={`flex cursor-pointer items-center gap-3 px-4 py-3 transition hover:bg-zinc-50 ${selected ? 'bg-blue-50/60' : ''}`}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={selected}
-                                      onChange={() => {
-                                        setSelectedUsers(current =>
-                                          selected
-                                            ? current.filter(item => item.id !== user.id)
-                                            : [...current, user],
-                                        );
-                                        setSelectedUserRoles(current => {
-                                          if (selected) {
-                                            const next = { ...current };
-                                            delete next[user.id];
-                                            return next;
-                                          }
-                                          return {
-                                            ...current,
-                                            [user.id]: current[user.id] ?? 'DEVELOPER',
-                                          };
-                                        });
-                                      }}
-                                      className="h-4 w-4 rounded border-zinc-300"
-                                    />
-                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-700">
-                                      {(user.name || user.username).charAt(0).toUpperCase()}
-                                    </span>
-                                    <span className="min-w-0 flex-1">
-                                      <span className="block truncate text-sm font-semibold text-zinc-800">
-                                        {user.name || user.username}
-                                      </span>
-                                      <span className="block truncate text-xs text-zinc-400">
-                                        @{user.username} · {user.email}
-                                      </span>
-                                    </span>
-                                  </label>
-                                );
-                              })}
+                          {userSearchTotalPages > 1 ? (
+                            <div className="flex items-center justify-between border-t border-zinc-100 px-3 py-2">
+                              <button
+                                type="button"
+                                disabled={userSearchPage <= 1 || userSearchLoading}
+                                onClick={() => setUserSearchPage(page => Math.max(1, page - 1))}
+                                className="rounded-lg px-3 py-1.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 disabled:opacity-40"
+                              >
+                                ← Sebelumnya
+                              </button>
+                              <span className="text-xs text-zinc-400">
+                                Halaman {userSearchPage} / {userSearchTotalPages}
+                              </span>
+                              <button
+                                type="button"
+                                disabled={userSearchPage >= userSearchTotalPages || userSearchLoading}
+                                onClick={() => setUserSearchPage(page => page + 1)}
+                                className="rounded-lg px-3 py-1.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 disabled:opacity-40"
+                              >
+                                Berikutnya →
+                              </button>
                             </div>
-
-                            {userSearchTotalPages > 1 ? (
-                              <div className="flex items-center justify-between border-t border-zinc-100 px-3 py-2">
-                                <button
-                                  type="button"
-                                  disabled={userSearchPage <= 1 || userSearchLoading}
-                                  onClick={() => setUserSearchPage(page => Math.max(1, page - 1))}
-                                  className="rounded-lg px-3 py-1.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 disabled:opacity-40"
-                                >
-                                  ← Sebelumnya
-                                </button>
-                                <span className="text-xs text-zinc-400">
-                                  Halaman {userSearchPage} / {userSearchTotalPages}
-                                </span>
-                                <button
-                                  type="button"
-                                  disabled={userSearchPage >= userSearchTotalPages || userSearchLoading}
-                                  onClick={() => setUserSearchPage(page => page + 1)}
-                                  className="rounded-lg px-3 py-1.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 disabled:opacity-40"
-                                >
-                                  Berikutnya →
-                                </button>
-                              </div>
-                            ) : null}
-                          </>
-                        )
+                          ) : null}
+                        </>
                       )}
                     </div>
 

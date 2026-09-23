@@ -1,7 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { unlink } from 'node:fs/promises';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateDocumentDto } from './dto/create-document.dto.js';
 import { UpdateDocumentDto } from './dto/update-document.dto.js';
+
+export interface UploadedDocumentFile {
+  filename: string;
+  originalname: string;
+  mimetype: string;
+  size: number;
+  path: string;
+}
 
 export interface DocumentResponse {
   id: string;
@@ -30,6 +39,28 @@ export class DocumentsService {
       fileSize: data.fileSize,
       createdBy: userId,
     });
+  }
+
+  async upload(
+    userId: string,
+    title: string,
+    description: string | undefined,
+    file: UploadedDocumentFile,
+  ): Promise<DocumentResponse> {
+    try {
+      return await this.prisma.client.orm.public.Document.create({
+        title,
+        description,
+        fileName: file.originalname,
+        filePath: file.path,
+        mimeType: file.mimetype,
+        fileSize: String(file.size),
+        createdBy: userId,
+      });
+    } catch (error) {
+      await unlink(file.path).catch(() => undefined);
+      throw error;
+    }
   }
 
   async findAll(userId: string): Promise<DocumentResponse[]> {
@@ -96,11 +127,13 @@ export class DocumentsService {
   }
 
   async remove(userId: string, id: string): Promise<{ message: string }> {
-    await this.findOne(userId, id);
+    const document = await this.findOne(userId, id);
 
     await this.prisma.client.orm.public.Document
       .where({ id, createdBy: userId })
       .delete();
+
+    await unlink(document.filePath).catch(() => undefined);
 
     return { message: 'Document berhasil dihapus' };
   }

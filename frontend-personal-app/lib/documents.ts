@@ -33,6 +33,10 @@ export async function uploadDocument(
   });
 }
 
+export function getDocumentFileUrl(id: string) {
+  return `/backend-api/documents/${id}/file`;
+}
+
 export async function updateDocument(
   id: string,
   data: { title?: string; description?: string | null },

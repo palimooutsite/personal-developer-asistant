@@ -74,7 +74,7 @@ export default function LoginPage() {
               onChange={(event) => setPassword(event.target.value)}
               autoComplete="current-password"
               required
-              className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-sm outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200"
+              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200"
               placeholder="••••••••"
             />
           </div>

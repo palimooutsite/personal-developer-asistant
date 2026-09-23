@@ -24,7 +24,7 @@ export async function searchUsers(
 ): Promise<UserSearchResponse> {
   const params = new URLSearchParams({
     page: String(page),
-    limit: String(Math.min(5, limit)),
+    limit: String(Math.min(10, limit)),
   });
 
   if (search.trim()) {

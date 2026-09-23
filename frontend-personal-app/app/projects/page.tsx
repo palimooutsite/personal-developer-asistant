@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ApiError } from '../../lib/api';
+import { searchUsers, UserPickerItem } from '../../lib/users';
 import {
   addProjectMember,
   createProject,
@@ -78,6 +79,10 @@ export default function ProjectsPage() {
   const [memberSaving, setMemberSaving] = useState(false);
   const [newMemberUserId, setNewMemberUserId] = useState('');
   const [newMemberRole, setNewMemberRole] = useState<Exclude<ProjectRole, 'OWNER'>>('DEVELOPER');
+  const [userSearch, setUserSearch] = useState('');
+  const [userResults, setUserResults] = useState<UserPickerItem[]>([]);
+  const [selectedUser, setSelectedUser] = useState<UserPickerItem | null>(null);
+  const [userSearchLoading, setUserSearchLoading] = useState(false);
 
   async function loadProjects() {
     setLoading(true);
@@ -153,6 +158,9 @@ export default function ProjectsPage() {
   async function openMembers(project: Project) {
     setMemberProject(project);
     setNewMemberUserId('');
+    setSelectedUser(null);
+    setUserSearch('');
+    setUserResults([]);
     setNewMemberRole('DEVELOPER');
     setError('');
     try {
@@ -169,7 +177,37 @@ export default function ProjectsPage() {
     setMemberProject(null);
     setMembers([]);
     setNewMemberUserId('');
+    setSelectedUser(null);
+    setUserSearch('');
+    setUserResults([]);
   }
+
+  useEffect(() => {
+    if (!memberProject || !(memberProject.role === 'OWNER' || memberProject.role === 'ADMIN')) {
+      return;
+    }
+
+    const keyword = userSearch.trim();
+    if (!keyword) {
+      setUserResults([]);
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      try {
+        setUserSearchLoading(true);
+        const results = await searchUsers(keyword);
+        const memberIds = new Set(members.map((member) => member.userId));
+        setUserResults(results.filter((user) => !memberIds.has(user.id)));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Gagal mencari user.');
+      } finally {
+        setUserSearchLoading(false);
+      }
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [memberProject, userSearch, members]);
 
   async function handleAddMember() {
     if (!memberProject || !newMemberUserId.trim()) return;
@@ -182,6 +220,9 @@ export default function ProjectsPage() {
       });
       setMembers(current => [...current, member]);
       setNewMemberUserId('');
+      setSelectedUser(null);
+      setUserSearch('');
+      setUserResults([]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal menambahkan member.');
     } finally {
@@ -563,13 +604,64 @@ export default function ProjectsPage() {
                   <div className="mb-6 rounded-2xl bg-zinc-50 p-4">
                     <p className="mb-3 text-sm font-semibold">Tambah Member</p>
                     <div className="grid gap-3 sm:grid-cols-[1fr_180px_auto]">
-                      <input value={newMemberUserId} onChange={e => setNewMemberUserId(e.target.value)} placeholder="UUID User" className="rounded-xl border border-zinc-200 bg-white px-3 py-3 text-sm outline-none focus:border-zinc-900" />
+                      <div className="relative">
+                        <input
+                          value={userSearch}
+                          onChange={e => {
+                            setUserSearch(e.target.value);
+                            setSelectedUser(null);
+                            setNewMemberUserId('');
+                          }}
+                          placeholder="Cari username, email, atau nama..."
+                          className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-3 text-sm outline-none focus:border-zinc-900"
+                        />
+                        {userSearch.trim() && !selectedUser ? (
+                          <div className="absolute left-0 right-0 top-full z-10 mt-2 max-h-64 overflow-auto rounded-xl border border-zinc-200 bg-white p-1 shadow-xl">
+                            {userSearchLoading ? (
+                              <div className="px-3 py-4 text-sm text-zinc-400">Mencari user...</div>
+                            ) : userResults.length === 0 ? (
+                              <div className="px-3 py-4 text-sm text-zinc-400">User tidak ditemukan.</div>
+                            ) : (
+                              userResults.map(user => (
+                                <button
+                                  key={user.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedUser(user);
+                                    setNewMemberUserId(user.id);
+                                    setUserSearch(user.name || user.username);
+                                    setUserResults([]);
+                                  }}
+                                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-zinc-50"
+                                >
+                                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-700">
+                                    {(user.name || user.username).charAt(0).toUpperCase()}
+                                  </span>
+                                  <span className="min-w-0">
+                                    <span className="block truncate text-sm font-semibold text-zinc-800">{user.name || user.username}</span>
+                                    <span className="block truncate text-xs text-zinc-400">@{user.username} · {user.email}</span>
+                                  </span>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
                       <select value={newMemberRole} onChange={e => setNewMemberRole(e.target.value as Exclude<ProjectRole, 'OWNER'>)} className="rounded-xl border border-zinc-200 bg-white px-3 py-3 text-sm outline-none">
                         <option value="ADMIN">ADMIN</option><option value="DEVELOPER">DEVELOPER</option><option value="REVIEWER">REVIEWER</option><option value="VIEWER">VIEWER</option>
                       </select>
                       <button type="button" onClick={() => void handleAddMember()} disabled={!newMemberUserId.trim() || memberSaving} className="rounded-xl bg-zinc-950 px-4 py-3 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50">{memberSaving ? '...' : 'Tambah'}</button>
                     </div>
-                    <p className="mt-2 text-xs text-zinc-400">Masukkan UUID user yang sudah terdaftar pada PDA.</p>
+                    {selectedUser ? (
+                      <div className="mt-3 flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2.5">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-blue-900">User dipilih: {selectedUser.name || selectedUser.username}</p>
+                          <p className="truncate text-xs text-blue-700/70">@{selectedUser.username} · {selectedUser.email}</p>
+                        </div>
+                        <button type="button" onClick={() => { setSelectedUser(null); setNewMemberUserId(''); setUserSearch(''); }} className="ml-3 text-xs font-semibold text-blue-700 hover:underline">Ganti</button>
+                      </div>
+                    ) : null}
+                    <p className="mt-2 text-xs text-zinc-400">Ketik minimal beberapa karakter untuk mencari user yang sudah terdaftar.</p>
                   </div>
                 ) : null}
                 <div className="mb-3 flex items-center justify-between"><p className="text-sm font-semibold">Daftar Member</p><span className="text-xs text-zinc-400">{members.length} member</span></div>

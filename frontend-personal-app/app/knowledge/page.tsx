@@ -133,7 +133,7 @@ export default function KnowledgePage() {
 
   return (
     <main className="min-h-screen bg-[#f6f7fb] text-zinc-950">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-10">
         <ModuleHeader
           icon="◈"
           label="KNOWLEDGE"
@@ -142,7 +142,7 @@ export default function KnowledgePage() {
           description="Simpan dokumentasi, catatan teknis, solusi, dan referensi development agar mudah ditemukan kembali."
           accent="violet"
           action={
-            <button type="button" onClick={openCreate} className="rounded-xl bg-violet-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-900">
+            <button type="button" onClick={openCreate} className="w-full rounded-xl bg-violet-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-900 sm:w-auto">
               + Knowledge Baru
             </button>
           }
@@ -171,7 +171,7 @@ export default function KnowledgePage() {
           <div className="grid gap-3 md:grid-cols-[1fr_220px_auto]">
             <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Cari judul, slug, atau isi knowledge..." className="rounded-xl border border-zinc-300 px-4 py-3 text-sm outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-50" />
             <StyledSelect value={tagFilter} onChange={(value) => { setTagFilter(value); setPage(1); }} options={tagOptions} />
-            <div className="flex items-center rounded-xl bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-700">{meta.total} artikel</div>
+            <div className="flex items-center justify-center rounded-xl bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-700 md:justify-start">{meta.total} artikel</div>
           </div>
         </section>
 
@@ -219,7 +219,7 @@ export default function KnowledgePage() {
             {meta.totalPages > 1 && (
               <div className="mt-6 flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3">
                 <p className="text-sm text-zinc-500">Halaman {meta.page} dari {meta.totalPages}</p>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <button type="button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)} className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-semibold disabled:opacity-40">← Sebelumnya</button>
                   <button type="button" disabled={page >= meta.totalPages} onClick={() => setPage((value) => value + 1)} className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-semibold disabled:opacity-40">Berikutnya →</button>
                 </div>

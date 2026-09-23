@@ -53,6 +53,7 @@ export class UsersService {
     search?: string,
     page = 1,
     limit = 5,
+    excludeUserIds: string[] = [],
   ): Promise<{
     data: UserResponse[];
     meta: { page: number; limit: number; total: number; totalPages: number };
@@ -62,12 +63,13 @@ export class UsersService {
     const normalizedPage = Math.max(1, page);
     const normalizedLimit = Math.min(10, Math.max(1, limit));
 
-    const filtered = keyword
+    const excludedIds = new Set(excludeUserIds);
+    const filtered = (keyword
       ? users.filter((user) =>
           [user.username, user.email, user.name ?? '']
             .some((value) => value.toLowerCase().includes(keyword)),
         )
-      : users;
+      : users).filter((user) => !excludedIds.has(user.id));
 
     const total = filtered.length;
     const totalPages = Math.ceil(total / normalizedLimit);

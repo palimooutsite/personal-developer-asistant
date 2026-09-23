@@ -48,6 +48,22 @@ export class UsersService {
       'updatedAt',
     ).all();
   }
+
+  async searchUsers(search?: string): Promise<UserResponse[]> {
+    const users = await this.findAll();
+    const keyword = search?.trim().toLowerCase();
+
+    if (!keyword) {
+      return users.slice(0, 20);
+    }
+
+    return users
+      .filter((user) =>
+        [user.username, user.email, user.name ?? '']
+          .some((value) => value.toLowerCase().includes(keyword)),
+      )
+      .slice(0, 20);
+  }
   async findByUsername(username: string) {
     return this.prisma.client.orm.public.User.where({
       username,

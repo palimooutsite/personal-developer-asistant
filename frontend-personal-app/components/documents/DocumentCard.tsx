@@ -10,7 +10,7 @@ interface DocumentCardProps {
   onOpen: () => void;
 }
 
-export function DocumentCard({ document, onEdit, onDelete }: DocumentCardProps) {
+export function DocumentCard({ document, onEdit, onDelete, onOpen }: DocumentCardProps) {
   const [copied, setCopied] = useState(false);
 
   async function copyPath() {

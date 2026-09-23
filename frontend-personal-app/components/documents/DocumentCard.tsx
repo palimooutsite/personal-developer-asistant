@@ -7,6 +7,7 @@ interface DocumentCardProps {
   document: DocumentItem;
   onEdit: () => void;
   onDelete: () => void;
+  onOpen: () => void;
 }
 
 export function DocumentCard({ document, onEdit, onDelete }: DocumentCardProps) {
@@ -60,6 +61,10 @@ export function DocumentCard({ document, onEdit, onDelete }: DocumentCardProps) 
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2 border-t border-zinc-100 pt-4">
+        <button type="button" onClick={onOpen}
+          className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-bold text-white hover:bg-amber-700">
+          Buka / Download
+        </button>
         <button type="button" onClick={() => void copyPath()}
           className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800">
           {copied ? '✓ Nama disalin' : 'Salin nama'}

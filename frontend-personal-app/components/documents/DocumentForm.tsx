@@ -83,7 +83,7 @@ export function DocumentForm({
           <span className="mb-2 block text-sm font-semibold text-zinc-700">Judul</span>
           <input value={title} onChange={e => setTitle(e.target.value)} maxLength={200}
             placeholder="Contoh: Dokumentasi API PDA"
-            className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-50" />
+            className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-50" />
         </label>
 
         <label className="block">

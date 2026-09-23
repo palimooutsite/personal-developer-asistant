@@ -1,5 +1,7 @@
 import { FormEvent } from 'react';
 import { TaskPriority, TaskStatus } from '../../lib/tasks';
+import { StyledSelect } from '../ui/StyledSelect';
+import { DateField } from '../ui/DateField';
 
 const statuses: Record<TaskStatus, string> = { TODO:'To Do', IN_PROGRESS:'In Progress', REVIEW:'Review', DONE:'Done', CANCELLED:'Cancelled' };
 const priorities: Record<TaskPriority, string> = { LOW:'Low', MEDIUM:'Medium', HIGH:'High', URGENT:'Urgent' };
@@ -15,9 +17,9 @@ export function TaskForm(p: TaskFormProps) {
     <div className="grid gap-4 md:grid-cols-2">
       <label className="md:col-span-2"><span className="mb-1.5 block text-sm font-semibold">Judul Task</span><input value={p.title} onChange={e=>p.onTitleChange(e.target.value)} maxLength={200} required className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" placeholder="Contoh: Implementasi JWT authentication"/></label>
       <label className="md:col-span-2"><span className="mb-1.5 block text-sm font-semibold">Deskripsi</span><textarea value={p.description} onChange={e=>p.onDescriptionChange(e.target.value)} maxLength={2000} rows={4} className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/></label>
-      {p.editing && <label><span className="mb-1.5 block text-sm font-semibold">Status</span><select value={p.status} onChange={e=>p.onStatusChange(e.target.value as TaskStatus)} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">{Object.entries(statuses).map(([v,m])=><option key={v} value={v}>{m}</option>)}</select></label>}
-      <label><span className="mb-1.5 block text-sm font-semibold">Prioritas</span><select value={p.priority} onChange={e=>p.onPriorityChange(e.target.value as TaskPriority)} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">{Object.entries(priorities).map(([v,m])=><option key={v} value={v}>{m}</option>)}</select></label>
-      <label><span className="mb-1.5 block text-sm font-semibold">Deadline</span><input type="date" value={p.dueDate} onChange={e=>p.onDueDateChange(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"/></label>
+      {p.editing && <div><span className="mb-1.5 block text-sm font-semibold">Status</span><StyledSelect value={p.status} onChange={v=>p.onStatusChange(v as TaskStatus)} options={Object.entries(statuses).map(([value,label])=>({value,label}))} /></div>}
+      <div><span className="mb-1.5 block text-sm font-semibold">Prioritas</span><StyledSelect value={p.priority} onChange={v=>p.onPriorityChange(v as TaskPriority)} options={Object.entries(priorities).map(([value,label])=>({value,label}))} /></div>
+      <DateField id="task-due-date" value={p.dueDate} onChange={p.onDueDateChange} />
     </div>
     <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" onClick={p.onClose} className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold hover:bg-slate-50">Batal</button><button type="submit" disabled={p.saving||!p.title.trim()} className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">{p.saving?'Menyimpan...':p.editing?'Simpan Perubahan':'Buat Task'}</button></div>
   </form>;

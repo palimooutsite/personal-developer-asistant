@@ -9,6 +9,8 @@ import { CreateTaskDto } from './dto/create-task.dto.js';
 import { UpdateTaskDto } from './dto/update-task.dto.js';
 import { AddTaskAssigneeDto } from './dto/add-task-assignee.dto.js';
 
+type TaskMutationRole = 'OWNER' | 'ADMIN' | 'DEVELOPER';
+
 export interface TaskAssigneeResponse {
   id: string;
   taskId: string;
@@ -50,27 +52,7 @@ export class TasksService {
     userId: string,
     data: CreateTaskDto,
   ): Promise<TaskResponse> {
-    const membership = await this.prisma.client.orm.public.ProjectMember
-      .where({
-        projectId,
-        userId,
-      })
-      .select('projectId', 'userId', 'role')
-      .first();
-
-    if (!membership) {
-      throw new ForbiddenException('Anda bukan member project ini');
-    }
-
-    if (
-      membership.role !== 'OWNER' &&
-      membership.role !== 'ADMIN' &&
-      membership.role !== 'DEVELOPER'
-    ) {
-      throw new ForbiddenException(
-        'Anda tidak memiliki izin untuk membuat task',
-      );
-    }
+    await this.requireMutationAccess(projectId, userId);
 
     const project = await this.prisma.client.orm.public.Project
       .where({ id: projectId })
@@ -90,33 +72,14 @@ export class TasksService {
       dueDate: data.dueDate,
     });
 
-    return {
-      id: task.id,
-      projectId: task.projectId,
-      createdBy: task.createdBy,
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      priority: task.priority,
-      dueDate: task.dueDate,
-    };
+    return this.toTaskResponse(task);
   }
 
   async findAll(
     projectId: string,
     userId: string,
   ): Promise<TaskListResponse[]> {
-    const membership = await this.prisma.client.orm.public.ProjectMember
-      .where({
-        projectId,
-        userId,
-      })
-      .select('projectId', 'userId', 'role')
-      .first();
-
-    if (!membership) {
-      throw new ForbiddenException('Anda bukan member project ini');
-    }
+    await this.requireProjectMembership(projectId, userId);
 
     const project = await this.prisma.client.orm.public.Project
       .where({ id: projectId })
@@ -165,14 +128,7 @@ export class TasksService {
       }
 
       result.push({
-        id: task.id,
-        projectId: task.projectId,
-        createdBy: task.createdBy,
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        priority: task.priority,
-        dueDate: task.dueDate,
+        ...this.toTaskResponse(task),
         assignees: assigneeResult,
       });
     }
@@ -185,51 +141,11 @@ export class TasksService {
     taskId: string,
     userId: string,
   ): Promise<TaskResponse> {
-    const membership = await this.prisma.client.orm.public.ProjectMember
-      .where({
-        projectId,
-        userId,
-      })
-      .select('projectId', 'userId', 'role')
-      .first();
+    await this.requireProjectMembership(projectId, userId);
 
-    if (!membership) {
-      throw new ForbiddenException('Anda bukan member project ini');
-    }
+    const task = await this.findTask(projectId, taskId);
 
-    const task = await this.prisma.client.orm.public.Task
-      .where({
-        id: taskId,
-        projectId,
-      })
-      .select(
-        'id',
-        'projectId',
-        'createdBy',
-        'title',
-        'description',
-        'status',
-        'priority',
-        'dueDate',
-      )
-      .first();
-
-    if (!task) {
-      throw new NotFoundException(
-        'Task tidak ditemukan pada project ini',
-      );
-    }
-
-    return {
-      id: task.id,
-      projectId: task.projectId,
-      createdBy: task.createdBy,
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      priority: task.priority,
-      dueDate: task.dueDate,
-    };
+    return this.toTaskResponse(task);
   }
 
   async update(
@@ -238,50 +154,9 @@ export class TasksService {
     userId: string,
     data: UpdateTaskDto,
   ): Promise<TaskResponse> {
-    const membership = await this.prisma.client.orm.public.ProjectMember
-      .where({
-        projectId,
-        userId,
-      })
-      .select('projectId', 'userId', 'role')
-      .first();
+    await this.requireMutationAccess(projectId, userId);
 
-    if (!membership) {
-      throw new ForbiddenException('Anda bukan member project ini');
-    }
-
-    if (
-      membership.role !== 'OWNER' &&
-      membership.role !== 'ADMIN' &&
-      membership.role !== 'DEVELOPER'
-    ) {
-      throw new ForbiddenException(
-        'Anda tidak memiliki izin untuk mengubah task',
-      );
-    }
-
-    const task = await this.prisma.client.orm.public.Task
-      .where({
-        id: taskId,
-        projectId,
-      })
-      .select(
-        'id',
-        'projectId',
-        'createdBy',
-        'title',
-        'description',
-        'status',
-        'priority',
-        'dueDate',
-      )
-      .first();
-
-    if (!task) {
-      throw new NotFoundException(
-        'Task tidak ditemukan pada project ini',
-      );
-    }
+    await this.findTask(projectId, taskId);
 
     const updateData: {
       title?: string;
@@ -292,72 +167,30 @@ export class TasksService {
     } = {};
 
     if (data.title !== undefined) updateData.title = data.title;
-    if (data.description !== undefined) {
-      updateData.description = data.description;
-    }
+    if (data.description !== undefined) updateData.description = data.description;
     if (data.status !== undefined) updateData.status = data.status;
     if (data.priority !== undefined) updateData.priority = data.priority;
     if (data.dueDate !== undefined) updateData.dueDate = data.dueDate;
 
     const updatedTask = await this.prisma.client.orm.public.Task
-      .where({
-        id: taskId,
-        projectId,
-      })
+      .where({ id: taskId, projectId })
       .update(updateData);
 
     if (!updatedTask) {
-      throw new NotFoundException(
-        'Task tidak ditemukan pada project ini',
-      );
+      throw new NotFoundException('Task tidak ditemukan pada project ini');
     }
 
-    return {
-      id: updatedTask.id,
-      projectId: updatedTask.projectId,
-      createdBy: updatedTask.createdBy,
-      title: updatedTask.title,
-      description: updatedTask.description,
-      status: updatedTask.status,
-      priority: updatedTask.priority,
-      dueDate: updatedTask.dueDate,
-    };
+    return this.toTaskResponse(updatedTask);
   }
+
   async addAssignee(
     projectId: string,
     taskId: string,
     userId: string,
     data: AddTaskAssigneeDto,
   ): Promise<{ taskId: string; userId: string }> {
-    const membership = await this.prisma.client.orm.public.ProjectMember
-      .where({ projectId, userId })
-      .select('projectId', 'userId', 'role')
-      .first();
-
-    if (!membership) {
-      throw new ForbiddenException('Anda bukan member project ini');
-    }
-
-    if (
-      membership.role !== 'OWNER' &&
-      membership.role !== 'ADMIN' &&
-      membership.role !== 'DEVELOPER'
-    ) {
-      throw new ForbiddenException(
-        'Anda tidak memiliki izin untuk mengatur assignee task',
-      );
-    }
-
-    const task = await this.prisma.client.orm.public.Task
-      .where({ id: taskId, projectId })
-      .select('id', 'projectId')
-      .first();
-
-    if (!task) {
-      throw new NotFoundException(
-        'Task tidak ditemukan pada project ini',
-      );
-    }
+    await this.requireMutationAccess(projectId, userId);
+    await this.findTask(projectId, taskId);
 
     const assigneeMember = await this.prisma.client.orm.public.ProjectMember
       .where({
@@ -368,23 +201,20 @@ export class TasksService {
       .first();
 
     if (!assigneeMember) {
-      throw new NotFoundException(
-        'User bukan member project ini',
-      );
+      throw new NotFoundException('User bukan member project ini');
     }
 
     const existing = await this.prisma.client.orm.public.TaskAssignee
       .where({
         taskId,
+        projectId,
         userId: data.userId,
       })
       .select('id')
       .first();
 
     if (existing) {
-      throw new ForbiddenException(
-        'User sudah menjadi assignee task ini',
-      );
+      throw new ForbiddenException('User sudah menjadi assignee task ini');
     }
 
     const assignee = await this.prisma.client.orm.public.TaskAssignee.create({
@@ -404,25 +234,8 @@ export class TasksService {
     taskId: string,
     userId: string,
   ): Promise<TaskAssigneeResponse[]> {
-    const membership = await this.prisma.client.orm.public.ProjectMember
-      .where({ projectId, userId })
-      .select('projectId', 'userId')
-      .first();
-
-    if (!membership) {
-      throw new ForbiddenException('Anda bukan member project ini');
-    }
-
-    const task = await this.prisma.client.orm.public.Task
-      .where({ id: taskId, projectId })
-      .select('id', 'projectId')
-      .first();
-
-    if (!task) {
-      throw new NotFoundException(
-        'Task tidak ditemukan pada project ini',
-      );
-    }
+    await this.requireProjectMembership(projectId, userId);
+    await this.findTask(projectId, taskId);
 
     const assignees = await this.prisma.client.orm.public.TaskAssignee
       .where({ taskId, projectId })
@@ -458,35 +271,8 @@ export class TasksService {
     assigneeUserId: string,
     userId: string,
   ): Promise<{ message: string }> {
-    const membership = await this.prisma.client.orm.public.ProjectMember
-      .where({ projectId, userId })
-      .select('projectId', 'userId', 'role')
-      .first();
-
-    if (!membership) {
-      throw new ForbiddenException('Anda bukan member project ini');
-    }
-
-    if (
-      membership.role !== 'OWNER' &&
-      membership.role !== 'ADMIN' &&
-      membership.role !== 'DEVELOPER'
-    ) {
-      throw new ForbiddenException(
-        'Anda tidak memiliki izin untuk mengatur assignee task',
-      );
-    }
-
-    const task = await this.prisma.client.orm.public.Task
-      .where({ id: taskId, projectId })
-      .select('id', 'projectId')
-      .first();
-
-    if (!task) {
-      throw new NotFoundException(
-        'Task tidak ditemukan pada project ini',
-      );
-    }
+    await this.requireMutationAccess(projectId, userId);
+    await this.findTask(projectId, taskId);
 
     const assignee = await this.prisma.client.orm.public.TaskAssignee
       .where({
@@ -498,9 +284,7 @@ export class TasksService {
       .first();
 
     if (!assignee) {
-      throw new NotFoundException(
-        'Assignee tidak ditemukan pada task ini',
-      );
+      throw new NotFoundException('Assignee tidak ditemukan pada task ini');
     }
 
     await this.prisma.client.orm.public.TaskAssignee
@@ -521,6 +305,17 @@ export class TasksService {
     taskId: string,
     userId: string,
   ): Promise<{ message: string }> {
+    await this.requireMutationAccess(projectId, userId);
+    await this.findTask(projectId, taskId);
+
+    await this.prisma.client.orm.public.Task
+      .where({ id: taskId, projectId })
+      .delete();
+
+    return { message: 'Task berhasil dihapus' };
+  }
+
+  private async requireProjectMembership(projectId: string, userId: string) {
     const membership = await this.prisma.client.orm.public.ProjectMember
       .where({ projectId, userId })
       .select('projectId', 'userId', 'role')
@@ -530,32 +325,72 @@ export class TasksService {
       throw new ForbiddenException('Anda bukan member project ini');
     }
 
+    return membership;
+  }
+
+  private async requireMutationAccess(
+    projectId: string,
+    userId: string,
+  ) {
+    const membership = await this.requireProjectMembership(projectId, userId);
+
     if (
       membership.role !== 'OWNER' &&
       membership.role !== 'ADMIN' &&
       membership.role !== 'DEVELOPER'
     ) {
       throw new ForbiddenException(
-        'Anda tidak memiliki izin untuk menghapus task',
+        'Anda tidak memiliki izin untuk mengubah task',
       );
     }
 
+    return membership as typeof membership & { role: TaskMutationRole };
+  }
+
+  private async findTask(projectId: string, taskId: string) {
     const task = await this.prisma.client.orm.public.Task
-      .where({ id: taskId, projectId })
-      .select('id')
+      .where({
+        id: taskId,
+        projectId,
+      })
+      .select(
+        'id',
+        'projectId',
+        'createdBy',
+        'title',
+        'description',
+        'status',
+        'priority',
+        'dueDate',
+      )
       .first();
 
     if (!task) {
-      throw new NotFoundException(
-        'Task tidak ditemukan pada project ini',
-      );
+      throw new NotFoundException('Task tidak ditemukan pada project ini');
     }
 
-    await this.prisma.client.orm.public.Task
-      .where({ id: taskId, projectId })
-      .delete();
-
-    return { message: 'Task berhasil dihapus' };
+    return task;
   }
 
+  private toTaskResponse(task: {
+    id: string;
+    projectId: string;
+    createdBy: string;
+    title: string;
+    description: string | null;
+    status: string;
+    priority: string;
+    dueDate: string | null;
+  }): TaskResponse {
+    return {
+      id: task.id,
+      projectId: task.projectId,
+      createdBy: task.createdBy,
+      title: task.title,
+      description: task.description,
+      status: task.status,
+      priority: task.priority,
+      dueDate: task.dueDate,
+    };
+  }
 }

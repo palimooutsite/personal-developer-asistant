@@ -179,7 +179,6 @@ export default function ProjectsPage() {
   function closeMembers() {
     setMemberProject(null);
     setMembers([]);
-    setNewMemberUserId('');
     setUserSearch('');
     setUserResults([]);
   }
@@ -190,22 +189,14 @@ export default function ProjectsPage() {
     }
 
     const keyword = userSearch.trim();
-    if (!keyword) {
-      setUserResults([]);
-      setUserSearchTotalPages(1);
-      return;
-    }
 
     const timer = window.setTimeout(async () => {
       try {
         setUserSearchLoading(true);
         const response = await searchUsers(keyword, userSearchPage, userSearchLimit);
         const memberIds = new Set(members.map((member) => member.userId));
-        const selectedIds = new Set(selectedUsers.map((user) => user.id));
         setUserResults(
-          response.data.filter(
-            (user) => !memberIds.has(user.id) && !selectedIds.has(user.id),
-          ),
+          response.data.filter((user) => !memberIds.has(user.id)),
         );
         setUserSearchTotalPages(response.meta.totalPages);
       } catch (err) {
@@ -648,12 +639,8 @@ export default function ProjectsPage() {
                         </p>
                       </div>
 
-                      {userSearch.trim() ? (
-                        userSearchLoading ? (
-                          <div className="px-4 py-8 text-center text-sm text-zinc-400">
-                            Mencari user...
-                          </div>
-                        ) : userResults.length === 0 ? (
+                      {userSearchLoading ? (
+                        userResults.length === 0 ? (
                           <div className="px-4 py-8 text-center text-sm text-zinc-400">
                             User tidak ditemukan.
                           </div>
@@ -721,10 +708,6 @@ export default function ProjectsPage() {
                             ) : null}
                           </>
                         )
-                      ) : (
-                        <div className="px-4 py-8 text-center text-sm text-zinc-400">
-                          Ketik username, email, atau nama untuk menampilkan user.
-                        </div>
                       )}
                     </div>
 
@@ -772,7 +755,7 @@ export default function ProjectsPage() {
                       </button>
                     </div>
 
-                    <p className="mt-2 text-xs text-zinc-400">Tampilkan 5 atau 10 user per halaman. Pilih satu atau beberapa user, lalu klik Simpan untuk menambahkan ke project.</p>
+                    <p className="mt-2 text-xs text-zinc-400">Daftar user ditampilkan otomatis. Gunakan pencarian untuk mempersempit hasil, lalu pilih satu atau beberapa user dan klik Simpan.</p>
                   </div>
                 ) : null}
                 <div className="mb-3 flex items-center justify-between"><p className="text-sm font-semibold">Daftar Member</p><span className="text-xs text-zinc-400">{members.length} member</span></div>

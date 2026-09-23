@@ -194,6 +194,13 @@ export default function ProjectsPage() {
     <main className="min-h-screen bg-[#f6f7fb] text-zinc-950">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
         <header className="mb-8">
+          <button
+            type="button"
+            onClick={() => router.push('/')}
+            className="mb-4 inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
+          >
+            ← Kembali ke Menu
+          </button>
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-500 shadow-sm">

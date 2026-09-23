@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { SnippetsService, CodeSnippetResponse } from './snippets.service.js';
 import { CreateCodeSnippetDto } from './dto/create-code-snippet.dto.js';
 import { UpdateCodeSnippetDto } from './dto/update-code-snippet.dto.js';
+import { QuerySnippetDto } from './dto/query-snippet.dto.js';
 import type { AuthRequest } from '../auth/types/auth-request.js';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard.js';
 
@@ -16,8 +17,11 @@ export class SnippetsController {
   }
 
   @Get()
-  findAll(@Req() req: AuthRequest): Promise<CodeSnippetResponse[]> {
-    return this.snippetsService.findAll(req.user.userId);
+  findAll(
+    @Query() query: QuerySnippetDto,
+    @Req() req: AuthRequest,
+  ) {
+    return this.snippetsService.findAll(req.user.userId, query);
   }
 
   @Get(':id')

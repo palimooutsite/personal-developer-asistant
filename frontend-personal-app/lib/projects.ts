@@ -41,6 +41,10 @@ export interface CreateProjectInput {
   description?: string;
 }
 
+export interface AddProjectMemberInput { userId: string; role: Exclude<ProjectRole, 'OWNER'>; }
+
+export interface UpdateProjectMemberInput { role: Exclude<ProjectRole, 'OWNER'>; }
+
 export interface UpdateProjectInput {
   name?: string;
   description?: string;
@@ -57,6 +61,26 @@ export async function getProject(id: string): Promise<Project> {
 
 export async function getProjectMembers(projectId: string): Promise<ProjectMember[]> {
   return apiRequest<ProjectMember[]>(`/projects/${projectId}/members`);
+}
+
+export async function addProjectMember(projectId: string, data: AddProjectMemberInput): Promise<ProjectMember> {
+  return apiRequest<ProjectMember>(`/projects/${projectId}/members`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateProjectMember(projectId: string, userId: string, data: UpdateProjectMemberInput): Promise<ProjectMember> {
+  return apiRequest<ProjectMember>(`/projects/${projectId}/members/${userId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function removeProjectMember(projectId: string, userId: string): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>(`/projects/${projectId}/members/${userId}`, {
+    method: 'DELETE',
+  });
 }
 
 export async function createProject(data: CreateProjectInput): Promise<Project> {

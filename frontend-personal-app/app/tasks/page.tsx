@@ -54,7 +54,7 @@ export default function TasksPage() {
   async function handleAddAssignee(){if(!assigneeTask||!assigneeUserId)return;try{setAssigneeSaving(true);setError('');await addTaskAssignee(projectId,assigneeTask.id,assigneeUserId);const m=members.find(x=>x.userId===assigneeUserId);if(m){const a={taskId:assigneeTask.id,projectId,userId:m.userId,username:m.user.username,email:m.user.email,name:m.user.name};setTasks(c=>c.map(t=>t.id===assigneeTask.id?{...t,assignees:[...(t.assignees??[]),a]}:t));setAssigneeTask(c=>c?{...c,assignees:[...(c.assignees??[]),a]}:c);}setAssigneeUserId('');}catch(e){setError(e instanceof Error?e.message:'Gagal menambahkan assignee');}finally{setAssigneeSaving(false);}}
   async function handleRemoveAssignee(userId:string){if(!assigneeTask)return;try{setAssigneeSaving(true);setError('');await removeTaskAssignee(projectId,assigneeTask.id,userId);setTasks(c=>c.map(t=>t.id===assigneeTask.id?{...t,assignees:(t.assignees??[]).filter(a=>a.userId!==userId)}:t));setAssigneeTask(c=>c?{...c,assignees:(c.assignees??[]).filter(a=>a.userId!==userId)}:c);}catch(e){setError(e instanceof Error?e.message:'Gagal menghapus assignee');}finally{setAssigneeSaving(false);}}
 
-  return <main className="min-h-screen bg-[#f6f7fb] px-4 py-8 text-zinc-950 sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl">
+  return <main className="min-h-screen bg-[#f6f7fb] px-4 py-5 text-zinc-950 sm:px-6 sm:py-6 lg:px-8 lg:py-10"><div className="mx-auto max-w-7xl">
     <ModuleHeader
       icon="✓"
       label="TASKS"
@@ -68,7 +68,7 @@ export default function TasksPage() {
             value={projectId}
             onChange={value=>{setProjectId(value);closeForm();}}
             disabled={loadingProjects||!projects.length}
-            className="min-w-64"
+            className="w-full sm:min-w-64 sm:w-auto"
             ariaLabel="Pilih project"
             options={projects.map(p=>({value:p.id,label:p.name}))}
           />
@@ -76,7 +76,7 @@ export default function TasksPage() {
             type="button"
             onClick={formOpen?closeForm:openCreate}
             disabled={!projectId}
-            className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white disabled:opacity-40"
+            className="w-full rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white disabled:opacity-40 sm:w-auto"
           >
             {formOpen?'Tutup Form':'+ Task Baru'}
           </button>

@@ -234,7 +234,38 @@ export default function HomePage() {
             </div>
           </section>
         )}
-        
+
+
+        <section className="mt-10">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Main Menu</p>
+            <h2 className="mt-1 text-xl font-bold">Workspace</h2>
+            <p className="mt-1 text-sm text-zinc-500">Pilih modul yang ingin kamu gunakan.</p>
+          </div>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {modules.map((module) => {
+              const styles = accentClasses[module.accent];
+              return (
+                <Link
+                  key={module.href}
+                  href={module.href}
+                  className={'group rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg ' + styles.ring}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className={'flex h-12 w-12 items-center justify-center rounded-xl text-sm font-bold ' + styles.icon}>
+                      {module.icon}
+                    </div>
+                    <span className={'translate-x-0 text-zinc-300 transition group-hover:translate-x-1 ' + styles.link}>→</span>
+                  </div>
+                  <h3 className="mt-5 text-lg font-bold">{module.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-zinc-500">{module.description}</p>
+                  <div className={'mt-5 text-sm font-semibold ' + styles.link}>Buka {module.title} →</div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
       </div>
     </main>
   );

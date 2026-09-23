@@ -1,7 +1,6 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { getProjectMembers, getProjects, Project, ProjectMember } from '../../lib/projects';
 import { addTaskAssignee, createTask, deleteTask, getTasks, removeTaskAssignee, Task, TaskPriority, TaskStatus, updateTask } from '../../lib/tasks';
@@ -9,6 +8,7 @@ import { TaskStats } from '../../components/tasks/TaskStats';
 import { TaskForm } from '../../components/tasks/TaskForm';
 import { TaskCard } from '../../components/tasks/TaskCard';
 import { TaskAssigneeModal } from '../../components/tasks/TaskAssigneeModal';
+import { ModuleHeader } from '../../components/layout/ModuleHeader';
 
 export default function TasksPage() {
   const searchParams = useSearchParams();
@@ -53,32 +53,34 @@ export default function TasksPage() {
   async function handleRemoveAssignee(userId:string){if(!assigneeTask)return;try{setAssigneeSaving(true);setError('');await removeTaskAssignee(projectId,assigneeTask.id,userId);setTasks(c=>c.map(t=>t.id===assigneeTask.id?{...t,assignees:(t.assignees??[]).filter(a=>a.userId!==userId)}:t));setAssigneeTask(c=>c?{...c,assignees:(c.assignees??[]).filter(a=>a.userId!==userId)}:c);}catch(e){setError(e instanceof Error?e.message:'Gagal menghapus assignee');}finally{setAssigneeSaving(false);}}
 
   return <main className="min-h-screen bg-[#f6f7fb] px-4 py-8 text-zinc-950 sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl">
-    <header className="mb-8">
-      <Link href="/" className="mb-4 inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900">
-        ← Kembali ke Menu
-      </Link>
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-950 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm">
-            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-white/15 text-[10px]">✓</span>
-            TASKS
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Tasks</h1>
-          <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-zinc-400">Task Management</p>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500 sm:text-base">
-            Kelola pekerjaan project, deadline, prioritas, dan status task dalam satu tempat.
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <select value={projectId} onChange={e=>{setProjectId(e.target.value);closeForm();}} disabled={loadingProjects||!projects.length} className="min-w-64 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium shadow-sm">
+    <ModuleHeader
+      icon="✓"
+      label="TASKS"
+      title="Tasks"
+      subtitle="Task Management"
+      description="Kelola pekerjaan project, deadline, prioritas, dan status task dalam satu tempat."
+      accent="blue"
+      action={
+        <>
+          <select
+            value={projectId}
+            onChange={e=>{setProjectId(e.target.value);closeForm();}}
+            disabled={loadingProjects||!projects.length}
+            className="min-w-64 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium shadow-sm"
+          >
             {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          <button type="button" onClick={formOpen?closeForm:openCreate} disabled={!projectId} className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">
+          <button
+            type="button"
+            onClick={formOpen?closeForm:openCreate}
+            disabled={!projectId}
+            className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white disabled:opacity-40"
+          >
             {formOpen?'Tutup Form':'+ Task Baru'}
           </button>
-        </div>
-      </div>
-    </header>
+        </>
+      }
+    />
     {error&&<div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
     {loadingProjects?<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{[1,2,3,4].map(i=><div key={i} className="h-28 animate-pulse rounded-2xl bg-white"/>)}</div>:!projects.length?<div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center"><h2 className="text-xl font-bold">Belum ada project</h2><p className="mx-auto mt-2 max-w-md text-sm text-slate-500">Task harus berada di dalam project. Buat project terlebih dahulu.</p><Link href="/projects" className="mt-6 inline-flex rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">Buat Project</Link></div>:<>
       {formOpen&&<TaskForm editing={Boolean(editing)} projectName={selectedProject?.name??''} title={title} description={description} status={status} priority={priority} dueDate={dueDate} saving={saving} onTitleChange={setTitle} onDescriptionChange={setDescription} onStatusChange={setStatus} onPriorityChange={setPriority} onDueDateChange={setDueDate} onSubmit={handleSubmit} onClose={closeForm}/>}

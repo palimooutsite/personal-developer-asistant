@@ -11,11 +11,12 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  StreamableFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'node:path';
-import { mkdirSync } from 'node:fs';
+import { createReadStream, mkdirSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { DocumentsService, DocumentResponse } from './documents.service.js';
 import { CreateDocumentDto } from './dto/create-document.dto.js';
@@ -96,6 +97,19 @@ export class DocumentsController {
   @Get()
   findAll(@Req() req: AuthRequest): Promise<DocumentResponse[]> {
     return this.documentsService.findAll(req.user.userId);
+  }
+
+  @Get(':id/file')
+  async file(
+    @Param('id') id: string,
+    @Req() req: AuthRequest,
+  ): Promise<StreamableFile> {
+    const document = await this.documentsService.getFile(req.user.userId, id);
+
+    return new StreamableFile(createReadStream(document.filePath), {
+      type: document.mimeType,
+      disposition: `inline; filename*=UTF-8''${encodeURIComponent(document.fileName)}`,
+    });
   }
 
   @Get(':id')

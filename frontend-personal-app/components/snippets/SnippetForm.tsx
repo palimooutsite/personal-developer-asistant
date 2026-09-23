@@ -93,7 +93,7 @@ export function SnippetForm({
         <span className="mb-2 block text-sm font-semibold text-zinc-700">Deskripsi <span className="font-normal text-zinc-400">(opsional)</span></span>
         <textarea value={description} onChange={e => setDescription(e.target.value)} maxLength={1000} rows={3}
           placeholder="Jelaskan kegunaan atau catatan penting snippet ini..."
-          className="w-full resize-y rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50" />
+          className="w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50" />
       </label>
 
       <label className="mt-4 block">

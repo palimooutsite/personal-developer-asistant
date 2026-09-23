@@ -34,7 +34,15 @@ export class UsersController {
   }
 
   @Get('search')
-  async search(@Query('search') search?: string) {
-    return this.usersService.searchUsers(search);
+  async search(
+    @Query('search') search?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '5',
+  ) {
+    return this.usersService.searchUsers(
+      search,
+      Number(page),
+      Number(limit),
+    );
   }
 }

@@ -4,12 +4,18 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ApiError } from '../../lib/api';
 import {
+  addProjectMember,
   createProject,
   deleteProject,
+  getProjectMembers,
   getProjects,
   Project,
+  ProjectMember,
+  ProjectRole,
   ProjectStatus,
+  removeProjectMember,
   updateProject,
+  updateProjectMember,
 } from '../../lib/projects';
 
 const STATUS_OPTIONS: ProjectStatus[] = [
@@ -66,6 +72,12 @@ export default function ProjectsPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<ProjectStatus>('PLANNED');
+  const [memberProject, setMemberProject] = useState<Project | null>(null);
+  const [members, setMembers] = useState<ProjectMember[]>([]);
+  const [memberLoading, setMemberLoading] = useState(false);
+  const [memberSaving, setMemberSaving] = useState(false);
+  const [newMemberUserId, setNewMemberUserId] = useState('');
+  const [newMemberRole, setNewMemberRole] = useState<Exclude<ProjectRole, 'OWNER'>>('DEVELOPER');
 
   async function loadProjects() {
     setLoading(true);
@@ -136,6 +148,73 @@ export default function ProjectsPage() {
         block: 'start',
       });
     }, 0);
+  }
+
+  async function openMembers(project: Project) {
+    setMemberProject(project);
+    setNewMemberUserId('');
+    setNewMemberRole('DEVELOPER');
+    setError('');
+    try {
+      setMemberLoading(true);
+      setMembers(await getProjectMembers(project.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal memuat member project.');
+    } finally {
+      setMemberLoading(false);
+    }
+  }
+
+  function closeMembers() {
+    setMemberProject(null);
+    setMembers([]);
+    setNewMemberUserId('');
+  }
+
+  async function handleAddMember() {
+    if (!memberProject || !newMemberUserId.trim()) return;
+    try {
+      setMemberSaving(true);
+      setError('');
+      const member = await addProjectMember(memberProject.id, {
+        userId: newMemberUserId.trim(),
+        role: newMemberRole,
+      });
+      setMembers(current => [...current, member]);
+      setNewMemberUserId('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal menambahkan member.');
+    } finally {
+      setMemberSaving(false);
+    }
+  }
+
+  async function handleMemberRoleChange(member: ProjectMember, role: Exclude<ProjectRole, 'OWNER'>) {
+    if (!memberProject) return;
+    try {
+      setMemberSaving(true);
+      setError('');
+      const updated = await updateProjectMember(memberProject.id, member.userId, { role });
+      setMembers(current => current.map(item => item.userId === updated.userId ? updated : item));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal mengubah role member.');
+    } finally {
+      setMemberSaving(false);
+    }
+  }
+
+  async function handleRemoveMember(member: ProjectMember) {
+    if (!memberProject || !window.confirm('Hapus member "' + (member.user.name || member.user.username) + '" dari project?')) return;
+    try {
+      setMemberSaving(true);
+      setError('');
+      await removeProjectMember(memberProject.id, member.userId);
+      setMembers(current => current.filter(item => item.userId !== member.userId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal menghapus member.');
+    } finally {
+      setMemberSaving(false);
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -465,6 +544,34 @@ export default function ProjectsPage() {
           )}
         </section>
       </div>
+        {memberProject ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) closeMembers(); }}>
+            <section className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
+              <div className="flex items-start justify-between border-b border-zinc-100 p-6">
+                <div><p className="text-xs font-semibold uppercase tracking-wider text-blue-600">Project Members</p><h2 className="mt-1 text-xl font-bold">{memberProject.name}</h2><p className="mt-1 text-sm text-zinc-500">Kelola anggota dan role project.</p></div>
+                <button type="button" onClick={closeMembers} className="rounded-lg p-2 text-xl leading-none text-zinc-400 hover:bg-zinc-100">×</button>
+              </div>
+              <div className="p-6">
+                {(memberProject.role === 'OWNER' || memberProject.role === 'ADMIN') ? (
+                  <div className="mb-6 rounded-2xl bg-zinc-50 p-4">
+                    <p className="mb-3 text-sm font-semibold">Tambah Member</p>
+                    <div className="grid gap-3 sm:grid-cols-[1fr_180px_auto]">
+                      <input value={newMemberUserId} onChange={e => setNewMemberUserId(e.target.value)} placeholder="UUID User" className="rounded-xl border border-zinc-200 bg-white px-3 py-3 text-sm outline-none focus:border-zinc-900" />
+                      <select value={newMemberRole} onChange={e => setNewMemberRole(e.target.value as Exclude<ProjectRole, 'OWNER'>)} className="rounded-xl border border-zinc-200 bg-white px-3 py-3 text-sm outline-none">
+                        <option value="ADMIN">ADMIN</option><option value="DEVELOPER">DEVELOPER</option><option value="REVIEWER">REVIEWER</option><option value="VIEWER">VIEWER</option>
+                      </select>
+                      <button type="button" onClick={() => void handleAddMember()} disabled={!newMemberUserId.trim() || memberSaving} className="rounded-xl bg-zinc-950 px-4 py-3 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50">{memberSaving ? '...' : 'Tambah'}</button>
+                    </div>
+                    <p className="mt-2 text-xs text-zinc-400">Masukkan UUID user yang sudah terdaftar pada PDA.</p>
+                  </div>
+                ) : null}
+                <div className="mb-3 flex items-center justify-between"><p className="text-sm font-semibold">Daftar Member</p><span className="text-xs text-zinc-400">{members.length} member</span></div>
+                {memberLoading ? <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-16 animate-pulse rounded-xl bg-zinc-100" />)}</div> : members.length === 0 ? <div className="rounded-xl border border-dashed border-zinc-300 px-4 py-8 text-center text-sm text-zinc-400">Belum ada member.</div> : <div className="space-y-2">{members.map(member => <div key={member.id} className="flex flex-col gap-3 rounded-xl border border-zinc-200 p-4 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><p className="truncate text-sm font-semibold">{member.user.name || member.user.username}</p><p className="truncate text-xs text-zinc-400">{member.user.email} · {member.userId}</p></div><div className="flex items-center gap-2">{member.role === 'OWNER' ? <span className="rounded-lg bg-zinc-900 px-3 py-2 text-xs font-bold text-white">OWNER</span> : (memberProject.role === 'OWNER' || memberProject.role === 'ADMIN') ? <><select value={member.role} disabled={memberSaving} onChange={e => void handleMemberRoleChange(member, e.target.value as Exclude<ProjectRole, 'OWNER'>)} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold"><option value="ADMIN">ADMIN</option><option value="DEVELOPER">DEVELOPER</option><option value="REVIEWER">REVIEWER</option><option value="VIEWER">VIEWER</option></select><button type="button" disabled={memberSaving} onClick={() => void handleRemoveMember(member)} className="rounded-lg border border-red-100 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50">Hapus</button></> : <span className="rounded-lg bg-zinc-100 px-3 py-2 text-xs font-bold text-zinc-600">{member.role}</span>}</div></div>)}</div>}
+              </div>
+            </section>
+          </div>
+        ) : null}
+
     </main>
   );
 }

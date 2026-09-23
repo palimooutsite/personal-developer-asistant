@@ -8,6 +8,7 @@ import { TaskStats } from '../../components/tasks/TaskStats';
 import { TaskForm } from '../../components/tasks/TaskForm';
 import { TaskCard } from '../../components/tasks/TaskCard';
 import { TaskAssigneeModal } from '../../components/tasks/TaskAssigneeModal';
+import { StyledSelect } from '../../components/ui/StyledSelect';
 import { ModuleHeader } from '../../components/layout/ModuleHeader';
 
 export default function TasksPage() {
@@ -62,14 +63,14 @@ export default function TasksPage() {
       accent="blue"
       action={
         <>
-          <select
+          <StyledSelect
             value={projectId}
-            onChange={e=>{setProjectId(e.target.value);closeForm();}}
+            onChange={value=>{setProjectId(value);closeForm();}}
             disabled={loadingProjects||!projects.length}
-            className="min-w-64 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium shadow-sm"
-          >
-            {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
+            className="min-w-64"
+            ariaLabel="Pilih project"
+            options={projects.map(p=>({value:p.id,label:p.name}))}
+          />
           <button
             type="button"
             onClick={formOpen?closeForm:openCreate}

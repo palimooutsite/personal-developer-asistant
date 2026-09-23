@@ -21,6 +21,7 @@ export async function searchUsers(
   search = '',
   page = 1,
   limit = 5,
+  excludeUserIds: string[] = [],
 ): Promise<UserSearchResponse> {
   const params = new URLSearchParams({
     page: String(page),
@@ -29,6 +30,10 @@ export async function searchUsers(
 
   if (search.trim()) {
     params.set('search', search.trim());
+  }
+
+  if (excludeUserIds.length > 0) {
+    params.set('excludeUserIds', excludeUserIds.join(','));
   }
 
   return apiRequest<UserSearchResponse>(`/users/search?${params.toString()}`);

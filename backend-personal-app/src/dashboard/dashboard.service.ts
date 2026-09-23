@@ -35,19 +35,23 @@ export class DashboardService {
 
     const projectIds = memberships.map((item) => item.projectId);
 
-    const projects = projectIds.length
-      ? await this.prisma.client.orm.public.Project
-          .where({ id: { in: projectIds } })
-          .select('id', 'status')
-          .all()
-      : [];
+    const projectIdSet = new Set(projectIds);
 
-    const tasks = projectIds.length
-      ? await this.prisma.client.orm.public.Task
-          .where({ projectId: { in: projectIds } })
-          .select('status', 'priority')
-          .all()
-      : [];
+    const allProjects = await this.prisma.client.orm.public.Project
+      .select('id', 'status')
+      .all();
+
+    const projects = allProjects.filter((project) =>
+      projectIdSet.has(project.id),
+    );
+
+    const allTasks = await this.prisma.client.orm.public.Task
+      .select('projectId', 'status', 'priority')
+      .all();
+
+    const tasks = allTasks.filter((task) =>
+      projectIdSet.has(task.projectId),
+    );
 
     const knowledge = await this.prisma.client.orm.public.KnowledgeArticle
       .where({ createdBy: userId })

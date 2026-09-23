@@ -1,5 +1,6 @@
 import { FormEvent } from 'react';
 import { ProjectStatus } from '../../lib/projects';
+import { StyledSelect } from '../ui/StyledSelect';
 
 interface ProjectFormProps {
   editingId: string | null;
@@ -44,9 +45,7 @@ export function ProjectForm({
         {editingId ? (
           <div>
             <label htmlFor="project-status" className="mb-2 block text-sm font-semibold">Status Project</label>
-            <select id="project-status" value={status} onChange={(event) => onStatusChange(event.target.value as ProjectStatus)} className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-zinc-900 focus:ring-4 focus:ring-zinc-100 sm:max-w-sm">
-              {STATUS_OPTIONS.map((option) => <option key={option} value={option}>{option.replace('_', ' ')}</option>)}
-            </select>
+            <StyledSelect id="project-status" value={status} onChange={(value) => onStatusChange(value as ProjectStatus)} className="sm:max-w-sm" options={STATUS_OPTIONS.map((option) => ({ value: option, label: option.replace('_', ' ') }))} />
           </div>
         ) : null}
         <div className="flex flex-col-reverse gap-3 border-t border-zinc-100 pt-5 sm:flex-row sm:justify-end">

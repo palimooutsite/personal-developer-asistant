@@ -1,4 +1,11 @@
-import { IsEnum, IsNotEmpty, IsUUID } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsEnum,
+  IsNotEmpty,
+  IsUUID,
+  ValidateNested,
+} from 'class-validator';
 
 export class AddProjectMemberDto {
   @IsUUID()
@@ -7,4 +14,11 @@ export class AddProjectMemberDto {
 
   @IsEnum(['ADMIN', 'DEVELOPER', 'REVIEWER', 'VIEWER'])
   role!: 'ADMIN' | 'DEVELOPER' | 'REVIEWER' | 'VIEWER';
+}
+
+export class AddProjectMembersDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AddProjectMemberDto)
+  members!: AddProjectMemberDto[];
 }

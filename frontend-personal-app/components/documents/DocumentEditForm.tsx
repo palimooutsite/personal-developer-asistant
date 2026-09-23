@@ -71,7 +71,7 @@ export function DocumentEditForm({
             onChange={event => setTitle(event.target.value)}
             maxLength={200}
             disabled={submitting}
-            className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-50 disabled:bg-zinc-50"
+            className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-50 disabled:bg-zinc-50"
           />
         </label>
 
@@ -85,7 +85,7 @@ export function DocumentEditForm({
             maxLength={1000}
             rows={4}
             disabled={submitting}
-            className="w-full resize-y rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-50 disabled:bg-zinc-50"
+            className="w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-50 disabled:bg-zinc-50"
           />
         </label>
       </div>

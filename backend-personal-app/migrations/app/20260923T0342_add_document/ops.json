@@ -1,0 +1,122 @@
+[
+  {
+    "id": "table.document",
+    "label": "Create table \"document\"",
+    "summary": "Creates table \"document\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "document"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"document\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"document\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"document\"",
+        "sql": "CREATE TABLE \"public\".\"document\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"createdBy\" text NOT NULL,\n  \"description\" text,\n  \"fileName\" text NOT NULL,\n  \"filePath\" text NOT NULL,\n  \"fileSize\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"mimeType\" text NOT NULL,\n  \"title\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"document\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"document\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.document.document_createdBy_idx_ba0f792f",
+    "label": "Create index \"document_createdBy_idx_ba0f792f\" on \"document\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "document_createdBy_idx_ba0f792f",
+        "table": "document"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"document_createdBy_idx_ba0f792f\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"document_createdBy_idx_ba0f792f\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"document_createdBy_idx_ba0f792f\"",
+        "sql": "CREATE INDEX \"document_createdBy_idx_ba0f792f\" ON \"public\".\"document\" (\"createdBy\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"document_createdBy_idx_ba0f792f\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"document_createdBy_idx_ba0f792f\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.document.document_createdBy_fkey",
+    "label": "Add foreign key \"document_createdBy_fkey\" on \"document\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "document_createdBy_fkey",
+        "table": "document"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"document_createdBy_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "document_createdBy_fkey",
+          "public",
+          "\"public\".\"document\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"document_createdBy_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"document\"\nADD CONSTRAINT \"document_createdBy_fkey\"\nFOREIGN KEY (\"createdBy\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"document_createdBy_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "document_createdBy_fkey",
+          "public",
+          "\"public\".\"document\""
+        ]
+      }
+    ]
+  }
+]

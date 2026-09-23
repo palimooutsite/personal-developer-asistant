@@ -8,6 +8,10 @@
       "model": "CodeSnippet",
       "namespace": "public"
     },
+    "document": {
+      "model": "Document",
+      "namespace": "public"
+    },
     "knowledgeArticle": {
       "model": "KnowledgeArticle",
       "namespace": "public"
@@ -268,6 +272,134 @@
               },
               "namespaceId": "public",
               "table": "codeSnippet"
+            }
+          },
+          "Document": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdBy": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "description": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "fileName": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "filePath": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "fileSize": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "mimeType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "title": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "creator": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "createdBy"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "createdBy": {
+                  "column": "createdBy"
+                },
+                "description": {
+                  "column": "description"
+                },
+                "fileName": {
+                  "column": "fileName"
+                },
+                "filePath": {
+                  "column": "filePath"
+                },
+                "fileSize": {
+                  "column": "fileSize"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "mimeType": {
+                  "column": "mimeType"
+                },
+                "title": {
+                  "column": "title"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "document"
             }
           },
           "KnowledgeArticle": {
@@ -1273,6 +1405,21 @@
                   "namespace": "public"
                 }
               },
+              "documents": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "createdBy"
+                  ]
+                },
+                "to": {
+                  "model": "Document",
+                  "namespace": "public"
+                }
+              },
               "knowledgeArticles": {
                 "cardinality": "1:N",
                 "on": {
@@ -1413,6 +1560,98 @@
                   ],
                   "name": "codeSnippet_createdBy_idx_ba0f792f",
                   "prefix": "codeSnippet_createdBy_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "document": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "createdBy": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "description": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "fileName": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "filePath": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "fileSize": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "mimeType": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "title": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "createdBy"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "document"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "createdBy"
+                  ],
+                  "name": "document_createdBy_idx_ba0f792f",
+                  "prefix": "document_createdBy_idx",
                   "unique": false
                 }
               ],
@@ -2317,10 +2556,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "782667759674a93826585b216c7198cc80bdb3f0df2c31cc19e105589c11c66f"
+    "storageHash": "48f3a1892abe1c5d4b29ef5f009501148ea7683b1270abfc28774bb55928a46d"
   },
   "execution": {
-    "executionHash": "b70ef20c7d02393d1242f0ab802407ed2dd41af15136f9aa6a3adfc5a13e5924",
+    "executionHash": "aaf55496e6814cfcd1737ffaa8df9782b8c8c36f02331f6a19c41e1207768f46",
     "mutations": {
       "defaults": [
         {
@@ -2347,6 +2586,32 @@
             "column": "updatedAt",
             "namespace": "public",
             "table": "codeSnippet"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "document"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "document"
           }
         },
         {

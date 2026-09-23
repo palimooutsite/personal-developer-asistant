@@ -26,7 +26,7 @@ export function KnowledgeForm({
         <h2 className="mt-1 text-xl font-bold">{editingId ? 'Edit Knowledge' : 'Buat Knowledge Baru'}</h2>
         <p className="mt-1 text-sm text-zinc-500">Simpan catatan teknis, solusi, dokumentasi, atau referensi development.</p>
       </div>
-      <form onSubmit={onSubmit} className="grid gap-5 p-6">
+      <form onSubmit={onSubmit} className="grid gap-5 p-4 sm:p-6">
         <div className="grid gap-5 md:grid-cols-2">
           <div>
             <label htmlFor="knowledge-title" className="mb-2 block text-sm font-semibold">Judul <span className="text-red-500">*</span></label>

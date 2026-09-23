@@ -45,6 +45,11 @@ export interface AddProjectMemberInput { userId: string; role: Exclude<ProjectRo
 
 export interface UpdateProjectMemberInput { role: Exclude<ProjectRole, 'OWNER'>; }
 
+export interface AddProjectMembersInput {
+  userIds: string[];
+  role: Exclude<ProjectRole, 'OWNER'>;
+}
+
 export interface UpdateProjectInput {
   name?: string;
   description?: string;
@@ -103,5 +108,15 @@ export async function updateProject(
 export async function deleteProject(id: string): Promise<{ message: string }> {
   return apiRequest<{ message: string }>(`/projects/${id}`, {
     method: 'DELETE',
+  });
+}
+
+export async function addProjectMembers(
+  projectId: string,
+  data: AddProjectMembersInput,
+): Promise<ProjectMember[]> {
+  return apiRequest<ProjectMember[]>(`/projects/${projectId}/members/bulk`, {
+    method: 'POST',
+    body: JSON.stringify(data),
   });
 }

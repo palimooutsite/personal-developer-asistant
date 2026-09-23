@@ -141,7 +141,7 @@ export class TasksService {
       )
       .all();
 
-    const result: TaskResponse[] = [];
+    const result: TaskListResponse[] = [];
 
     for (const task of tasks) {
       const assignees = await this.prisma.client.orm.public.TaskAssignee

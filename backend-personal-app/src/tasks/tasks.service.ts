@@ -29,6 +29,13 @@ export interface TaskResponse {
   status: string;
   priority: string;
   dueDate: string | null;
+  assignees: TaskAssigneeSummary[];
+}
+
+export interface TaskAssigneeSummary {
+  userId: string;
+  username: string | null;
+  name: string | null;
 }
 
 @Injectable()
@@ -131,16 +138,43 @@ export class TasksService {
       )
       .all();
 
-    return tasks.map((task) => ({
-      id: task.id,
-      projectId: task.projectId,
-      createdBy: task.createdBy,
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      priority: task.priority,
-      dueDate: task.dueDate,
-    }));
+    const result: TaskResponse[] = [];
+
+    for (const task of tasks) {
+      const assignees = await this.prisma.client.orm.public.TaskAssignee
+        .where({ taskId: task.id, projectId })
+        .select('userId')
+        .all();
+
+      const assigneeResult: TaskAssigneeSummary[] = [];
+
+      for (const assignee of assignees) {
+        const user = await this.prisma.client.orm.public.User
+          .where({ id: assignee.userId })
+          .select('id', 'username', 'name')
+          .first();
+
+        assigneeResult.push({
+          userId: assignee.userId,
+          username: user?.username ?? null,
+          name: user?.name ?? null,
+        });
+      }
+
+      result.push({
+        id: task.id,
+        projectId: task.projectId,
+        createdBy: task.createdBy,
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        dueDate: task.dueDate,
+        assignees: assigneeResult,
+      });
+    }
+
+    return result;
   }
 
   async findOne(

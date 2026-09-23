@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import { TasksService, TaskResponse, TaskAssigneeResponse } from './tasks.service.js';
+import { TasksService, TaskResponse, TaskListResponse, TaskAssigneeResponse } from './tasks.service.js';
 import { CreateTaskDto } from './dto/create-task.dto.js';
 import { UpdateTaskDto } from './dto/update-task.dto.js';
 import { AddTaskAssigneeDto } from './dto/add-task-assignee.dto.js';
@@ -39,7 +39,7 @@ export class TasksController {
   async findAll(
     @Param('projectId') projectId: string,
     @Req() req: AuthRequest,
-  ): Promise<TaskResponse[]> {
+  ): Promise<TaskListResponse[]> {
     return this.tasksService.findAll(
       projectId,
       req.user.userId,

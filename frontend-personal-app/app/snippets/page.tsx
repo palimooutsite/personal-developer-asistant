@@ -15,7 +15,6 @@ import {
   removeSnippetTag,
   updateSnippet,
   type CodeSnippet,
-  type SnippetTag,
   type Tag,
 } from '../../lib/snippets';
 import { ApiError } from '../../lib/api';

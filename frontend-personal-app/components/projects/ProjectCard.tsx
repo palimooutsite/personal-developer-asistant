@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Project, ProjectRole, ProjectStatus } from '../../lib/projects';
 
 interface ProjectCardProps {
@@ -36,6 +37,7 @@ function statusIcon(status: ProjectStatus) {
 export function ProjectCard({ project, onMembers, onEdit, onDelete }: ProjectCardProps) {
   return (
     <article className="group flex min-h-52 flex-col rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-lg">
+      <Link href={`/tasks?projectId=${project.id}`} className="block flex-1 rounded-xl outline-none focus:ring-2 focus:ring-blue-200">
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-sm font-bold text-zinc-600">{project.name.charAt(0).toUpperCase()}</div>
@@ -49,6 +51,8 @@ export function ProjectCard({ project, onMembers, onEdit, onDelete }: ProjectCar
         </span>
       </div>
       <p className="mt-5 line-clamp-3 min-h-[4.5rem] text-sm leading-6 text-zinc-500">{project.description || 'Belum ada deskripsi untuk project ini.'}</p>
+      <p className="mt-2 text-xs font-semibold text-blue-600 opacity-0 transition group-hover:opacity-100">Lihat Tasks →</p>
+      </Link>
       <div className="mt-auto flex items-center justify-between gap-3 border-t border-zinc-100 pt-4">
         <span className={`rounded-lg px-2.5 py-1 text-[11px] font-bold ${ROLE_STYLES[project.role]}`}>{project.role}</span>
         <div className="flex gap-2">

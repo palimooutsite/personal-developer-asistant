@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ModuleHeader } from '../../components/layout/ModuleHeader';
 import { DocumentCard } from '../../components/documents/DocumentCard';
 import { DocumentForm } from '../../components/documents/DocumentForm';
+import { DocumentEditForm } from '../../components/documents/DocumentEditForm';
 import { ApiError } from '../../lib/api';
 import {
   deleteDocument,
@@ -60,11 +61,6 @@ export default function DocumentsPage() {
     setEditing(document);
     setShowForm(false);
     setError('');
-    const title = window.prompt('Judul document:', document.title);
-    if (title === null) return;
-    const description = window.prompt('Deskripsi document:', document.description ?? '');
-    if (description === null) return;
-    void saveEdit(document.id, title, description);
   }
 
   async function saveEdit(id: string, title: string, description: string) {
@@ -135,6 +131,20 @@ export default function DocumentsPage() {
             </button>
           }
         />
+
+        {editing ? (
+          <section className="mb-7">
+            <DocumentEditForm
+              document={editing}
+              onSubmit={async (title, description) => {
+                await saveEdit(editing.id, title, description);
+                setEditing(null);
+              }}
+              onCancel={() => setEditing(null)}
+              submitting={saving}
+            />
+          </section>
+        ) : null}
 
         {showForm ? (
           <section className="mb-7">

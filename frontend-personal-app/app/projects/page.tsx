@@ -77,7 +77,7 @@ export default function ProjectsPage() {
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [memberLoading, setMemberLoading] = useState(false);
   const [memberSaving, setMemberSaving] = useState(false);
-  const [newMemberRole, setNewMemberRole] = useState<Exclude<ProjectRole, 'OWNER'>>('DEVELOPER');
+  const [selectedUserRoles, setSelectedUserRoles] = useState<Record<string, Exclude<ProjectRole, 'OWNER'>>>({});
   const [userSearch, setUserSearch] = useState('');
   const [userResults, setUserResults] = useState<UserPickerItem[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<UserPickerItem[]>([]);
@@ -164,7 +164,7 @@ export default function ProjectsPage() {
     setUserResults([]);
     setUserSearchPage(1);
     setUserSearchTotalPages(1);
-    setNewMemberRole('DEVELOPER');
+    setSelectedUserRoles({});
     setError('');
     try {
       setMemberLoading(true);
@@ -207,7 +207,7 @@ export default function ProjectsPage() {
     }, 300);
 
     return () => window.clearTimeout(timer);
-  }, [memberProject, userSearch, userSearchPage, userSearchLimit, members, selectedUsers]);
+  }, [memberProject, userSearch, userSearchPage, userSearchLimit, members]);
 
   async function handleAddMember() {
     if (!memberProject || selectedUsers.length === 0) return;
@@ -215,11 +215,14 @@ export default function ProjectsPage() {
       setMemberSaving(true);
       setError('');
       const addedMembers = await addProjectMembers(memberProject.id, {
-        userIds: selectedUsers.map((user) => user.id),
-        role: newMemberRole,
+        members: selectedUsers.map((user) => ({
+          userId: user.id,
+          role: selectedUserRoles[user.id] ?? 'DEVELOPER',
+        })),
       });
       setMembers(current => [...current, ...addedMembers]);
       setSelectedUsers([]);
+      setSelectedUserRoles({});
       setUserSearch('');
       setUserResults([]);
       setUserSearchPage(1);
@@ -664,6 +667,17 @@ export default function ProjectsPage() {
                                             ? current.filter(item => item.id !== user.id)
                                             : [...current, user],
                                         );
+                                        setSelectedUserRoles(current => {
+                                          if (selected) {
+                                            const next = { ...current };
+                                            delete next[user.id];
+                                            return next;
+                                          }
+                                          return {
+                                            ...current,
+                                            [user.id]: current[user.id] ?? 'DEVELOPER',
+                                          };
+                                        });
                                       }}
                                       className="h-4 w-4 rounded border-zinc-300"
                                     />
@@ -727,14 +741,44 @@ export default function ProjectsPage() {
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {selectedUsers.map(user => (
-                            <button
+                            <div
                               key={user.id}
-                              type="button"
-                              onClick={() => setSelectedUsers(current => current.filter(item => item.id !== user.id))}
-                              className="rounded-full border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-800 hover:bg-blue-100"
+                              className="flex items-center gap-2 rounded-xl border border-blue-200 bg-white p-2"
                             >
-                              {user.name || user.username} ×
-                            </button>
+                              <span className="min-w-0 flex-1 truncate px-1 text-xs font-semibold text-blue-900">
+                                {user.name || user.username}
+                              </span>
+                              <select
+                                value={selectedUserRoles[user.id] ?? 'DEVELOPER'}
+                                onChange={(event) =>
+                                  setSelectedUserRoles(current => ({
+                                    ...current,
+                                    [user.id]: event.target.value as Exclude<ProjectRole, 'OWNER'>,
+                                  }))
+                                }
+                                className="rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-xs font-semibold text-zinc-700"
+                              >
+                                <option value="ADMIN">ADMIN</option>
+                                <option value="DEVELOPER">DEVELOPER</option>
+                                <option value="REVIEWER">REVIEWER</option>
+                                <option value="VIEWER">VIEWER</option>
+                              </select>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedUsers(current => current.filter(item => item.id !== user.id));
+                                  setSelectedUserRoles(current => {
+                                    const next = { ...current };
+                                    delete next[user.id];
+                                    return next;
+                                  });
+                                }}
+                                className="rounded-lg px-2 py-1 text-xs font-bold text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+                                aria-label={`Hapus ${user.name || user.username}`}
+                              >
+                                ×
+                              </button>
+                            </div>
                           ))}
                         </div>
                       </div>

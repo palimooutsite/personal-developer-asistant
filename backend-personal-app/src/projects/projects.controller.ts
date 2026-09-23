@@ -89,6 +89,20 @@ export class ProjectsController {
       userId,
     );
   }
+  @Post(':id/members/bulk')
+  async addMembers(
+    @Param('id') id: string,
+    @Body() body: { userIds: string[]; role: AddProjectMemberDto['role'] },
+    @Req() req: AuthRequest,
+  ): Promise<ProjectMemberListItem[]> {
+    return this.projectsService.addMembers(
+      id,
+      req.user.userId,
+      body.userIds,
+      body.role,
+    );
+  }
+
   @Post(':id/members')
 async addMember(
   @Param('id') id: string,

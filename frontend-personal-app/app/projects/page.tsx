@@ -203,11 +203,12 @@ export default function ProjectsPage() {
           </button>
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-500 shadow-sm">
-                <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                Workspace
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-950 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm">
+                <span className="flex h-5 w-5 items-center justify-center rounded-md bg-white/15 text-[10px]">▦</span>
+                PROJECTS
               </div>
               <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Projects</h1>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-zinc-400">Project Workspace</p>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500 sm:text-base">
                 Kelola seluruh project development kamu dalam satu tempat.
                 Pilih project untuk mulai mengatur pekerjaan dan progress.

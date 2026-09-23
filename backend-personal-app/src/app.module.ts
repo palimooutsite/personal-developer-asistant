@@ -8,6 +8,8 @@ import { UsersModule } from './users/user.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { ProjectsModule } from './projects/projects.module.js';
 import { TasksModule } from './tasks/tasks.module.js';
+import { KnowledgeModule } from './knowledge/knowledge.module.js';
+import { SnippetsModule } from './snippets/snippets.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -26,6 +28,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     AuthModule,
     ProjectsModule,
     TasksModule,
+    KnowledgeModule,
+    SnippetsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

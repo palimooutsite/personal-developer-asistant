@@ -28,11 +28,46 @@ export class SnippetsService {
     });
   }
 
-  async findAll(userId: string): Promise<CodeSnippetResponse[]> {
-    return this.prisma.client.orm.public.CodeSnippet
+  async findAll(
+    userId: string,
+    query: { search?: string; language?: string; page?: number; limit?: number } = {},
+  ): Promise<{
+    data: CodeSnippetResponse[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const search = query.search?.trim().toLowerCase();
+    const language = query.language?.trim().toLowerCase();
+
+    let snippets = await this.prisma.client.orm.public.CodeSnippet
       .where({ createdBy: userId })
       .select('id', 'title', 'language', 'code', 'description', 'createdBy', 'createdAt', 'updatedAt')
       .all();
+
+    if (search) {
+      snippets = snippets.filter((snippet) =>
+        [snippet.title, snippet.language, snippet.code, snippet.description ?? '']
+          .join(' ')
+          .toLowerCase()
+          .includes(search),
+      );
+    }
+
+    if (language) {
+      snippets = snippets.filter(
+        (snippet) => snippet.language.toLowerCase() === language,
+      );
+    }
+
+    const total = snippets.length;
+    const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
+    const start = (page - 1) * limit;
+
+    return {
+      data: snippets.slice(start, start + limit),
+      meta: { page, limit, total, totalPages },
+    };
   }
 
   async findOne(userId: string, id: string): Promise<CodeSnippetResponse> {

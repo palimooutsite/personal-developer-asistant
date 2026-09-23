@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 type ModuleAccent = 'indigo' | 'blue' | 'violet' | 'emerald' | 'amber' | 'cyan';
 
@@ -9,7 +10,7 @@ interface ModuleHeaderProps {
   subtitle: string;
   description: string;
   accent?: ModuleAccent;
-  action?: React.ReactNode;
+  action?: ReactNode;
 }
 
 const ACCENT_STYLES: Record<ModuleAccent, string> = {

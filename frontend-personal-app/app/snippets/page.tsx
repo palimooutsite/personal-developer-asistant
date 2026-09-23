@@ -192,7 +192,7 @@ export default function SnippetsPage() {
                 value={search}
                 onChange={event => { setSearch(event.target.value); setPage(1); }}
                 placeholder="Cari judul, bahasa, deskripsi, atau isi kode..."
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-3 pl-11 pr-4 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-50"
+                className="w-full rounded-xl border border-zinc-300 bg-white py-3 pl-11 pr-4 text-sm font-medium text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-50"
               />
             </div>
             <div className="w-full lg:w-64">

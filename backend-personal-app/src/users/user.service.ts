@@ -49,20 +49,42 @@ export class UsersService {
     ).all();
   }
 
-  async searchUsers(search?: string): Promise<UserResponse[]> {
+  async searchUsers(
+    search?: string,
+    page = 1,
+    limit = 5,
+  ): Promise<{
+    data: UserResponse[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }> {
     const users = await this.findAll();
     const keyword = search?.trim().toLowerCase();
+    const normalizedPage = Math.max(1, page);
+    const normalizedLimit = Math.min(5, Math.max(1, limit));
 
-    if (!keyword) {
-      return users.slice(0, 20);
-    }
+    const filtered = keyword
+      ? users.filter((user) =>
+          [user.username, user.email, user.name ?? '']
+            .some((value) => value.toLowerCase().includes(keyword)),
+        )
+      : users;
 
-    return users
-      .filter((user) =>
-        [user.username, user.email, user.name ?? '']
-          .some((value) => value.toLowerCase().includes(keyword)),
-      )
-      .slice(0, 20);
+    const total = filtered.length;
+    const totalPages = Math.ceil(total / normalizedLimit);
+    const safePage = totalPages > 0
+      ? Math.min(normalizedPage, totalPages)
+      : 1;
+    const start = (safePage - 1) * normalizedLimit;
+
+    return {
+      data: filtered.slice(start, start + normalizedLimit),
+      meta: {
+        page: safePage,
+        limit: normalizedLimit,
+        total,
+        totalPages,
+      },
+    };
   }
   async findByUsername(username: string) {
     return this.prisma.client.orm.public.User.where({

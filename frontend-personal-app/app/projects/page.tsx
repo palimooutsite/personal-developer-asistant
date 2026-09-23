@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ApiError } from '../../lib/api';
 import {
@@ -20,8 +20,39 @@ const STATUS_OPTIONS: ProjectStatus[] = [
   'ARCHIVED',
 ];
 
+const STATUS_STYLES: Record<ProjectStatus, string> = {
+  PLANNED: 'border-sky-200 bg-sky-50 text-sky-700',
+  ACTIVE: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  ON_HOLD: 'border-amber-200 bg-amber-50 text-amber-700',
+  COMPLETED: 'border-violet-200 bg-violet-50 text-violet-700',
+  ARCHIVED: 'border-zinc-200 bg-zinc-100 text-zinc-600',
+};
+
+const ROLE_STYLES: Record<Project['role'], string> = {
+  OWNER: 'bg-zinc-900 text-white',
+  ADMIN: 'bg-blue-100 text-blue-700',
+  DEVELOPER: 'bg-emerald-100 text-emerald-700',
+  REVIEWER: 'bg-amber-100 text-amber-700',
+  VIEWER: 'bg-zinc-100 text-zinc-600',
+};
+
 function statusLabel(status: ProjectStatus): string {
   return status.replace('_', ' ');
+}
+
+function statusIcon(status: ProjectStatus): string {
+  switch (status) {
+    case 'ACTIVE':
+      return '●';
+    case 'COMPLETED':
+      return '✓';
+    case 'ON_HOLD':
+      return 'Ⅱ';
+    case 'ARCHIVED':
+      return '▣';
+    default:
+      return '○';
+  }
 }
 
 export default function ProjectsPage() {
@@ -58,6 +89,16 @@ export default function ProjectsPage() {
   useEffect(() => {
     void loadProjects();
   }, []);
+
+  const projectStats = useMemo(
+    () => ({
+      total: projects.length,
+      active: projects.filter((project) => project.status === 'ACTIVE').length,
+      planned: projects.filter((project) => project.status === 'PLANNED').length,
+      completed: projects.filter((project) => project.status === 'COMPLETED').length,
+    }),
+    [projects],
+  );
 
   function resetForm() {
     setEditingId(null);
@@ -141,63 +182,96 @@ export default function ProjectsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-50 px-4 py-8 text-zinc-950 sm:px-8">
-      <div className="mx-auto max-w-6xl">
-        <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-zinc-500">
-              Personal Developer Assistant
-            </p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight">Projects</h1>
-            <p className="mt-2 text-sm text-zinc-500">
-              Kelola project dan status pekerjaan development kamu.
-            </p>
-          </div>
+    <main className="min-h-screen bg-[#f6f7fb] text-zinc-950">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+        <header className="mb-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-500 shadow-sm">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                Workspace
+              </div>
+              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                Projects
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500 sm:text-base">
+                Kelola seluruh project development kamu dalam satu tempat.
+                Pilih project untuk mulai mengatur pekerjaan dan progress.
+              </p>
+            </div>
 
-          <button
-            type="button"
-            onClick={formOpen ? closeForm : openCreateForm}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-zinc-950 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800"
-          >
-            <span className="text-lg leading-none">{formOpen ? '×' : '+'}</span>
-            {formOpen ? 'Tutup' : 'Project Baru'}
-          </button>
+            <button
+              type="button"
+              onClick={formOpen ? closeForm : openCreateForm}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-zinc-950 px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-md"
+            >
+              <span className="text-xl leading-none">{formOpen ? '×' : '+'}</span>
+              {formOpen ? 'Tutup Form' : 'Project Baru'}
+            </button>
+          </div>
         </header>
+
+        {!loading && projects.length > 0 ? (
+          <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+              <p className="text-sm text-zinc-500">Total Project</p>
+              <p className="mt-2 text-3xl font-bold">{projectStats.total}</p>
+              <p className="mt-1 text-xs text-zinc-400">Semua project kamu</p>
+            </div>
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-5">
+              <p className="text-sm text-emerald-700">Active</p>
+              <p className="mt-2 text-3xl font-bold text-emerald-900">{projectStats.active}</p>
+              <p className="mt-1 text-xs text-emerald-700/70">Sedang dikerjakan</p>
+            </div>
+            <div className="rounded-2xl border border-sky-100 bg-sky-50/70 p-5">
+              <p className="text-sm text-sky-700">Planned</p>
+              <p className="mt-2 text-3xl font-bold text-sky-900">{projectStats.planned}</p>
+              <p className="mt-1 text-xs text-sky-700/70">Belum dimulai</p>
+            </div>
+            <div className="rounded-2xl border border-violet-100 bg-violet-50/70 p-5">
+              <p className="text-sm text-violet-700">Completed</p>
+              <p className="mt-2 text-3xl font-bold text-violet-900">{projectStats.completed}</p>
+              <p className="mt-1 text-xs text-violet-700/70">Sudah selesai</p>
+            </div>
+          </div>
+        ) : null}
 
         {formOpen ? (
           <section
             id="project-form"
-            className="mb-8 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-zinc-200"
+            className="mb-8 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm"
           >
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold">
-                  {editingId ? 'Edit Project' : 'Buat Project Baru'}
-                </h2>
-                <p className="mt-1 text-sm text-zinc-500">
-                  {editingId
-                    ? 'Perbarui informasi dan status project.'
-                    : 'Isi informasi project yang ingin kamu buat.'}
-                </p>
-              </div>
+            <div className="border-b border-zinc-100 bg-zinc-50/80 px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                    {editingId ? 'Project' : 'New Project'}
+                  </p>
+                  <h2 className="mt-1 text-xl font-bold">
+                    {editingId ? 'Edit Project' : 'Buat Project Baru'}
+                  </h2>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    {editingId
+                      ? 'Perbarui informasi dan status project.'
+                      : 'Isi informasi dasar project untuk mulai bekerja.'}
+                  </p>
+                </div>
 
-              <button
-                type="button"
-                onClick={closeForm}
-                className="rounded-lg px-2 py-1 text-xl leading-none text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
-                aria-label="Tutup form"
-              >
-                ×
-              </button>
+                <button
+                  type="button"
+                  onClick={closeForm}
+                  className="rounded-lg p-2 text-xl leading-none text-zinc-400 transition hover:bg-white hover:text-zinc-700"
+                  aria-label="Tutup form"
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="grid gap-5">
+            <form onSubmit={handleSubmit} className="grid gap-5 p-6">
               <div>
-                <label
-                  htmlFor="project-name"
-                  className="mb-2 block text-sm font-medium"
-                >
-                  Nama Project
+                <label htmlFor="project-name" className="mb-2 block text-sm font-semibold">
+                  Nama Project <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="project-name"
@@ -205,17 +279,15 @@ export default function ProjectsPage() {
                   onChange={(event) => setName(event.target.value)}
                   maxLength={200}
                   required
-                  className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200"
-                  placeholder="Personal Developer Assistant"
+                  autoFocus
+                  className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-zinc-400 focus:border-zinc-900 focus:ring-4 focus:ring-zinc-100"
+                  placeholder="Contoh: Personal Developer Assistant"
                 />
               </div>
 
               <div>
-                <label
-                  htmlFor="project-description"
-                  className="mb-2 block text-sm font-medium"
-                >
-                  Deskripsi
+                <label htmlFor="project-description" className="mb-2 block text-sm font-semibold">
+                  Deskripsi <span className="font-normal text-zinc-400">(opsional)</span>
                 </label>
                 <textarea
                   id="project-description"
@@ -223,26 +295,21 @@ export default function ProjectsPage() {
                   onChange={(event) => setDescription(event.target.value)}
                   maxLength={2000}
                   rows={4}
-                  className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200"
-                  placeholder="Deskripsi project..."
+                  className="w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-zinc-400 focus:border-zinc-900 focus:ring-4 focus:ring-zinc-100"
+                  placeholder="Jelaskan secara singkat tujuan atau ruang lingkup project..."
                 />
               </div>
 
               {editingId ? (
                 <div>
-                  <label
-                    htmlFor="project-status"
-                    className="mb-2 block text-sm font-medium"
-                  >
-                    Status
+                  <label htmlFor="project-status" className="mb-2 block text-sm font-semibold">
+                    Status Project
                   </label>
                   <select
                     id="project-status"
                     value={status}
-                    onChange={(event) =>
-                      setStatus(event.target.value as ProjectStatus)
-                    }
-                    className="rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200"
+                    onChange={(event) => setStatus(event.target.value as ProjectStatus)}
+                    className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-zinc-900 focus:ring-4 focus:ring-zinc-100 sm:max-w-sm"
                   >
                     {STATUS_OPTIONS.map((option) => (
                       <option key={option} value={option}>
@@ -253,11 +320,18 @@ export default function ProjectsPage() {
                 </div>
               ) : null}
 
-              <div className="flex gap-3">
+              <div className="flex flex-col-reverse gap-3 border-t border-zinc-100 pt-5 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={closeForm}
+                  className="rounded-xl border border-zinc-300 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
+                >
+                  Batal
+                </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-xl bg-zinc-950 px-5 py-3 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-xl bg-zinc-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {saving
                     ? 'Menyimpan...'
@@ -265,85 +339,111 @@ export default function ProjectsPage() {
                       ? 'Simpan Perubahan'
                       : 'Buat Project'}
                 </button>
-
-                <button
-                  type="button"
-                  onClick={closeForm}
-                  className="rounded-xl border border-zinc-300 bg-white px-5 py-3 text-sm font-medium hover:bg-zinc-100"
-                >
-                  Batal
-                </button>
               </div>
             </form>
           </section>
         ) : null}
 
         {error ? (
-          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
+          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700">
+            <span className="mt-0.5 font-bold">!</span>
+            <div>
+              <p className="font-semibold">Terjadi kesalahan</p>
+              <p className="mt-0.5">{error}</p>
+            </div>
           </div>
         ) : null}
 
         <section>
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-5 flex items-end justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold">Daftar Project</h2>
+              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                Workspace
+              </p>
+              <h2 className="mt-1 text-xl font-bold">Daftar Project</h2>
               {!loading ? (
                 <p className="mt-1 text-sm text-zinc-500">
-                  {projects.length} project tersedia
+                  {projects.length === 0
+                    ? 'Belum ada project'
+                    : `${projects.length} project tersedia`}
                 </p>
               ) : null}
             </div>
           </div>
 
           {loading ? (
-            <div className="rounded-2xl bg-white p-10 text-center text-sm text-zinc-500 ring-1 ring-zinc-200">
-              Memuat project...
+            <div className="grid gap-4 md:grid-cols-2">
+              {[1, 2].map((item) => (
+                <div
+                  key={item}
+                  className="h-48 animate-pulse rounded-2xl border border-zinc-200 bg-white"
+                />
+              ))}
             </div>
           ) : projects.length === 0 ? (
-            <div className="rounded-2xl bg-white px-6 py-14 text-center shadow-sm ring-1 ring-zinc-200">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 text-2xl text-zinc-500">
+            <div className="rounded-3xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center shadow-sm">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-100 text-3xl text-zinc-400">
                 +
               </div>
-              <h3 className="mt-4 text-base font-semibold">Belum ada project</h3>
+              <h3 className="mt-5 text-lg font-bold">Belum ada project</h3>
               <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">
-                Belum ada project yang tersedia. Klik tombol{' '}
-                <span className="font-medium text-zinc-700">+ Project Baru</span>{' '}
-                untuk membuat project pertama.
+                Mulai dengan membuat project pertama kamu. Semua project,
+                task, dan aktivitas development bisa dikelola dari sini.
               </p>
+              <button
+                type="button"
+                onClick={openCreateForm}
+                className="mt-6 rounded-xl bg-zinc-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800"
+              >
+                + Buat Project Pertama
+              </button>
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {projects.map((project) => (
                 <article
                   key={project.id}
-                  className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-200 transition hover:shadow-md"
+                  className="group flex min-h-52 flex-col rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-lg"
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <h3 className="truncate text-lg font-semibold">
-                        {project.name}
-                      </h3>
-                      <p className="mt-1 text-sm leading-6 text-zinc-500">
-                        {project.description || 'Tidak ada deskripsi.'}
-                      </p>
+                    <div className="flex min-w-0 items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-sm font-bold text-zinc-600">
+                        {project.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="truncate text-base font-bold text-zinc-900">
+                          {project.name}
+                        </h3>
+                        <p className="mt-1 text-xs text-zinc-400">
+                          Project
+                        </p>
+                      </div>
                     </div>
 
-                    <span className="shrink-0 rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
+                    <span
+                      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${STATUS_STYLES[project.status]}`}
+                    >
+                      <span>{statusIcon(project.status)}</span>
                       {statusLabel(project.status)}
                     </span>
                   </div>
 
-                  <div className="mt-5 flex items-center justify-between border-t border-zinc-100 pt-4">
-                    <span className="text-xs font-medium text-zinc-500">
-                      Role: {project.role}
+                  <p className="mt-5 line-clamp-3 min-h-[4.5rem] text-sm leading-6 text-zinc-500">
+                    {project.description || 'Belum ada deskripsi untuk project ini.'}
+                  </p>
+
+                  <div className="mt-auto flex items-center justify-between gap-3 border-t border-zinc-100 pt-4">
+                    <span
+                      className={`rounded-lg px-2.5 py-1 text-[11px] font-bold ${ROLE_STYLES[project.role]}`}
+                    >
+                      {project.role}
                     </span>
 
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={() => startEdit(project)}
-                        className="rounded-lg border border-zinc-300 px-3 py-2 text-xs font-medium hover:bg-zinc-100"
+                        className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50"
                       >
                         Edit
                       </button>
@@ -352,7 +452,7 @@ export default function ProjectsPage() {
                         <button
                           type="button"
                           onClick={() => void handleDelete(project)}
-                          className="rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50"
+                          className="rounded-lg border border-red-100 px-3 py-2 text-xs font-semibold text-red-600 transition hover:border-red-200 hover:bg-red-50"
                         >
                           Hapus
                         </button>

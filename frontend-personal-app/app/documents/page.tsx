@@ -8,6 +8,7 @@ import { ApiError } from '../../lib/api';
 import {
   deleteDocument,
   getDocuments,
+  openDocumentFile,
   updateDocument,
   uploadDocument,
   type DocumentItem,
@@ -91,6 +92,15 @@ export default function DocumentsPage() {
       await loadDocuments();
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleOpen(document: DocumentItem) {
+    setError('');
+    try {
+      await openDocumentFile(document.id, document.fileName);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'File document gagal dibuka.');
     }
   }
 
@@ -184,6 +194,7 @@ export default function DocumentsPage() {
                 document={document}
                 onEdit={() => startEdit(document)}
                 onDelete={() => void handleDelete(document)}
+                onOpen={() => void handleOpen(document)}
               />
             ))}
           </div>

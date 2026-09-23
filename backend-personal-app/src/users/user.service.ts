@@ -60,7 +60,7 @@ export class UsersService {
     const users = await this.findAll();
     const keyword = search?.trim().toLowerCase();
     const normalizedPage = Math.max(1, page);
-    const normalizedLimit = Math.min(5, Math.max(1, limit));
+    const normalizedLimit = Math.min(10, Math.max(1, limit));
 
     const filtered = keyword
       ? users.filter((user) =>

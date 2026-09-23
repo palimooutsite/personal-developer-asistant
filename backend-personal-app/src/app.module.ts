@@ -11,6 +11,7 @@ import { TasksModule } from './tasks/tasks.module.js';
 import { KnowledgeModule } from './knowledge/knowledge.module.js';
 import { SnippetsModule } from './snippets/snippets.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
+import { DocumentsModule } from './documents/documents.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -32,6 +33,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     KnowledgeModule,
     SnippetsModule,
     DashboardModule,
+    DocumentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

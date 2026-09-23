@@ -180,7 +180,6 @@ export default function ProjectsPage() {
     setMemberProject(null);
     setMembers([]);
     setNewMemberUserId('');
-    setSelectedUser(null);
     setUserSearch('');
     setUserResults([]);
   }

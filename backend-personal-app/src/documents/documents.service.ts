@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { unlink } from 'node:fs/promises';
+import { access, unlink } from 'node:fs/promises';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateDocumentDto } from './dto/create-document.dto.js';
 import { UpdateDocumentDto } from './dto/update-document.dto.js';
@@ -100,6 +100,18 @@ export class DocumentsService {
 
     if (!document) {
       throw new NotFoundException('Document tidak ditemukan');
+    }
+
+    return document;
+  }
+
+  async getFile(userId: string, id: string): Promise<DocumentResponse> {
+    const document = await this.findOne(userId, id);
+
+    try {
+      await access(document.filePath);
+    } catch {
+      throw new NotFoundException('File document tidak ditemukan');
     }
 
     return document;

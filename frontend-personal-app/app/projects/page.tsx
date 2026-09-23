@@ -600,8 +600,8 @@ export default function ProjectsPage() {
         </section>
       </div>
         {memberProject ? (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) closeMembers(); }}>
-            <section className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-zinc-950/40 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) closeMembers(); }}>
+            <section className="my-auto flex max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
               <div className="flex items-start justify-between border-b border-zinc-100 p-6">
                 <div><p className="text-xs font-semibold uppercase tracking-wider text-blue-600">Project Members</p><h2 className="mt-1 text-xl font-bold">{memberProject.name}</h2><p className="mt-1 text-sm text-zinc-500">Kelola anggota dan role project.</p></div>
                 <button type="button" onClick={closeMembers} className="rounded-lg p-2 text-xl leading-none text-zinc-400 hover:bg-zinc-100">×</button>

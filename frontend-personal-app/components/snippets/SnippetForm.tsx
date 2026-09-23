@@ -75,7 +75,7 @@ export function SnippetForm({
         <label className="block">
           <span className="mb-2 block text-sm font-semibold text-zinc-700">Judul</span>
           <input value={title} onChange={e => setTitle(e.target.value)} maxLength={200} placeholder="Contoh: NestJS JWT Guard"
-            className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50" />
+            className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50" />
         </label>
 
         <label className="block">

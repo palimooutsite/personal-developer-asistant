@@ -29,6 +29,9 @@ export interface TaskResponse {
   status: string;
   priority: string;
   dueDate: string | null;
+}
+
+export interface TaskListResponse extends TaskResponse {
   assignees: TaskAssigneeSummary[];
 }
 
@@ -102,7 +105,7 @@ export class TasksService {
   async findAll(
     projectId: string,
     userId: string,
-  ): Promise<TaskResponse[]> {
+  ): Promise<TaskListResponse[]> {
     const membership = await this.prisma.client.orm.public.ProjectMember
       .where({
         projectId,

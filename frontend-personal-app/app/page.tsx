@@ -179,26 +179,36 @@ export default function HomePage() {
           <section className="mt-8 grid gap-4 lg:grid-cols-3">
             <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Task Status</p>
-              <div className="mt-4 space-y-3">
+              <div className="mt-5 space-y-4">
                 {Object.entries(summary.tasks.byStatus).map(([status, count]) => {
                   const styles =
                     status === 'DONE'
-                      ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+                      ? { badge: 'bg-emerald-50 text-emerald-700 ring-emerald-200', bar: 'bg-emerald-500' }
                       : status === 'IN_PROGRESS'
-                        ? 'bg-blue-50 text-blue-700 ring-blue-200'
+                        ? { badge: 'bg-blue-50 text-blue-700 ring-blue-200', bar: 'bg-blue-500' }
                         : status === 'REVIEW'
-                          ? 'bg-amber-50 text-amber-700 ring-amber-200'
+                          ? { badge: 'bg-amber-50 text-amber-700 ring-amber-200', bar: 'bg-amber-500' }
                           : status === 'CANCELLED'
-                            ? 'bg-red-50 text-red-700 ring-red-200'
-                            : 'bg-zinc-50 text-zinc-600 ring-zinc-200';
+                            ? { badge: 'bg-red-50 text-red-700 ring-red-200', bar: 'bg-red-500' }
+                            : { badge: 'bg-zinc-50 text-zinc-600 ring-zinc-200', bar: 'bg-zinc-400' };
+                  const percentage = summary.tasks.total > 0
+                    ? Math.round((count / summary.tasks.total) * 100)
+                    : 0;
 
                   return (
-                    <div key={status} className="flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-2 text-zinc-600">
-                        <span className={`h-2.5 w-2.5 rounded-full ${styles.split(' ')[0]}`} />
-                        {status.replace('_', ' ')}
-                      </span>
-                      <span className={`rounded-lg px-2.5 py-1 text-xs font-bold ring-1 ${styles}`}>{count}</span>
+                    <div key={status}>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium text-zinc-700">{status.replace('_', ' ')}</span>
+                        <span className={`rounded-lg px-2 py-1 text-xs font-bold ring-1 ${styles.badge}`}>
+                          {count} <span className="font-medium opacity-70">({percentage}%)</span>
+                        </span>
+                      </div>
+                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-100">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${styles.bar}`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
                     </div>
                   );
                 })}
@@ -206,24 +216,34 @@ export default function HomePage() {
             </div>
             <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Task Priority</p>
-              <div className="mt-4 space-y-3">
+              <div className="mt-5 space-y-4">
                 {Object.entries(summary.tasks.byPriority).map(([priority, count]) => {
                   const styles =
                     priority === 'URGENT'
-                      ? 'bg-red-50 text-red-700 ring-red-200'
+                      ? { badge: 'bg-red-50 text-red-700 ring-red-200', bar: 'bg-red-500' }
                       : priority === 'HIGH'
-                        ? 'bg-orange-50 text-orange-700 ring-orange-200'
+                        ? { badge: 'bg-orange-50 text-orange-700 ring-orange-200', bar: 'bg-orange-500' }
                         : priority === 'MEDIUM'
-                          ? 'bg-amber-50 text-amber-700 ring-amber-200'
-                          : 'bg-emerald-50 text-emerald-700 ring-emerald-200';
+                          ? { badge: 'bg-amber-50 text-amber-700 ring-amber-200', bar: 'bg-amber-500' }
+                          : { badge: 'bg-emerald-50 text-emerald-700 ring-emerald-200', bar: 'bg-emerald-500' };
+                  const percentage = summary.tasks.total > 0
+                    ? Math.round((count / summary.tasks.total) * 100)
+                    : 0;
 
                   return (
-                    <div key={priority} className="flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-2 text-zinc-600">
-                        <span className={`h-2.5 w-2.5 rounded-full ${styles.split(' ')[0]}`} />
-                        {priority}
-                      </span>
-                      <span className={`rounded-lg px-2.5 py-1 text-xs font-bold ring-1 ${styles}`}>{count}</span>
+                    <div key={priority}>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium text-zinc-700">{priority}</span>
+                        <span className={`rounded-lg px-2 py-1 text-xs font-bold ring-1 ${styles.badge}`}>
+                          {count} <span className="font-medium opacity-70">({percentage}%)</span>
+                        </span>
+                      </div>
+                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-100">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${styles.bar}`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
                     </div>
                   );
                 })}

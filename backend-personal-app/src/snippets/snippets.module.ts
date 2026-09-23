@@ -1,0 +1,14 @@
+import { Module } from '@nestjs/common';
+import { PassportModule } from '@nestjs/passport';
+import { SnippetsController } from './snippets.controller.js';
+import { SnippetTagsController } from './snippet-tags.controller.js';
+import { SnippetsService } from './snippets.service.js';
+import { SnippetTagsService } from './snippet-tags.service.js';
+import { PrismaService } from '../prisma/prisma.service.js';
+
+@Module({
+  imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
+  controllers: [SnippetsController, SnippetTagsController],
+  providers: [SnippetsService, SnippetTagsService, PrismaService],
+})
+export class SnippetsModule {}

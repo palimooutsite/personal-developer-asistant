@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard.js';
@@ -30,5 +31,10 @@ export class UsersController {
   @Get()
   async findAll() {
     return this.usersService.findAll();
+  }
+
+  @Get('search')
+  async search(@Query('search') search?: string) {
+    return this.usersService.searchUsers(search);
   }
 }

@@ -47,8 +47,19 @@ export class KnowledgeService {
     return article;
   }
 
-  async findAll(userId: string): Promise<KnowledgeArticleResponse[]> {
-    return this.prisma.client.orm.public.KnowledgeArticle
+  async findAll(
+    userId: string,
+    query: { search?: string; tag?: string; page?: number; limit?: number } = {},
+  ): Promise<{
+    data: KnowledgeArticleResponse[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const search = query.search?.trim().toLowerCase();
+    const tag = query.tag?.trim().toLowerCase();
+
+    let articles = await this.prisma.client.orm.public.KnowledgeArticle
       .where({ createdBy: userId })
       .select(
         'id',
@@ -61,6 +72,42 @@ export class KnowledgeService {
         'updatedAt',
       )
       .all();
+
+    if (search) {
+      articles = articles.filter((article) =>
+        [article.title, article.slug, article.content, article.summary ?? '']
+          .join(' ')
+          .toLowerCase()
+          .includes(search),
+      );
+    }
+
+    if (tag) {
+      const tags = await this.prisma.client.orm.public.Tag
+        .where({ name: tag })
+        .select('id')
+        .first();
+
+      if (!tags) {
+        articles = [];
+      } else {
+        const taggedArticles = await this.prisma.client.orm.public.KnowledgeArticleTag
+          .where({ tagId: tags.id })
+          .select('articleId')
+          .all();
+        const ids = new Set(taggedArticles.map((item) => item.articleId));
+        articles = articles.filter((article) => ids.has(article.id));
+      }
+    }
+
+    const total = articles.length;
+    const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
+    const start = (page - 1) * limit;
+
+    return {
+      data: articles.slice(start, start + limit),
+      meta: { page, limit, total, totalPages },
+    };
   }
 
   async findOne(

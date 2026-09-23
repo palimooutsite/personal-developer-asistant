@@ -21,7 +21,7 @@ export function KnowledgeCard({ article, tags, onEdit, onDelete }: KnowledgeCard
             <p className="mt-0.5 truncate text-xs text-zinc-400">/{article.slug}</p>
           </div>
         </div>
-        <div className="flex shrink-0 gap-1">
+        <div className="grid grid-cols-2 gap-1 sm:flex">
           <button type="button" onClick={onEdit} className="rounded-lg px-2.5 py-2 text-xs font-semibold text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900">Edit</button>
           <button type="button" onClick={onDelete} className="rounded-lg px-2.5 py-2 text-xs font-semibold text-red-500 hover:bg-red-50">Hapus</button>
         </div>

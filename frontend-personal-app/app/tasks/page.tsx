@@ -10,6 +10,7 @@ import { TaskCard } from '../../components/tasks/TaskCard';
 import { TaskAssigneeModal } from '../../components/tasks/TaskAssigneeModal';
 import { StyledSelect } from '../../components/ui/StyledSelect';
 import { ModuleHeader } from '../../components/layout/ModuleHeader';
+import Link from 'next/link';
 
 export default function TasksPage() {
   const searchParams = useSearchParams();

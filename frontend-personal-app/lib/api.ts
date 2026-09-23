@@ -1,0 +1,52 @@
+export class ApiError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
+const API_PREFIX = '/backend-api';
+
+export async function apiRequest<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const token =
+    typeof window !== 'undefined'
+      ? window.localStorage.getItem('pda_access_token')
+      : null;
+
+  const headers = new Headers(options.headers);
+
+  if (options.body && !(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  const response = await fetch(`${API_PREFIX}${path}`, {
+    ...options,
+    headers,
+  });
+
+  const contentType = response.headers.get('content-type') ?? '';
+  const data = contentType.includes('application/json')
+    ? await response.json()
+    : null;
+
+  if (!response.ok) {
+    const message =
+      data && typeof data.message === 'string'
+        ? data.message
+        : 'Terjadi kesalahan pada API';
+
+    throw new ApiError(response.status, message);
+  }
+
+  return data as T;
+}

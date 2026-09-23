@@ -23,7 +23,6 @@ export default function KnowledgePage() {
   const [articles, setArticles] = useState<KnowledgeArticle[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [articleTags, setArticleTags] = useState<Record<string, string[]>>({});
-  const [selectedArticleTags, setSelectedArticleTags] = useState<Record<string, string[]>>({});
   const [search, setSearch] = useState('');
   const [tagFilter, setTagFilter] = useState('');
   const [page, setPage] = useState(1);
@@ -119,16 +118,11 @@ export default function KnowledgePage() {
     }
   }
 
-  async function toggleTag(articleId: string, tagId: string) {
-    const current = selectedArticleTags[articleId] ?? [];
+  async function toggleTag(articleId: string, tag: Tag) {
+    const attached = (articleTags[articleId] ?? []).includes(tag.name);
     try {
-      if (current.includes(tagId)) {
-        await removeArticleTag(articleId, tagId);
-        setSelectedArticleTags((state) => ({ ...state, [articleId]: current.filter((id) => id !== tagId) }));
-      } else {
-        await addArticleTag(articleId, tagId);
-        setSelectedArticleTags((state) => ({ ...state, [articleId]: [...current, tagId] }));
-      }
+      if (attached) await removeArticleTag(articleId, tag.id);
+      else await addArticleTag(articleId, tag.id);
       await loadArticles();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Tag gagal diperbarui.');
@@ -209,12 +203,8 @@ export default function KnowledgePage() {
                       <div className="flex flex-wrap gap-2">
                         {tags.map((tag) => {
                           const attached = (articleTags[article.id] ?? []).includes(tag.name);
-                          const idAttached = (selectedArticleTags[article.id] ?? []).includes(tag.id);
-                          if (idAttached !== attached) {
-                            setTimeout(() => setSelectedArticleTags((state) => ({ ...state, [article.id]: (articleTags[article.id] ?? []).flatMap((name) => tags.filter((t) => t.name === name).map((t) => t.id)) })), 0);
-                          }
                           return (
-                            <button key={tag.id} type="button" onClick={() => void toggleTag(article.id, tag.id)} className={`rounded-full px-3 py-1 text-xs font-semibold transition ${attached ? 'bg-violet-100 text-violet-700 ring-1 ring-violet-200' : 'bg-zinc-100 text-zinc-500 hover:bg-violet-50 hover:text-violet-600'}`}>
+                            <button key={tag.id} type="button" onClick={() => void toggleTag(article.id, tag)} className={`rounded-full px-3 py-1 text-xs font-semibold transition ${attached ? 'bg-violet-100 text-violet-700 ring-1 ring-violet-200' : 'bg-zinc-100 text-zinc-500 hover:bg-violet-50 hover:text-violet-600'}`}>
                               {tag.name}
                             </button>
                           );

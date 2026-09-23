@@ -45,6 +45,7 @@ model User {
   createdTasks      Task[]
   knowledgeArticles KnowledgeArticle[]
   codeSnippets CodeSnippet[]
+  documents Document[]
 }
 
 model Project {
@@ -216,4 +217,22 @@ model SnippetTag {
   )
 
   @@unique([snippetId, tagId])
+}
+
+model Document {
+  id          String            @id @default(uuid())
+  title       String
+  description String?
+  fileName    String
+  filePath    String
+  mimeType    String
+  fileSize    String
+  createdBy   String
+  createdAt   TimestamptzString @default(now())
+  updatedAt   temporal.updatedAtString()
+
+  creator User @relation(
+    fields: [createdBy],
+    references: [id]
+  )
 }

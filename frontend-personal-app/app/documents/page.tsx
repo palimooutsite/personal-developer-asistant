@@ -168,7 +168,7 @@ export default function DocumentsPage() {
             <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">⌕</span>
             <input value={search} onChange={event => setSearch(event.target.value)}
               placeholder="Cari document, nama file, deskripsi..."
-              className="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-3 pl-11 pr-4 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-50" />
+              className="w-full rounded-xl border border-zinc-300 bg-white py-3 pl-11 pr-4 text-sm font-medium text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-50" />
           </div>
           <div className="mt-4 flex flex-wrap gap-2 text-xs">
             <span className="rounded-full bg-amber-50 px-3 py-1.5 font-semibold text-amber-700">{filtered.length} document</span>

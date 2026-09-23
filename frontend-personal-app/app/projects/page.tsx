@@ -606,7 +606,7 @@ export default function ProjectsPage() {
                 <div><p className="text-xs font-semibold uppercase tracking-wider text-blue-600">Project Members</p><h2 className="mt-1 text-xl font-bold">{memberProject.name}</h2><p className="mt-1 text-sm text-zinc-500">Kelola anggota dan role project.</p></div>
                 <button type="button" onClick={closeMembers} className="rounded-lg p-2 text-xl leading-none text-zinc-400 hover:bg-zinc-100">×</button>
               </div>
-              <div className="p-6">
+              <div className="min-h-0 flex-1 overflow-y-auto p-6">
                 {(memberProject.role === 'OWNER' || memberProject.role === 'ADMIN') ? (
                   <div className="mb-6 rounded-2xl bg-zinc-50 p-4">
                     <p className="mb-3 text-sm font-semibold">Tambah Member</p>

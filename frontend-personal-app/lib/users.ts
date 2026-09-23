@@ -7,7 +7,29 @@ export interface UserPickerItem {
   name: string | null;
 }
 
-export async function searchUsers(search = ''): Promise<UserPickerItem[]> {
-  const query = search.trim() ? `?search=${encodeURIComponent(search.trim())}` : '';
-  return apiRequest<UserPickerItem[]>(`/users/search${query}`);
+export interface UserSearchResponse {
+  data: UserPickerItem[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export async function searchUsers(
+  search = '',
+  page = 1,
+  limit = 5,
+): Promise<UserSearchResponse> {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(Math.min(5, limit)),
+  });
+
+  if (search.trim()) {
+    params.set('search', search.trim());
+  }
+
+  return apiRequest<UserSearchResponse>(`/users/search?${params.toString()}`);
 }

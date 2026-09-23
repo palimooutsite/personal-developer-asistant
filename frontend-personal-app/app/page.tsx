@@ -93,26 +93,26 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-[#f6f7fb] text-zinc-950">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-10">
         <header className="flex flex-col gap-6 border-b border-zinc-200 pb-8 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
               DASHBOARD
             </div>
-            <h1 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">
+            <h1 className="mt-5 text-2xl font-bold tracking-tight sm:text-4xl">
               Selamat datang{user?.name ? ', ' + user.name : ''}.
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500 sm:text-base">
               Semua aktivitas development kamu dalam satu tempat.
             </p>
           </div>
-          <button type="button" onClick={handleLogout} className="rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50">
+          <button type="button" onClick={handleLogout} className="self-start rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 sm:self-auto">
             Logout
           </button>
         </header>
 
-        <section className="mt-8">
+        <section className="mt-7 sm:mt-8">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Overview</p>
@@ -151,7 +151,7 @@ export default function HomePage() {
         </section>
 
         {summary && (
-          <section className="mt-8 grid gap-4 lg:grid-cols-3">
+          <section className="mt-7 grid gap-4 lg:mt-8 lg:grid-cols-3">
             <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Task Status</p>
               <div className="mt-5 space-y-4">
@@ -236,7 +236,7 @@ export default function HomePage() {
         )}
 
 
-        <section className="mt-10">
+        <section className="mt-8 sm:mt-10">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Main Menu</p>
             <h2 className="mt-1 text-xl font-bold">Workspace</h2>

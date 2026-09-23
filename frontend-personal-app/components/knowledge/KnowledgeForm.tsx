@@ -39,11 +39,11 @@ export function KnowledgeForm({
         </div>
         <div>
           <label htmlFor="knowledge-summary" className="mb-2 block text-sm font-semibold">Ringkasan <span className="font-normal text-zinc-400">(opsional)</span></label>
-          <textarea id="knowledge-summary" value={summary} onChange={(e) => onSummaryChange(e.target.value)} maxLength={500} rows={2} className="w-full resize-y rounded-xl border border-zinc-300 px-4 py-3 text-sm outline-none transition placeholder:text-zinc-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-50" placeholder="Ringkasan singkat artikel..." />
+          <textarea id="knowledge-summary" value={summary} onChange={(e) => onSummaryChange(e.target.value)} maxLength={500} rows={2} className="w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-50" placeholder="Ringkasan singkat artikel..." />
         </div>
         <div>
           <label htmlFor="knowledge-content" className="mb-2 block text-sm font-semibold">Content <span className="text-red-500">*</span></label>
-          <textarea id="knowledge-content" value={content} onChange={(e) => onContentChange(e.target.value)} required rows={12} className="w-full resize-y rounded-xl border border-zinc-300 px-4 py-3 font-mono text-sm leading-6 outline-none transition placeholder:text-zinc-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-50" placeholder="Tulis dokumentasi atau catatan teknis di sini..." />
+          <textarea id="knowledge-content" value={content} onChange={(e) => onContentChange(e.target.value)} required rows={12} className="w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-4 font-mono text-sm leading-6 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-50" placeholder="Tulis dokumentasi atau catatan teknis di sini..." />
         </div>
         <div className="flex flex-col-reverse gap-3 border-t border-zinc-100 pt-5 sm:flex-row sm:justify-end">
           <button type="button" onClick={onClose} className="rounded-xl border border-zinc-300 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50">Batal</button>

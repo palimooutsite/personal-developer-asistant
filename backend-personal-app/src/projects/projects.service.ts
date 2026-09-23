@@ -422,6 +422,75 @@ export class ProjectsService {
     };
   }
 
+  async addMembers(
+    projectId: string,
+    currentUserId: string,
+    userIds: string[],
+    role: AddProjectMemberDto['role'],
+  ): Promise<ProjectMemberListItem[]> {
+    const membership = await this.getMembership(projectId, currentUserId);
+
+    if (membership.role !== 'OWNER' && membership.role !== 'ADMIN') {
+      throw new ForbiddenException(
+        'Anda tidak memiliki izin untuk menambahkan member',
+      );
+    }
+
+    const uniqueUserIds = [...new Set(userIds)];
+
+    return this.prisma.client.transaction(async (tx) => {
+      const project = await tx.orm.public.Project.where({ id: projectId }).first();
+
+      if (!project) {
+        throw new NotFoundException('Project tidak ditemukan');
+      }
+
+      const results: ProjectMemberListItem[] = [];
+
+      for (const userId of uniqueUserIds) {
+        const user = await tx.orm.public.User.where({ id: userId })
+          .select('id', 'username', 'email', 'name')
+          .first();
+
+        if (!user) {
+          throw new NotFoundException(`User tidak ditemukan: ${userId}`);
+        }
+
+        const existingMember = await tx.orm.public.ProjectMember.where({
+          projectId,
+          userId,
+        }).first();
+
+        if (existingMember) {
+          throw new ConflictException(
+            `User ${user.username} sudah menjadi member project`,
+          );
+        }
+
+        const member = await tx.orm.public.ProjectMember.create({
+          projectId,
+          userId,
+          role,
+        });
+
+        results.push({
+          id: member.id,
+          projectId: member.projectId,
+          userId: member.userId,
+          role: member.role,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            name: user.name,
+          },
+        });
+      }
+
+      return results;
+    });
+  }
+
   async addMember(
   projectId: string,
   currentUserId: string,

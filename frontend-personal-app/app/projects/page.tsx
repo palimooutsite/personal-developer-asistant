@@ -193,11 +193,14 @@ export default function ProjectsPage() {
     const timer = window.setTimeout(async () => {
       try {
         setUserSearchLoading(true);
-        const response = await searchUsers(keyword, userSearchPage, userSearchLimit);
-        const memberIds = new Set(members.map((member) => member.userId));
-        setUserResults(
-          response.data.filter((user) => !memberIds.has(user.id)),
+        const memberIds = members.map((member) => member.userId);
+        const response = await searchUsers(
+          keyword,
+          userSearchPage,
+          userSearchLimit,
+          memberIds,
         );
+        setUserResults(response.data);
         setUserSearchTotalPages(response.meta.totalPages);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Gagal mencari user.');

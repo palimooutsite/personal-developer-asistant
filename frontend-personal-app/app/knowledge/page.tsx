@@ -15,6 +15,7 @@ import {
   updateKnowledge,
 } from '../../lib/knowledge';
 import { KnowledgeCard } from '../../components/knowledge/KnowledgeCard';
+import { KnowledgeReader } from '../../components/knowledge/KnowledgeReader';
 import { KnowledgeForm } from '../../components/knowledge/KnowledgeForm';
 import { ModuleHeader } from '../../components/layout/ModuleHeader';
 import { StyledSelect } from '../../components/ui/StyledSelect';
@@ -29,6 +30,7 @@ export default function KnowledgePage() {
   const [meta, setMeta] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 });
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [readingArticle, setReadingArticle] = useState<KnowledgeArticle | null>(null);
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [summary, setSummary] = useState('');
@@ -74,12 +76,14 @@ export default function KnowledgePage() {
   }
 
   function openCreate() {
+    setReadingArticle(null);
     resetForm();
     setShowForm(true);
     setTimeout(() => document.getElementById('knowledge-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
   }
 
   function openEdit(article: KnowledgeArticle) {
+    setReadingArticle(null);
     setEditingId(article.id);
     setTitle(article.title);
     setSlug(article.slug);
@@ -106,6 +110,14 @@ export default function KnowledgePage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function openReader(article: KnowledgeArticle) {
+    setShowForm(false);
+    setEditingId(null);
+    setReadingArticle(article);
+    setError('');
+    setTimeout(() => document.getElementById('knowledge-reader')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
   }
 
   async function handleDelete(article: KnowledgeArticle) {
@@ -149,6 +161,15 @@ export default function KnowledgePage() {
         />
 
         {error && <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+
+        {readingArticle && !showForm && (
+          <KnowledgeReader
+            article={readingArticle}
+            tags={articleTags[readingArticle.id] ?? []}
+            onBack={() => setReadingArticle(null)}
+            onEdit={() => openEdit(readingArticle)}
+          />
+        )}
 
         {showForm && (
           <KnowledgeForm
@@ -194,6 +215,7 @@ export default function KnowledgePage() {
                   <KnowledgeCard
                     article={article}
                     tags={articleTags[article.id] ?? []}
+                    onOpen={() => openReader(article)}
                     onEdit={() => openEdit(article)}
                     onDelete={() => void handleDelete(article)}
                   />

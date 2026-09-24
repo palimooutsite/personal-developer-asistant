@@ -236,7 +236,7 @@ export default function SnippetsPage() {
         {loading ? (
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="h-[430px] animate-pulse rounded-2xl border border-zinc-200 bg-white" />
+              <div key={index} className="h-[430px] animate-pulse rounded-2xl border border-zinc-200 bg-zinc-100/70" />
             ))}
           </div>
         ) : snippets.length === 0 ? (

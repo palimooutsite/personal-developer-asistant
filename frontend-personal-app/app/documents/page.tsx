@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { ModuleHeader } from '../../components/layout/ModuleHeader';
+import { Modal } from '../../components/ui/Modal';
 import { DocumentCard } from '../../components/documents/DocumentCard';
 import { DocumentForm } from '../../components/documents/DocumentForm';
 import { DocumentEditForm } from '../../components/documents/DocumentEditForm';
@@ -132,8 +133,14 @@ export default function DocumentsPage() {
           }
         />
 
-        {editing ? (
-          <section className="mb-7">
+        <Modal
+          open={showForm || Boolean(editing)}
+          onClose={() => { setShowForm(false); setEditing(null); }}
+          title={editing ? 'Edit Document' : 'Upload Document'}
+          description={editing ? 'Perbarui informasi document tanpa mengubah file.' : 'Format yang didukung: PDF, DOCX, TXT, dan Markdown. Maksimal 10 MB.'}
+          maxWidth="lg"
+        >
+          {editing ? (
             <DocumentEditForm
               document={editing}
               onSubmit={async (title, description) => {
@@ -143,18 +150,14 @@ export default function DocumentsPage() {
               onCancel={() => setEditing(null)}
               submitting={saving}
             />
-          </section>
-        ) : null}
-
-        {showForm ? (
-          <section className="mb-7">
+          ) : (
             <DocumentForm
               onSubmit={handleUpload}
               onCancel={() => setShowForm(false)}
               submitting={saving}
             />
-          </section>
-        ) : null}
+          )}
+        </Modal>
 
         {error ? (
           <div className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">

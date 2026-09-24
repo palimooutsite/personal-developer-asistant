@@ -7,6 +7,7 @@ import {
   Post,
   Patch,
   Req,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 
@@ -38,11 +39,17 @@ export class TasksController {
   @Get()
   async findAll(
     @Param('projectId') projectId: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '10',
+    @Query('all') all = 'false',
     @Req() req: AuthRequest,
-  ): Promise<TaskListResponse[]> {
+  ): Promise<TaskListResponse[] | import('./tasks.service.js').TaskPaginatedResponse> {
     return this.tasksService.findAll(
       projectId,
       req.user.userId,
+      Number(page),
+      Number(limit),
+      all === 'true',
     );
   }
 

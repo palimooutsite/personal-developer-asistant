@@ -272,9 +272,9 @@ export default function SnippetsPage() {
                 <span className="text-sm text-zinc-500">Halaman {meta.page} dari {meta.totalPages}</span>
                 <div className="grid grid-cols-2 gap-2 sm:flex">
                   <button type="button" disabled={page <= 1} onClick={() => setPage(current => Math.max(1, current - 1))}
-                    className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-600 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40">Sebelumnya</button>
+                    className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-600 transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:opacity-40">Sebelumnya</button>
                   <button type="button" disabled={page >= meta.totalPages} onClick={() => setPage(current => Math.min(meta.totalPages, current + 1))}
-                    className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40">Berikutnya</button>
+                    className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:opacity-40">Berikutnya</button>
                 </div>
               </div>
             ) : null}

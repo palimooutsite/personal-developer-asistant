@@ -63,7 +63,7 @@ export function SnippetForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm sm:p-6">
+    <form onSubmit={handleSubmit} className="bg-white p-4 sm:p-6">
       <div className="mb-5">
         <h2 className="text-lg font-bold text-zinc-900">{initialValue ? 'Edit Code Snippet' : 'Code Snippet Baru'}</h2>
         <p className="mt-1 text-sm text-zinc-500">Simpan potongan kode agar mudah ditemukan dan digunakan kembali.</p>

@@ -55,7 +55,7 @@ export function SnippetCard({
         </div>
 
         <button type="button" onClick={() => void copyCode()}
-          className="shrink-0 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-500 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700">
+          className="shrink-0 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-500 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-100">
           {copied ? '✓ Copied' : 'Copy'}
         </button>
       </div>
@@ -76,7 +76,7 @@ export function SnippetCard({
                 className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
                   attached.has(tag.id)
                     ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200'
-                    : 'bg-zinc-100 text-zinc-500 hover:bg-emerald-50 hover:text-emerald-600'
+                    : 'bg-zinc-100 text-zinc-500 hover:bg-emerald-50 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-100'
                 }`}>
                 {tag.name}
               </button>
@@ -87,8 +87,8 @@ export function SnippetCard({
         <div className="flex items-center justify-between gap-2 border-t border-zinc-100 pt-3">
           <span className="text-xs text-zinc-400">{tags.length} tag terpasang</span>
           <div className="flex gap-2">
-            <button type="button" onClick={onEdit} className="rounded-lg px-3 py-2 text-xs font-semibold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900">Edit</button>
-            <button type="button" onClick={onDelete} className="rounded-lg px-3 py-2 text-xs font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600">Hapus</button>
+            <button type="button" onClick={onEdit} className="rounded-lg px-3 py-2 text-xs font-semibold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-100">Edit</button>
+            <button type="button" onClick={onDelete} className="rounded-lg px-3 py-2 text-xs font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-100 focus:outline-none focus:ring-2 focus:ring-red-100">Hapus</button>
           </div>
         </div>
       </div>

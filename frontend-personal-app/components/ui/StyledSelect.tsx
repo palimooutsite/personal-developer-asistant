@@ -23,7 +23,7 @@ export function StyledSelect({ value, onChange, options, placeholder='Pilih...',
 
   return (
     <div ref={ref} className={`relative ${className}`}>
-      <button id={id} type="button" disabled={disabled} aria-label={ariaLabel} aria-expanded={open}
+      <button id={id} type="button" disabled={disabled} aria-label={ariaLabel} aria-expanded={open} aria-haspopup="listbox"
         onClick={() => setOpen(current => !current)}
         className="flex w-full items-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-medium text-zinc-800 shadow-sm outline-none transition hover:border-zinc-300 hover:shadow-md focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:text-zinc-400">
         {selected?.icon ? <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">{selected.icon}</span> : null}
@@ -35,11 +35,11 @@ export function StyledSelect({ value, onChange, options, placeholder='Pilih...',
       </button>
 
       {open ? (
-        <div className="absolute left-0 right-0 z-50 mt-2 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-1.5 shadow-2xl ring-1 ring-black/5">
+        <div role="listbox" className="absolute left-0 right-0 z-50 mt-2 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-1.5 shadow-2xl ring-1 ring-black/5">
           <div className="max-h-64 overflow-y-auto">
             {options.length ? options.map(option => (
               <button key={option.value} type="button" onClick={() => { onChange(option.value); setOpen(false); }}
-                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${option.value === value ? 'bg-blue-50 text-blue-700' : 'text-zinc-700 hover:bg-zinc-50'}`}>
+                aria-selected={option.value === value}\n                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition focus:outline-none focus:ring-2 focus:ring-blue-100 ${option.value === value ? 'bg-blue-50 text-blue-700' : 'text-zinc-700 hover:bg-zinc-50'}`}>
                 {option.icon ? <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${option.value === value ? 'bg-blue-100 text-blue-600' : 'bg-zinc-100 text-zinc-500'}`}>{option.icon}</span> : null}
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold">{option.label}</span>

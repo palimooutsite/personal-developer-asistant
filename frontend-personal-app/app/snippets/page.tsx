@@ -149,7 +149,7 @@ export default function SnippetsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f6f7fb] px-4 py-8 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[#f6f7fb] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-10">
       <div className="mx-auto max-w-7xl">
         <ModuleHeader
           icon="</>"
@@ -160,7 +160,7 @@ export default function SnippetsPage() {
           accent="emerald"
           action={
             <button type="button" onClick={startCreate}
-              className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 hover:shadow-md">
+              className="w-full rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 hover:shadow-md sm:w-auto">
               + Snippet Baru
             </button>
           }
@@ -246,9 +246,9 @@ export default function SnippetsPage() {
             </div>
 
             {meta.totalPages > 1 ? (
-              <div className="mt-8 flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
+              <div className="mt-8 flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-sm text-zinc-500">Halaman {meta.page} dari {meta.totalPages}</span>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:flex">
                   <button type="button" disabled={page <= 1} onClick={() => setPage(current => Math.max(1, current - 1))}
                     className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-600 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40">Sebelumnya</button>
                   <button type="button" disabled={page >= meta.totalPages} onClick={() => setPage(current => Math.min(meta.totalPages, current + 1))}

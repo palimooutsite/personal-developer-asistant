@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ModuleHeader } from '../../components/layout/ModuleHeader';
+import { Modal } from '../../components/ui/Modal';
 import { StyledSelect } from '../../components/ui/StyledSelect';
 import { SnippetCard } from '../../components/snippets/SnippetCard';
 import { SnippetForm, type SnippetFormValue } from '../../components/snippets/SnippetForm';
@@ -166,16 +167,20 @@ export default function SnippetsPage() {
           }
         />
 
-        {showForm ? (
-          <section className="mb-7">
-            <SnippetForm
-              initialValue={editing ?? undefined}
-              onSubmit={handleSave}
-              onCancel={() => { setShowForm(false); setEditing(null); }}
-              submitting={saving}
-            />
-          </section>
-        ) : null}
+        <Modal
+          open={showForm}
+          onClose={() => { setShowForm(false); setEditing(null); }}
+          title={editing ? 'Edit Code Snippet' : 'Code Snippet Baru'}
+          description="Simpan potongan kode agar mudah ditemukan dan digunakan kembali."
+          maxWidth="xl"
+        >
+          <SnippetForm
+            initialValue={editing ?? undefined}
+            onSubmit={handleSave}
+            onCancel={() => { setShowForm(false); setEditing(null); }}
+            submitting={saving}
+          />
+        </Modal>
 
         {error ? (
           <div className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">

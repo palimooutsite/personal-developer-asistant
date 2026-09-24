@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getProjectMembers, getProjects, Project, ProjectMember } from '../../lib/projects';
-import { addTaskAssignee, createTask, deleteTask, getTasks, removeTaskAssignee, Task, TaskPriority, TaskStatus, updateTask } from '../../lib/tasks';
+import { addTaskAssignee, createTask, deleteTask, getAllTasks, getTasks, removeTaskAssignee, Task, TaskPriority, TaskStatus, updateTask } from '../../lib/tasks';
 import { TaskStats } from '../../components/tasks/TaskStats';
 import { TaskForm } from '../../components/tasks/TaskForm';
 import { TaskCard } from '../../components/tasks/TaskCard';

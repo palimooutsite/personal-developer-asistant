@@ -20,6 +20,9 @@ export default function TasksPage() {
   const [projects,setProjects]=useState<Project[]>([]);
   const [projectId,setProjectId]=useState(requestedProjectId??'');
   const [tasks,setTasks]=useState<Task[]>([]);
+  const [allTasks,setAllTasks]=useState<Task[]>([]);
+  const [page,setPage]=useState(1);
+  const [meta,setMeta]=useState({page:1,limit:10,total:0,totalPages:0});
   const [loadingProjects,setLoadingProjects]=useState(true);
   const [loadingTasks,setLoadingTasks]=useState(false);
   const [error,setError]=useState('');
@@ -40,17 +43,18 @@ export default function TasksPage() {
   const [viewMode,setViewMode]=useState<'list'|'kanban'>('list');
 
   useEffect(()=>{(async()=>{try{setLoadingProjects(true);const data=await getProjects();setProjects(data);if(data.length&&(!requestedProjectId||!data.some(p=>p.id===requestedProjectId)))setProjectId(data[0].id);}catch(e){setError(e instanceof Error?e.message:'Gagal memuat project');}finally{setLoadingProjects(false);}})();},[requestedProjectId]);
-  useEffect(()=>{if(!projectId){setTasks([]);return;}(async()=>{try{setLoadingTasks(true);setError('');setTasks(await getTasks(projectId));}catch(e){setError(e instanceof Error?e.message:'Gagal memuat task');}finally{setLoadingTasks(false);}})();},[projectId]);
+  useEffect(()=>{setPage(1);},[projectId]);
+  useEffect(()=>{if(!projectId){setTasks([]);setAllTasks([]);return;}(async()=>{try{setLoadingTasks(true);setError('');const [paged,all]=await Promise.all([getTasks(projectId,page,10),getAllTasks(projectId)]);setTasks(paged.data);setMeta(paged.meta);setAllTasks(all);}catch(e){setError(e instanceof Error?e.message:'Gagal memuat task');}finally{setLoadingTasks(false);}})();},[projectId,page]);
 
   const selectedProject=projects.find(p=>p.id===projectId);
-  const stats=useMemo(()=>({total:tasks.length,todo:tasks.filter(t=>t.status==='TODO').length,inProgress:tasks.filter(t=>t.status==='IN_PROGRESS').length,done:tasks.filter(t=>t.status==='DONE').length}),[tasks]);
+  const stats=useMemo(()=>({total:allTasks.length,todo:allTasks.filter(t=>t.status==='TODO').length,inProgress:allTasks.filter(t=>t.status==='IN_PROGRESS').length,done:allTasks.filter(t=>t.status==='DONE').length}),[tasks]);
 
   function resetForm(){setTitle('');setDescription('');setStatus('TODO');setPriority('MEDIUM');setDueDate('');setEditing(null);}
   function openCreate(){resetForm();setFormOpen(true);}
   function openEdit(task:Task){setEditing(task);setTitle(task.title);setDescription(task.description??'');setStatus(task.status);setPriority(task.priority);setDueDate(task.dueDate?task.dueDate.slice(0,10):'');setFormOpen(true);}
   function closeForm(){resetForm();setFormOpen(false);}
 
-  async function handleSubmit(e:FormEvent<HTMLFormElement>){e.preventDefault();if(!projectId||!title.trim())return;try{setSaving(true);setError('');if(editing){const updated=await updateTask(projectId,editing.id,{title:title.trim(),description:description.trim()||null,status,priority,dueDate:dueDate||null});setTasks(c=>c.map(t=>t.id===updated.id?updated:t));}else{const created=await createTask(projectId,{title:title.trim(),description:description.trim()||undefined,priority,dueDate:dueDate||undefined});setTasks(c=>[created,...c]);}closeForm();}catch(e){setError(e instanceof Error?e.message:'Gagal menyimpan task');}finally{setSaving(false);}}
+  async function handleSubmit(e:FormEvent<HTMLFormElement>){e.preventDefault();if(!projectId||!title.trim())return;try{setSaving(true);setError('');if(editing){const updated=await updateTask(projectId,editing.id,{title:title.trim(),description:description.trim()||null,status,priority,dueDate:dueDate||null});setTasks(c=>c.map(t=>t.id===updated.id?updated:t));setAllTasks(c=>c.map(t=>t.id===updated.id?updated:t));}else{const created=await createTask(projectId,{title:title.trim(),description:description.trim()||undefined,priority,dueDate:dueDate||undefined});setTasks(c=>[created,...c].slice(0,10));setAllTasks(c=>[created,...c]);}closeForm();}catch(e){setError(e instanceof Error?e.message:'Gagal menyimpan task');}finally{setSaving(false);}}
   async function handleKanbanStatusChange(task:Task, nextStatus:TaskStatus){
     if(task.status===nextStatus)return;
     try{
@@ -62,7 +66,7 @@ export default function TasksPage() {
     }
   }
 
-  async function handleDelete(task:Task){if(!window.confirm('Hapus task "'+task.title+'"?'))return;try{setDeletingId(task.id);setError('');await deleteTask(projectId,task.id);setTasks(c=>c.filter(t=>t.id!==task.id));}catch(e){setError(e instanceof Error?e.message:'Gagal menghapus task');}finally{setDeletingId('');}}
+  async function handleDelete(task:Task){if(!window.confirm('Hapus task "'+task.title+'"?'))return;try{setDeletingId(task.id);setError('');await deleteTask(projectId,task.id);setTasks(c=>c.filter(t=>t.id!==task.id));setAllTasks(c=>c.filter(t=>t.id!==task.id));}catch(e){setError(e instanceof Error?e.message:'Gagal menghapus task');}finally{setDeletingId('');}}
   async function openAssignees(task:Task){setAssigneeTask(task);setAssigneeUserId('');setError('');try{setLoadingMembers(true);setMembers(await getProjectMembers(projectId));}catch(e){setError(e instanceof Error?e.message:'Gagal memuat member project');}finally{setLoadingMembers(false);}}
   function closeAssignees(){setAssigneeTask(null);setAssigneeUserId('');setMembers([]);}
   async function handleAddAssignee(){if(!assigneeTask||!assigneeUserId)return;try{setAssigneeSaving(true);setError('');await addTaskAssignee(projectId,assigneeTask.id,assigneeUserId);const m=members.find(x=>x.userId===assigneeUserId);if(m){const a={taskId:assigneeTask.id,projectId,userId:m.userId,username:m.user.username,email:m.user.email,name:m.user.name};setTasks(c=>c.map(t=>t.id===assigneeTask.id?{...t,assignees:[...(t.assignees??[]),a]}:t));setAssigneeTask(c=>c?{...c,assignees:[...(c.assignees??[]),a]}:c);}setAssigneeUserId('');}catch(e){setError(e instanceof Error?e.message:'Gagal menambahkan assignee');}finally{setAssigneeSaving(false);}}
@@ -113,13 +117,22 @@ export default function TasksPage() {
       </Modal>
       <TaskStats tasks={tasks}/>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div><h2 className="text-xl font-bold">{selectedProject?.name}</h2><p className="mt-1 text-sm text-slate-500">{tasks.length} task dalam project ini</p></div>
+        <div><h2 className="text-xl font-bold">{selectedProject?.name}</h2><p className="mt-1 text-sm text-slate-500">{meta.total} task dalam project ini</p></div>
         <div className="flex w-full rounded-xl border border-slate-200 bg-white p-1 shadow-sm sm:w-auto">
           <button type="button" onClick={()=>setViewMode('list')} className={`flex-1 rounded-lg px-4 py-2 text-xs font-semibold transition sm:flex-none ${viewMode==='list'?'bg-slate-900 text-white shadow-sm':'text-slate-500 hover:bg-slate-50'}`}>☷ Normal</button>
           <button type="button" onClick={()=>setViewMode('kanban')} className={`flex-1 rounded-lg px-4 py-2 text-xs font-semibold transition sm:flex-none ${viewMode==='kanban'?'bg-blue-600 text-white shadow-sm':'text-slate-500 hover:bg-slate-50'}`}>▦ Kanban</button>
         </div>
       </div>
-      {loadingTasks?<div className="grid gap-4 md:grid-cols-2">{[1,2,3,4].map(i=><div key={i} className="h-52 animate-pulse rounded-2xl bg-white"/>)}</div>:!tasks.length?<div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center"><h2 className="text-xl font-bold">Belum ada task</h2><p className="mt-2 text-sm text-slate-500">Tambahkan pekerjaan pertama untuk project ini.</p><button onClick={openCreate} className="mt-6 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">+ Buat Task</button></div>:viewMode==='kanban'?<TaskKanbanBoard tasks={tasks} deletingId={deletingId} onAssignees={openAssignees} onEdit={openEdit} onDelete={handleDelete} onStatusChange={handleKanbanStatusChange}/>:<div className="grid gap-4 md:grid-cols-2">{tasks.map(task=><TaskCard key={task.id} task={task} deleting={deletingId===task.id} onAssignees={openAssignees} onEdit={openEdit} onDelete={handleDelete}/>)}</div>}
+      {loadingTasks?<div className="grid gap-4 md:grid-cols-2">{[1,2,3,4].map(i=><div key={i} className="h-52 animate-pulse rounded-2xl bg-white"/>)}</div>:!tasks.length?<div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center"><h2 className="text-xl font-bold">Belum ada task</h2><p className="mt-2 text-sm text-slate-500">Tambahkan pekerjaan pertama untuk project ini.</p><button onClick={openCreate} className="mt-6 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">+ Buat Task</button></div>:viewMode==='kanban'?<TaskKanbanBoard tasks={allTasks} deletingId={deletingId} onAssignees={openAssignees} onEdit={openEdit} onDelete={handleDelete} onStatusChange={handleKanbanStatusChange}/>:<div className="grid gap-4 md:grid-cols-2">{tasks.map(task=><TaskCard key={task.id} task={task} deleting={deletingId===task.id} onAssignees={openAssignees} onEdit={openEdit} onDelete={handleDelete}/>)}</div>}
+        {meta.totalPages > 1 && (
+          <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-500">Halaman {meta.page} dari {meta.totalPages}</p>
+            <div className="grid grid-cols-2 gap-2 sm:flex">
+              <button type="button" disabled={page <= 1} onClick={()=>setPage(current=>Math.max(1,current-1))} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-40">Sebelumnya</button>
+              <button type="button" disabled={page >= meta.totalPages} onClick={()=>setPage(current=>Math.min(meta.totalPages,current+1))} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-40">Berikutnya</button>
+            </div>
+          </div>
+        )}
     </>}
     {assigneeTask&&<TaskAssigneeModal task={assigneeTask} members={members} loadingMembers={loadingMembers} saving={assigneeSaving} selectedUserId={assigneeUserId} onSelectedUserChange={setAssigneeUserId} onAdd={()=>void handleAddAssignee()} onRemove={(id)=>void handleRemoveAssignee(id)} onClose={closeAssignees}/>}
   </div></main>;

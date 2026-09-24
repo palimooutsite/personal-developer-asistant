@@ -46,8 +46,8 @@ export function ProjectForm({
           </div>
         ) : null}
         <div className="flex flex-col-reverse gap-3 border-t border-zinc-100 pt-5 sm:flex-row sm:justify-end">
-          <button type="button" onClick={onClose} className="rounded-xl border border-zinc-300 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50">Batal</button>
-          <button type="submit" disabled={saving} className="rounded-xl bg-zinc-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50">
+          <button type="button" onClick={onClose} className="rounded-xl border border-zinc-300 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-100">Batal</button>
+          <button type="submit" disabled={saving} className="rounded-xl bg-zinc-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-200 disabled:cursor-not-allowed disabled:opacity-50">
             {saving ? 'Menyimpan...' : editingId ? 'Simpan Perubahan' : 'Buat Project'}
           </button>
         </div>

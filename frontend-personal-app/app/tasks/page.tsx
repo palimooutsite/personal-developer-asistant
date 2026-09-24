@@ -11,6 +11,7 @@ import { TaskAssigneeModal } from '../../components/tasks/TaskAssigneeModal';
 import { TaskKanbanBoard } from '../../components/tasks/TaskKanbanBoard';
 import { StyledSelect } from '../../components/ui/StyledSelect';
 import { ModuleHeader } from '../../components/layout/ModuleHeader';
+import { Modal } from '../../components/ui/Modal';
 import Link from 'next/link';
 
 export default function TasksPage() {
@@ -87,18 +88,26 @@ export default function TasksPage() {
           />
           <button
             type="button"
-            onClick={formOpen?closeForm:openCreate}
+            onClick={openCreate}
             disabled={!projectId}
             className="w-full rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white disabled:opacity-40 sm:w-auto"
           >
-            {formOpen?'Tutup Form':'+ Task Baru'}
+            + Task Baru
           </button>
         </>
       }
     />
     {error&&<div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
     {loadingProjects?<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{[1,2,3,4].map(i=><div key={i} className="h-28 animate-pulse rounded-2xl bg-white"/>)}</div>:!projects.length?<div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center"><h2 className="text-xl font-bold">Belum ada project</h2><p className="mx-auto mt-2 max-w-md text-sm text-slate-500">Task harus berada di dalam project. Buat project terlebih dahulu.</p><Link href="/projects" className="mt-6 inline-flex rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">Buat Project</Link></div>:<>
-      {formOpen&&<TaskForm editing={Boolean(editing)} projectName={selectedProject?.name??''} title={title} description={description} status={status} priority={priority} dueDate={dueDate} saving={saving} onTitleChange={setTitle} onDescriptionChange={setDescription} onStatusChange={setStatus} onPriorityChange={setPriority} onDueDateChange={setDueDate} onSubmit={handleSubmit} onClose={closeForm}/>}
+      <Modal
+        open={formOpen}
+        onClose={closeForm}
+        title={editing ? 'Edit Task' : 'Task Baru'}
+        description={editing ? 'Perbarui informasi task yang dipilih.' : `Tambahkan task ke project ${selectedProject?.name ?? ''}.`}
+        maxWidth="lg"
+      >
+        <TaskForm editing={Boolean(editing)} projectName={selectedProject?.name??''} title={title} description={description} status={status} priority={priority} dueDate={dueDate} saving={saving} onTitleChange={setTitle} onDescriptionChange={setDescription} onStatusChange={setStatus} onPriorityChange={setPriority} onDueDateChange={setDueDate} onSubmit={handleSubmit} onClose={closeForm}/>
+      </Modal>
       <TaskStats tasks={tasks}/>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div><h2 className="text-xl font-bold">{selectedProject?.name}</h2><p className="mt-1 text-sm text-slate-500">{tasks.length} task dalam project ini</p></div>

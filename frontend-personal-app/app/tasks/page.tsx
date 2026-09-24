@@ -102,9 +102,9 @@ export default function TasksPage() {
       <TaskStats tasks={tasks}/>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div><h2 className="text-xl font-bold">{selectedProject?.name}</h2><p className="mt-1 text-sm text-slate-500">{tasks.length} task dalam project ini</p></div>
-        <div className="grid grid-cols-2 rounded-xl border border-slate-200 bg-white p-1 shadow-sm sm:flex">
-          <button type="button" onClick={()=>setViewMode('list')} className={`rounded-lg px-4 py-2 text-xs font-semibold transition ${viewMode==='list'?'bg-slate-900 text-white shadow-sm':'text-slate-500 hover:bg-slate-50'}`}>☷ Normal</button>
-          <button type="button" onClick={()=>setViewMode('kanban')} className={`rounded-lg px-4 py-2 text-xs font-semibold transition ${viewMode==='kanban'?'bg-blue-600 text-white shadow-sm':'text-slate-500 hover:bg-slate-50'}`}>▦ Kanban</button>
+        <div className="flex w-full rounded-xl border border-slate-200 bg-white p-1 shadow-sm sm:w-auto">
+          <button type="button" onClick={()=>setViewMode('list')} className={`flex-1 rounded-lg px-4 py-2 text-xs font-semibold transition sm:flex-none ${viewMode==='list'?'bg-slate-900 text-white shadow-sm':'text-slate-500 hover:bg-slate-50'}`}>☷ Normal</button>
+          <button type="button" onClick={()=>setViewMode('kanban')} className={`flex-1 rounded-lg px-4 py-2 text-xs font-semibold transition sm:flex-none ${viewMode==='kanban'?'bg-blue-600 text-white shadow-sm':'text-slate-500 hover:bg-slate-50'}`}>▦ Kanban</button>
         </div>
       </div>
       {loadingTasks?<div className="grid gap-4 md:grid-cols-2">{[1,2,3,4].map(i=><div key={i} className="h-52 animate-pulse rounded-2xl bg-white"/>)}</div>:!tasks.length?<div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center"><h2 className="text-xl font-bold">Belum ada task</h2><p className="mt-2 text-sm text-slate-500">Tambahkan pekerjaan pertama untuk project ini.</p><button onClick={openCreate} className="mt-6 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">+ Buat Task</button></div>:viewMode==='kanban'?<TaskKanbanBoard tasks={tasks} deletingId={deletingId} onAssignees={openAssignees} onEdit={openEdit} onDelete={handleDelete} onStatusChange={handleKanbanStatusChange}/>:<div className="grid gap-4 md:grid-cols-2">{tasks.map(task=><TaskCard key={task.id} task={task} deleting={deletingId===task.id} onAssignees={openAssignees} onEdit={openEdit} onDelete={handleDelete}/>)}</div>}

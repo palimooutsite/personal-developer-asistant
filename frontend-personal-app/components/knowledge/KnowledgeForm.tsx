@@ -46,7 +46,7 @@ export function KnowledgeForm({
           <textarea id="knowledge-content" value={content} onChange={(e) => onContentChange(e.target.value)} required rows={12} className="w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-4 font-mono text-sm leading-6 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-50" placeholder="Tulis dokumentasi atau catatan teknis di sini..." />
         </div>
         <div className="flex flex-col-reverse gap-3 border-t border-zinc-100 pt-5 sm:flex-row sm:justify-end">
-          <button type="button" onClick={onClose} className="rounded-xl border border-zinc-300 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50">Batal</button>
+          <button type="button" onClick={onClose} className="rounded-xl border border-zinc-300 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-100">Batal</button>
           <button type="submit" disabled={saving} className="rounded-xl bg-violet-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-900 disabled:cursor-not-allowed disabled:opacity-50">{saving ? 'Menyimpan...' : editingId ? 'Simpan Perubahan' : 'Simpan Knowledge'}</button>
         </div>
       </form>

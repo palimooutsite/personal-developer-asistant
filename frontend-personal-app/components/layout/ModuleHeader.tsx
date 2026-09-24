@@ -35,12 +35,12 @@ export function ModuleHeader({
     <header className="mb-8">
       <Link
         href="/"
-        className="mb-4 inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
+        className="mb-4 inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-200"
       >
         ← Kembali ke Menu
       </Link>
 
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div
             className={`mb-3 inline-flex items-center gap-2 rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm ${ACCENT_STYLES[accent]}`}
@@ -51,7 +51,7 @@ export function ModuleHeader({
             {label}
           </div>
 
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{title}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">{title}</h1>
           <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-zinc-400">
             {subtitle}
           </p>
@@ -60,7 +60,7 @@ export function ModuleHeader({
           </p>
         </div>
 
-        {action ? <div className="flex flex-col gap-2 sm:flex-row">{action}</div> : null}
+        {action ? <div className="w-full shrink-0 sm:w-auto">{action}</div> : null}
       </div>
     </header>
   );

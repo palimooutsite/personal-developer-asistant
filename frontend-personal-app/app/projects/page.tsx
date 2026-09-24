@@ -266,7 +266,7 @@ export default function ProjectsPage() {
 
           {loading ? (
             <div className="grid gap-4 md:grid-cols-2">
-              {[1, 2].map((item) => <div key={item} className="h-48 animate-pulse rounded-2xl border border-zinc-200 bg-white" />)}
+              {[1, 2].map((item) => <div key={item} className="h-48 animate-pulse rounded-2xl border border-zinc-200 bg-zinc-100/70" />)}
             </div>
           ) : projects.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center">

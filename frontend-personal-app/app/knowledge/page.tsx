@@ -211,7 +211,7 @@ export default function KnowledgePage() {
 
         {loading ? (
           <div className="grid gap-4 md:grid-cols-2">
-            {[1,2,3,4].map((item) => <div key={item} className="h-48 animate-pulse rounded-2xl bg-white ring-1 ring-zinc-200" />)}
+            {[1,2,3,4].map((item) => <div key={item} className="h-48 animate-pulse rounded-2xl border border-zinc-200 bg-zinc-100/70" />)}
           </div>
         ) : articles.length === 0 ? (
           <section className="rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center">

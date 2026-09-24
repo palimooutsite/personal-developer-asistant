@@ -37,6 +37,18 @@ export interface TaskListResponse extends TaskResponse {
   assignees: TaskAssigneeSummary[];
 }
 
+export interface TaskPaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface TaskPaginatedResponse {
+  data: TaskListResponse[];
+  meta: TaskPaginationMeta;
+}
+
 export interface TaskAssigneeSummary {
   userId: string;
   username: string | null;
@@ -78,7 +90,10 @@ export class TasksService {
   async findAll(
     projectId: string,
     userId: string,
-  ): Promise<TaskListResponse[]> {
+    page = 1,
+    limit = 10,
+    all = false,
+  ): Promise<TaskPaginatedResponse | TaskListResponse[]> {
     await this.requireProjectMembership(projectId, userId);
 
     const project = await this.prisma.client.orm.public.Project
@@ -133,7 +148,27 @@ export class TasksService {
       });
     }
 
-    return result;
+    if (all) {
+      return result;
+    }
+
+    const normalizedLimit = Math.min(50, Math.max(1, limit));
+    const total = result.length;
+    const totalPages = Math.ceil(total / normalizedLimit);
+    const safePage = totalPages > 0
+      ? Math.min(Math.max(1, page), totalPages)
+      : 1;
+    const start = (safePage - 1) * normalizedLimit;
+
+    return {
+      data: result.slice(start, start + normalizedLimit),
+      meta: {
+        page: safePage,
+        limit: normalizedLimit,
+        total,
+        totalPages,
+      },
+    };
   }
 
   async findOne(

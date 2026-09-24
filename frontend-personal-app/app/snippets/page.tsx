@@ -247,7 +247,7 @@ export default function SnippetsPage() {
               Mulai simpan potongan kode yang sering Anda gunakan supaya bisa ditemukan kembali dengan cepat.
             </p>
             <button type="button" onClick={startCreate}
-              className="mt-5 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-700">
+              className="mt-5 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-100">
               + Buat Snippet Pertama
             </button>
           </div>

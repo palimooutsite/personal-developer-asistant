@@ -54,15 +54,15 @@ export function DateField({ value, onChange, id, label='Deadline' }: DateFieldPr
           <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.7"/><path d="M16 3v4M8 3v4M3 10h18" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>
         </span>
         <span className="min-w-0 flex-1"><span className={value?'block text-sm font-semibold text-zinc-800':'block text-sm font-medium text-zinc-400'}>{formatDate(value)}</span><span className="mt-0.5 block text-[11px] text-zinc-400">{value || 'Belum ditentukan'}</span></span>
-        {value?<span onClick={e=>{e.stopPropagation();onChange('')}} className="rounded-lg px-2 py-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700">×</span>:null}
+        {value?<span onClick={e=>{e.stopPropagation();onChange('')}} className="rounded-lg px-2 py-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 focus-within:ring-2 focus-within:ring-blue-100">×</span>:null}
         <svg viewBox="0 0 20 20" fill="none" className={`h-5 w-5 text-zinc-400 transition ${open?'rotate-180 text-blue-500':''}`}><path d="m5 7 5 5 5-5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
       </button>
 
       {open?<div className="absolute left-0 top-full z-50 mt-2 w-full min-w-[320px] max-w-[380px] rounded-2xl border border-zinc-200 bg-white p-4 shadow-2xl ring-1 ring-black/5">
         <div className="mb-4 flex items-center justify-between">
-          <button type="button" onClick={prevMonth} className="rounded-xl p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900">‹</button>
+          <button type="button" onClick={prevMonth} className="rounded-xl p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-100">‹</button>
           <div className="text-center"><p className="text-sm font-bold text-zinc-900">{MONTHS[viewMonth]}</p><p className="text-xs font-medium text-zinc-400">{viewYear}</p></div>
-          <button type="button" onClick={nextMonth} className="rounded-xl p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900">›</button>
+          <button type="button" onClick={nextMonth} className="rounded-xl p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-100">›</button>
         </div>
         <div className="grid grid-cols-7 gap-1">{WEEKDAYS.map(day=><div key={day} className="py-1 text-center text-[11px] font-bold uppercase text-zinc-400">{day}</div>)}</div>
         <div className="grid grid-cols-7 gap-1">
@@ -74,11 +74,11 @@ export function DateField({ value, onChange, id, label='Deadline' }: DateFieldPr
           })}
         </div>
         <div className="mt-4 flex gap-2 border-t border-zinc-100 pt-3">
-          <button type="button" onClick={()=>choose(today)} className="flex-1 rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100">Hari ini</button>
-          {value?<button type="button" onClick={()=>{onChange('');setOpen(false)}} className="rounded-lg px-3 py-2 text-xs font-semibold text-zinc-500 hover:bg-zinc-100">Hapus</button>:null}
+          <button type="button" onClick={()=>choose(today)} className="flex-1 rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-100">Hari ini</button>
+          {value?<button type="button" onClick={()=>{onChange('');setOpen(false)}} className="rounded-lg px-3 py-2 text-xs font-semibold text-zinc-500 hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-100">Hapus</button>:null}
         </div>
       </div>:null}
-      <div className="mt-2 flex flex-wrap gap-2">{[{label:'Besok',days:1},{label:'7 hari',days:7},{label:'30 hari',days:30}].map(item=><button key={item.label} type="button" onClick={()=>onChange(addDays(item.days))} className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-zinc-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">{item.label}</button>)}</div>
+      <div className="mt-2 flex flex-wrap gap-2">{[{label:'Besok',days:1},{label:'7 hari',days:7},{label:'30 hari',days:30}].map(item=><button key={item.label} type="button" onClick={()=>onChange(addDays(item.days))} className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-zinc-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100">{item.label}</button>)}</div>
     </div>
   );
 }

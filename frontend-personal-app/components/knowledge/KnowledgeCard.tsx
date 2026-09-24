@@ -3,11 +3,12 @@ import type { KnowledgeArticle } from '../../lib/knowledge';
 interface KnowledgeCardProps {
   article: KnowledgeArticle;
   tags: string[];
+  onOpen: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }
 
-export function KnowledgeCard({ article, tags, onEdit, onDelete }: KnowledgeCardProps) {
+export function KnowledgeCard({ article, tags, onOpen, onEdit, onDelete }: KnowledgeCardProps) {
   const date = new Date(article.updatedAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
   const preview = article.summary || article.content.replace(/\s+/g, ' ').slice(0, 180);
 
@@ -17,7 +18,7 @@ export function KnowledgeCard({ article, tags, onEdit, onDelete }: KnowledgeCard
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 font-bold text-violet-600">◈</div>
           <div className="min-w-0">
-            <h3 className="truncate font-bold text-zinc-900">{article.title}</h3>
+            <button type="button" onClick={onOpen} className="block max-w-full truncate text-left font-bold text-zinc-900 hover:text-violet-700">{article.title}</button>
             <p className="mt-0.5 truncate text-xs text-zinc-400">/{article.slug}</p>
           </div>
         </div>
@@ -26,7 +27,7 @@ export function KnowledgeCard({ article, tags, onEdit, onDelete }: KnowledgeCard
           <button type="button" onClick={onDelete} className="rounded-lg px-2.5 py-2 text-xs font-semibold text-red-500 hover:bg-red-50">Hapus</button>
         </div>
       </div>
-      <p className="mt-4 line-clamp-3 text-sm leading-6 text-zinc-500">{preview}</p>
+      <button type="button" onClick={onOpen} className="mt-4 block w-full text-left"><p className="line-clamp-3 text-sm leading-6 text-zinc-500">{preview}</p><span className="mt-3 inline-flex text-xs font-semibold text-violet-600">Baca selengkapnya →</span></button>
       <div className="mt-5 flex flex-wrap items-center gap-2">
         {tags.map((tag) => <span key={tag} className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700">{tag}</span>)}
         {tags.length === 0 && <span className="text-xs text-zinc-400">Belum ada tag</span>}

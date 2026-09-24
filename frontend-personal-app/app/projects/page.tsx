@@ -269,13 +269,13 @@ export default function ProjectsPage() {
               {[1, 2].map((item) => <div key={item} className="h-48 animate-pulse rounded-2xl border border-zinc-200 bg-white" />)}
             </div>
           ) : projects.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center shadow-sm">
+            <div className="rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-100 text-3xl text-zinc-400">+</div>
               <h3 className="mt-5 text-lg font-bold">Belum ada project</h3>
               <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">
                 Mulai dengan membuat project pertama kamu. Semua project, task, dan aktivitas development bisa dikelola dari sini.
               </p>
-              <button type="button" onClick={openCreateForm} className="mt-6 rounded-xl bg-zinc-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800">
+              <button type="button" onClick={openCreateForm} className="mt-5 rounded-xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-200">
                 + Buat Project Pertama
               </button>
             </div>

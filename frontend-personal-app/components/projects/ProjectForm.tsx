@@ -22,15 +22,12 @@ export function ProjectForm({
   onNameChange, onDescriptionChange, onStatusChange, onSubmit, onClose,
 }: ProjectFormProps) {
   return (
-    <section id="project-form" className="mb-8 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+    <section id="project-form" className="overflow-hidden bg-white">
       <div className="border-b border-zinc-100 bg-zinc-50/80 px-6 py-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">{editingId ? 'Project' : 'New Project'}</p>
-            <h2 className="mt-1 text-xl font-bold">{editingId ? 'Edit Project' : 'Buat Project Baru'}</h2>
-            <p className="mt-1 text-sm text-zinc-500">{editingId ? 'Perbarui informasi dan status project.' : 'Isi informasi dasar project untuk mulai bekerja.'}</p>
-          </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-2 text-xl leading-none text-zinc-400 transition hover:bg-white hover:text-zinc-700" aria-label="Tutup form">×</button>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">{editingId ? 'Project' : 'New Project'}</p>
+          <h2 className="mt-1 text-xl font-bold">{editingId ? 'Edit Project' : 'Buat Project Baru'}</h2>
+          <p className="mt-1 text-sm text-zinc-500">{editingId ? 'Perbarui informasi dan status project.' : 'Isi informasi dasar project untuk mulai bekerja.'}</p>
         </div>
       </div>
       <form onSubmit={onSubmit} className="grid gap-5 p-6">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ApiError, apiRequest } from '../lib/api';
@@ -48,24 +48,27 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [summaryError, setSummaryError] = useState(false);
 
-  useEffect(() => {
-    async function loadDashboard() {
-      try {
-        const currentUser = await getCurrentUser();
-        setUser(currentUser);
-        setSummary(await apiRequest<DashboardSummary>('/dashboard/summary'));
-      } catch (error) {
-        if (error instanceof ApiError && error.status === 401) {
-          router.replace('/login');
-          return;
-        }
-        setSummaryError(true);
-      } finally {
-        setLoading(false);
+  const loadDashboard = useCallback(async () => {
+    setLoading(true);
+    setSummaryError(false);
+    try {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+      setSummary(await apiRequest<DashboardSummary>('/dashboard/summary'));
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        router.replace('/login');
+        return;
       }
+      setSummaryError(true);
+    } finally {
+      setLoading(false);
     }
-    void loadDashboard();
   }, [router]);
+
+  useEffect(() => {
+    void loadDashboard();
+  }, [loadDashboard]);
 
   const totalTaskDone = useMemo(() => summary?.tasks.byStatus?.DONE ?? 0, [summary]);
 
@@ -122,8 +125,16 @@ export default function HomePage() {
           </div>
 
           {summaryError ? (
-            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
-              Ringkasan dashboard belum dapat dimuat. Menu utama tetap bisa digunakan.
+            <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800 sm:flex-row sm:items-center sm:justify-between">
+              <span>Ringkasan dashboard belum dapat dimuat. Menu utama tetap bisa digunakan.</span>
+              <button
+                type="button"
+                onClick={() => void loadDashboard()}
+                disabled={loading}
+                className="inline-flex shrink-0 items-center justify-center rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? 'Memuat...' : 'Coba lagi'}
+              </button>
             </div>
           ) : (
             <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

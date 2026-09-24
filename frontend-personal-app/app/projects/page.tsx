@@ -232,12 +232,22 @@ export default function ProjectsPage() {
         </Modal>
 
         {error ? (
-          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700">
-            <span className="mt-0.5 font-bold">!</span>
-            <div>
-              <p className="font-semibold">Terjadi kesalahan</p>
-              <p className="mt-0.5">{error}</p>
+          <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 font-bold">!</span>
+              <div>
+                <p className="font-semibold">Terjadi kesalahan</p>
+                <p className="mt-0.5">{error}</p>
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={() => void loadProjects()}
+              disabled={loading}
+              className="inline-flex shrink-0 items-center justify-center rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loading ? 'Memuat...' : 'Coba lagi'}
+            </button>
           </div>
         ) : null}
 

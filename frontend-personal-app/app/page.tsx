@@ -77,7 +77,7 @@ export default function HomePage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[#f6f7fb] p-6 sm:p-8">
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto w-full max-w-[1600px]">
           <div className="h-7 w-44 animate-pulse rounded-lg bg-zinc-200" />
           <div className="mt-4 h-12 w-80 max-w-full animate-pulse rounded-xl bg-zinc-200" />
           <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -93,7 +93,7 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-[#f6f7fb] text-zinc-950">
-      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-10">
+      <div className="mx-auto w-full max-w-[1600px] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 2xl:px-10 lg:py-10">
         <header className="flex flex-col gap-6 border-b border-zinc-200 pb-8 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700">

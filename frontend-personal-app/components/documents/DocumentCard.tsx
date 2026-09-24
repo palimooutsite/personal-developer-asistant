@@ -60,9 +60,9 @@ export function DocumentCard({ document, onEdit, onDelete, onOpen }: DocumentCar
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2 border-t border-zinc-100 pt-4">
+      <div className="mt-4 grid grid-cols-2 gap-2 border-t border-zinc-100 pt-4 sm:flex sm:flex-wrap">
         <button type="button" onClick={onOpen}
-          className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-bold text-white hover:bg-amber-700">
+          className="col-span-2 rounded-lg bg-amber-600 px-3 py-2 text-xs font-bold text-white hover:bg-amber-700 sm:col-span-1">
           Buka / Download
         </button>
         <button type="button" onClick={() => void copyPath()}

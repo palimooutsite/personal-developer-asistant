@@ -21,6 +21,6 @@ export function TaskForm(p: TaskFormProps) {
       <div><span className="mb-1.5 block text-sm font-semibold">Prioritas</span><StyledSelect value={p.priority} onChange={v=>p.onPriorityChange(v as TaskPriority)} options={Object.entries(priorities).map(([value,label])=>({value,label}))} /></div>
       <DateField id="task-due-date" value={p.dueDate} onChange={p.onDueDateChange} />
     </div>
-    <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" onClick={p.onClose} className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold hover:bg-slate-50">Batal</button><button type="submit" disabled={p.saving||!p.title.trim()} className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">{p.saving?'Menyimpan...':p.editing?'Simpan Perubahan':'Buat Task'}</button></div>
+    <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" onClick={p.onClose} className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-100">Batal</button><button type="submit" disabled={p.saving||!p.title.trim()} className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:opacity-50">{p.saving?'Menyimpan...':p.editing?'Simpan Perubahan':'Buat Task'}</button></div>
   </form>;
 }

@@ -8,6 +8,12 @@ enum ProjectStatus {
   ARCHIVED
 }
 
+enum TenantRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
 enum ProjectRole {
   OWNER
   ADMIN
@@ -42,10 +48,51 @@ model User {
 
   createdProjects Project[]
   projectMembers    ProjectMember[]
+  createdTenants Tenant[]
+  tenantMembers TenantMember[]
   createdTasks      Task[]
   knowledgeArticles KnowledgeArticle[]
   codeSnippets CodeSnippet[]
   documents Document[]
+}
+
+model Tenant {
+  id        String       @id @default(uuid())
+  name      String
+  createdBy String
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.updatedAtString()
+
+  creator User @relation(
+    fields: [createdBy],
+    references: [id]
+  )
+
+  members TenantMember[]
+
+  @@index([createdBy])
+}
+
+model TenantMember {
+  id        String     @id @default(uuid())
+  tenantId  String
+  userId    String
+  role      TenantRole
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.updatedAtString()
+
+  tenant Tenant @relation(
+    fields: [tenantId],
+    references: [id]
+  )
+
+  user User @relation(
+    fields: [userId],
+    references: [id]
+  )
+
+  @@unique([tenantId, userId])
+  @@index([userId])
 }
 
 model Project {

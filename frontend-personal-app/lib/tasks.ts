@@ -33,6 +33,18 @@ export interface CreateTaskInput {
   dueDate?: string;
 }
 
+export interface TaskPaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface TaskPaginatedResponse {
+  data: Task[];
+  meta: TaskPaginationMeta;
+}
+
 export interface UpdateTaskInput {
   title?: string;
   description?: string | null;
@@ -41,8 +53,12 @@ export interface UpdateTaskInput {
   dueDate?: string | null;
 }
 
-export async function getTasks(projectId: string): Promise<Task[]> {
-  return apiRequest<Task[]>(`/projects/${projectId}/tasks`);
+export async function getTasks(projectId: string, page = 1, limit = 10): Promise<TaskPaginatedResponse> {
+  return apiRequest<TaskPaginatedResponse>(`/projects/${projectId}/tasks?page=${page}&limit=${limit}`);
+}
+
+export async function getAllTasks(projectId: string): Promise<Task[]> {
+  return apiRequest<Task[]>(`/projects/${projectId}/tasks?all=true`);
 }
 
 export async function createTask(

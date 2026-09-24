@@ -115,8 +115,8 @@ export default function DocumentsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f6f7fb] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-10">
-      <div className="mx-auto max-w-7xl">
+    <main className="min-h-screen bg-[#f6f7fb] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 2xl:px-10 lg:py-10">
+      <div className="mx-auto w-full max-w-[1600px]">
         <ModuleHeader
           icon="▤"
           label="DOCUMENTS"

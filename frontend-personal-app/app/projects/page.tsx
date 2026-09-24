@@ -23,6 +23,7 @@ import { ProjectForm } from '../../components/projects/ProjectForm';
 import { ProjectMembersModal } from '../../components/projects/ProjectMembersModal';
 import { ProjectStats } from '../../components/projects/ProjectStats';
 import { ModuleHeader } from '../../components/layout/ModuleHeader';
+import { Modal } from '../../components/ui/Modal';
 
 type EditableRole = Exclude<ProjectRole, 'OWNER'>;
 
@@ -78,9 +79,6 @@ export default function ProjectsPage() {
   function openCreateForm() {
     resetForm();
     setFormOpen(true);
-    setTimeout(() => {
-      document.getElementById('project-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 0);
   }
 
   function startEdit(project: Project) {
@@ -89,9 +87,6 @@ export default function ProjectsPage() {
     setDescription(project.description ?? '');
     setStatus(project.status);
     setFormOpen(true);
-    setTimeout(() => {
-      document.getElementById('project-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 0);
   }
 
   async function openMembers(project: Project) {
@@ -207,15 +202,21 @@ export default function ProjectsPage() {
               onClick={formOpen ? closeForm : openCreateForm}
               className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-zinc-950 px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-md sm:w-auto"
             >
-              <span className="text-xl leading-none">{formOpen ? '×' : '+'}</span>
-              {formOpen ? 'Tutup Form' : 'Project Baru'}
+              <span className="text-xl leading-none">+</span>
+              Project Baru
             </button>
           }
         />
 
         {!loading && projects.length > 0 ? <ProjectStats projects={projects} /> : null}
 
-        {formOpen ? (
+        <Modal
+          open={formOpen}
+          onClose={closeForm}
+          title={editingId ? 'Edit Project' : 'Buat Project Baru'}
+          description={editingId ? 'Perbarui informasi dan status project.' : 'Isi informasi dasar project untuk mulai bekerja.'}
+          maxWidth="lg"
+        >
           <ProjectForm
             editingId={editingId}
             name={name}
@@ -228,7 +229,7 @@ export default function ProjectsPage() {
             onSubmit={handleSubmit}
             onClose={closeForm}
           />
-        ) : null}
+        </Modal>
 
         {error ? (
           <div className="mb-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700">

@@ -63,7 +63,7 @@ export function DocumentForm({
         type="button"
         disabled={submitting}
         onClick={() => inputRef.current?.click()}
-        className="w-full rounded-2xl border-2 border-dashed border-amber-200 bg-amber-50/50 px-6 py-8 text-center transition hover:border-amber-400 hover:bg-amber-50 disabled:opacity-50"
+        className="w-full rounded-2xl border-2 border-dashed border-amber-200 bg-amber-50/50 px-6 py-8 text-center transition hover:border-amber-400 hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-100 disabled:opacity-50"
       >
         <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-xl text-amber-700">↑</span>
         <span className="mt-3 block text-sm font-bold text-zinc-800">{file ? file.name : 'Pilih file document'}</span>
@@ -96,9 +96,9 @@ export function DocumentForm({
 
       <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <button type="button" onClick={onCancel} disabled={submitting}
-          className="rounded-xl border border-zinc-200 px-5 py-3 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 disabled:opacity-50">Batal</button>
+          className="rounded-xl border border-zinc-200 px-5 py-3 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-100 disabled:opacity-50">Batal</button>
         <button type="submit" disabled={submitting}
-          className="rounded-xl bg-amber-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50">
+          className="rounded-xl bg-amber-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-100 disabled:cursor-not-allowed disabled:opacity-50">
           {submitting ? 'Mengunggah...' : 'Upload Document'}
         </button>
       </div>

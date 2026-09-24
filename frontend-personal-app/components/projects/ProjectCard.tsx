@@ -56,9 +56,9 @@ export function ProjectCard({ project, onMembers, onEdit, onDelete }: ProjectCar
       <div className="mt-auto flex flex-col gap-3 border-t border-zinc-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
         <span className={`rounded-lg px-2.5 py-1 text-[11px] font-bold ${ROLE_STYLES[project.role]}`}>{project.role}</span>
         <div className="grid grid-cols-2 gap-2 sm:flex">
-          <button type="button" onClick={() => onMembers(project)} className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100">Members</button>
-          <button type="button" onClick={() => onEdit(project)} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50">Edit</button>
-          {project.role === 'OWNER' ? <button type="button" onClick={() => onDelete(project)} className="col-span-2 rounded-lg border border-red-100 px-3 py-2 text-xs font-semibold text-red-600 transition hover:border-red-200 hover:bg-red-50 sm:col-span-1">Hapus</button> : null}
+          <button type="button" onClick={() => onMembers(project)} className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-100">Members</button>
+          <button type="button" onClick={() => onEdit(project)} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-100">Edit</button>
+          {project.role === 'OWNER' ? <button type="button" onClick={() => onDelete(project)} className="col-span-2 rounded-lg border border-red-100 bg-white px-3 py-2 text-xs font-semibold text-red-600 transition hover:border-red-200 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-100 sm:col-span-1">Hapus</button> : null}
         </div>
       </div>
     </article>

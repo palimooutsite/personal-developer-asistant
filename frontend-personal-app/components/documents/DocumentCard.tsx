@@ -62,17 +62,17 @@ export function DocumentCard({ document, onEdit, onDelete, onOpen }: DocumentCar
 
       <div className="mt-4 grid grid-cols-2 gap-2 border-t border-zinc-100 pt-4 sm:flex sm:flex-wrap">
         <button type="button" onClick={onOpen}
-          className="col-span-2 rounded-lg bg-amber-600 px-3 py-2 text-xs font-bold text-white hover:bg-amber-700 sm:col-span-1">
+          className="col-span-2 rounded-lg bg-amber-600 px-3 py-2 text-xs font-bold text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-100 sm:col-span-1">
           Buka / Download
         </button>
         <button type="button" onClick={() => void copyPath()}
-          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800">
+          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-100">
           {copied ? '✓ Nama disalin' : 'Salin nama'}
         </button>
         <button type="button" onClick={onEdit}
-          className="rounded-lg px-3 py-2 text-xs font-semibold text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900">Edit</button>
+          className="rounded-lg px-3 py-2 text-xs font-semibold text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-100">Edit</button>
         <button type="button" onClick={onDelete}
-          className="rounded-lg px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 hover:text-red-600">Hapus</button>
+          className="rounded-lg px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-100">Hapus</button>
       </div>
     </article>
   );

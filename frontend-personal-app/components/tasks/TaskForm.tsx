@@ -12,8 +12,8 @@ export interface TaskFormProps {
 }
 
 export function TaskForm(p: TaskFormProps) {
-  return <form onSubmit={p.onSubmit} className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-    <div className="mb-5"><h2 className="text-lg font-bold">{p.editing ? 'Edit Task' : 'Task Baru'}</h2><p className="mt-1 text-sm text-slate-500">{p.editing ? 'Perbarui informasi task yang dipilih.' : 'Tambahkan task ke project ' + p.projectName + '.'}</p></div>
+  return <form onSubmit={p.onSubmit} className="bg-white p-5 sm:p-6">
+    <div className="mb-5"><p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Task Management</p><h2 className="mt-1 text-lg font-bold">{p.editing ? 'Edit Task' : 'Task Baru'}</h2><p className="mt-1 text-sm text-slate-500">{p.editing ? 'Perbarui informasi task yang dipilih.' : 'Tambahkan task ke project ' + p.projectName + '.'}</p></div>
     <div className="grid gap-4 md:grid-cols-2">
       <label className="md:col-span-2"><span className="mb-1.5 block text-sm font-semibold">Judul Task</span><input value={p.title} onChange={e=>p.onTitleChange(e.target.value)} maxLength={200} required className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100" placeholder="Contoh: Implementasi JWT authentication"/></label>
       <label className="md:col-span-2"><span className="mb-1.5 block text-sm font-semibold">Deskripsi</span><textarea value={p.description} onChange={e=>p.onDescriptionChange(e.target.value)} maxLength={2000} rows={4} className="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/></label>

@@ -81,13 +81,13 @@ export default function HomePage() {
     return (
       <main className="min-h-screen bg-[#f6f7fb] p-6 sm:p-8">
         <div className="mx-auto w-full max-w-[1600px]">
-          <div className="h-7 w-44 animate-pulse rounded-lg bg-zinc-200" />
-          <div className="mt-4 h-12 w-80 max-w-full animate-pulse rounded-xl bg-zinc-200" />
+          <div className="h-7 w-44 animate-pulse rounded-lg bg-zinc-200/80" />
+          <div className="mt-4 h-12 w-80 max-w-full animate-pulse rounded-xl bg-zinc-200/80" />
           <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {[1, 2, 3, 4].map((item) => <div key={item} className="h-32 animate-pulse rounded-2xl bg-white ring-1 ring-zinc-200" />)}
+            {[1, 2, 3, 4].map((item) => <div key={item} className="h-32 animate-pulse rounded-2xl border border-zinc-200 bg-zinc-100/70" />)}
           </div>
           <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {[1, 2, 3, 4, 5].map((item) => <div key={item} className="h-48 animate-pulse rounded-2xl bg-white ring-1 ring-zinc-200" />)}
+            {[1, 2, 3, 4, 5].map((item) => <div key={item} className="h-48 animate-pulse rounded-2xl border border-zinc-200 bg-zinc-100/70" />)}
           </div>
         </div>
       </main>

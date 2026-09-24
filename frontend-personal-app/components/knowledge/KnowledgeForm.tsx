@@ -20,7 +20,7 @@ export function KnowledgeForm({
   onTitleChange, onSlugChange, onSummaryChange, onContentChange, onSubmit, onClose,
 }: KnowledgeFormProps) {
   return (
-    <section id="knowledge-form" className="mb-8 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+    <section id="knowledge-form" className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
       <div className="border-b border-zinc-100 bg-zinc-50/80 px-6 py-5">
         <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">{editingId ? 'Knowledge Article' : 'New Article'}</p>
         <h2 className="mt-1 text-xl font-bold">{editingId ? 'Edit Knowledge' : 'Buat Knowledge Baru'}</h2>

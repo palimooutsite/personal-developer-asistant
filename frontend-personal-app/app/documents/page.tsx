@@ -115,7 +115,7 @@ export default function DocumentsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f6f7fb] px-4 py-8 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[#f6f7fb] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-10">
       <div className="mx-auto max-w-7xl">
         <ModuleHeader
           icon="▤"
@@ -126,7 +126,7 @@ export default function DocumentsPage() {
           accent="amber"
           action={
             <button type="button" onClick={startCreate}
-              className="rounded-xl bg-amber-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-amber-700 hover:shadow-md">
+              className="w-full rounded-xl bg-amber-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-amber-700 hover:shadow-md sm:w-auto">
               + Upload Document
             </button>
           }
@@ -170,7 +170,7 @@ export default function DocumentsPage() {
               placeholder="Cari document, nama file, deskripsi..."
               className="w-full rounded-xl border border-zinc-300 bg-white py-3 pl-11 pr-4 text-sm font-medium text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-50" />
           </div>
-          <div className="mt-4 flex flex-wrap gap-2 text-xs">
+          <div className="mt-4 flex flex-col gap-2 text-xs sm:flex-row sm:flex-wrap">
             <span className="rounded-full bg-amber-50 px-3 py-1.5 font-semibold text-amber-700">{filtered.length} document</span>
             {search ? <span className="rounded-full bg-zinc-100 px-3 py-1.5 text-zinc-500">Filter: {search}</span> : null}
           </div>

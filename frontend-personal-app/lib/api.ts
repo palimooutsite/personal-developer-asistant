@@ -45,6 +45,16 @@ export async function apiRequest<T>(
         ? data.message
         : 'Terjadi kesalahan pada API';
 
+    if (
+      response.status === 401 &&
+      typeof window !== 'undefined' &&
+      !path.startsWith('/auth/login') &&
+      !path.startsWith('/auth/register') &&
+      window.location.pathname !== '/login'
+    ) {
+      window.location.replace('/login');
+    }
+
     throw new ApiError(response.status, message);
   }
 

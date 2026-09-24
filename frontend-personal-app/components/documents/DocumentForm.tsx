@@ -51,7 +51,7 @@ export function DocumentForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl border border-amber-100 bg-white p-5 shadow-sm sm:p-6">
+    <form onSubmit={handleSubmit} className="rounded-2xl border border-amber-100 bg-white p-4 shadow-sm sm:p-6">
       <div className="mb-5">
         <h2 className="text-lg font-bold text-zinc-900">Upload Document</h2>
         <p className="mt-1 text-sm text-zinc-500">Format yang didukung: PDF, DOCX, TXT, dan Markdown. Maksimal 10 MB.</p>

@@ -1,0 +1,527 @@
+[
+  {
+    "id": "table.document",
+    "label": "Create table \"document\"",
+    "summary": "Creates table \"document\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "document"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"document\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"document\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"document\"",
+        "sql": "CREATE TABLE \"public\".\"document\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"createdBy\" text NOT NULL,\n  \"description\" text,\n  \"fileName\" text NOT NULL,\n  \"filePath\" text NOT NULL,\n  \"fileSize\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"mimeType\" text NOT NULL,\n  \"title\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"document\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"document\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.tenant",
+    "label": "Create table \"tenant\"",
+    "summary": "Creates table \"tenant\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "tenant"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"tenant\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"tenant\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"tenant\"",
+        "sql": "CREATE TABLE \"public\".\"tenant\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"createdBy\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"name\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"tenant\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"tenant\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.tenantMember",
+    "label": "Create table \"tenantMember\"",
+    "summary": "Creates table \"tenantMember\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "tenantMember"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"tenantMember\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"tenantMember\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"tenantMember\"",
+        "sql": "CREATE TABLE \"public\".\"tenantMember\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"role\" text NOT NULL,\n  \"tenantId\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"tenantMember_role_check_50a44636\" CHECK (\"role\" IN ('OWNER', 'ADMIN', 'MEMBER'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"tenantMember\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"tenantMember\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "setDefault.project.status",
+    "label": "Set default on \"project\".\"status\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "status",
+        "table": "project"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"status\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "project",
+          "status"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "set default on \"status\"",
+        "sql": "ALTER TABLE \"public\".\"project\" ALTER COLUMN \"status\" SET DEFAULT 'PLANNED'"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"status\" has a default",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"column_default\" IS NOT NULL)) AS \"result\"",
+        "params": [
+          "public",
+          "project",
+          "status"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.tenantMember.tenantMember_tenantId_userId_key",
+    "label": "Add unique constraint on \"tenantMember\" (tenantId, userId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "tenantMember_tenantId_userId_key",
+        "table": "tenantMember"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"tenantMember_tenantId_userId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "tenantMember_tenantId_userId_key",
+          "public",
+          "\"public\".\"tenantMember\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"tenantMember_tenantId_userId_key\"",
+        "sql": "ALTER TABLE \"public\".\"tenantMember\" ADD CONSTRAINT \"tenantMember_tenantId_userId_key\" UNIQUE (\"tenantId\", \"userId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"tenantMember_tenantId_userId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "tenantMember_tenantId_userId_key",
+          "public",
+          "\"public\".\"tenantMember\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.document.document_createdBy_idx_ba0f792f",
+    "label": "Create index \"document_createdBy_idx_ba0f792f\" on \"document\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "document_createdBy_idx_ba0f792f",
+        "table": "document"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"document_createdBy_idx_ba0f792f\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"document_createdBy_idx_ba0f792f\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"document_createdBy_idx_ba0f792f\"",
+        "sql": "CREATE INDEX \"document_createdBy_idx_ba0f792f\" ON \"public\".\"document\" (\"createdBy\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"document_createdBy_idx_ba0f792f\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"document_createdBy_idx_ba0f792f\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.tenant.tenant_createdBy_idx_ba0f792f",
+    "label": "Create index \"tenant_createdBy_idx_ba0f792f\" on \"tenant\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "tenant_createdBy_idx_ba0f792f",
+        "table": "tenant"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"tenant_createdBy_idx_ba0f792f\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"tenant_createdBy_idx_ba0f792f\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"tenant_createdBy_idx_ba0f792f\"",
+        "sql": "CREATE INDEX \"tenant_createdBy_idx_ba0f792f\" ON \"public\".\"tenant\" (\"createdBy\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"tenant_createdBy_idx_ba0f792f\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"tenant_createdBy_idx_ba0f792f\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.tenantMember.tenantMember_tenantId_idx_c93ed4f1",
+    "label": "Create index \"tenantMember_tenantId_idx_c93ed4f1\" on \"tenantMember\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "tenantMember_tenantId_idx_c93ed4f1",
+        "table": "tenantMember"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"tenantMember_tenantId_idx_c93ed4f1\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"tenantMember_tenantId_idx_c93ed4f1\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"tenantMember_tenantId_idx_c93ed4f1\"",
+        "sql": "CREATE INDEX \"tenantMember_tenantId_idx_c93ed4f1\" ON \"public\".\"tenantMember\" (\"tenantId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"tenantMember_tenantId_idx_c93ed4f1\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"tenantMember_tenantId_idx_c93ed4f1\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.tenantMember.tenantMember_userId_idx_a489d58a",
+    "label": "Create index \"tenantMember_userId_idx_a489d58a\" on \"tenantMember\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "tenantMember_userId_idx_a489d58a",
+        "table": "tenantMember"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"tenantMember_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"tenantMember_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"tenantMember_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"tenantMember_userId_idx_a489d58a\" ON \"public\".\"tenantMember\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"tenantMember_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"tenantMember_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.document.document_createdBy_fkey",
+    "label": "Add foreign key \"document_createdBy_fkey\" on \"document\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "document_createdBy_fkey",
+        "table": "document"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"document_createdBy_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "document_createdBy_fkey",
+          "public",
+          "\"public\".\"document\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"document_createdBy_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"document\"\nADD CONSTRAINT \"document_createdBy_fkey\"\nFOREIGN KEY (\"createdBy\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"document_createdBy_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "document_createdBy_fkey",
+          "public",
+          "\"public\".\"document\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.tenant.tenant_createdBy_fkey",
+    "label": "Add foreign key \"tenant_createdBy_fkey\" on \"tenant\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "tenant_createdBy_fkey",
+        "table": "tenant"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"tenant_createdBy_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "tenant_createdBy_fkey",
+          "public",
+          "\"public\".\"tenant\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"tenant_createdBy_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"tenant\"\nADD CONSTRAINT \"tenant_createdBy_fkey\"\nFOREIGN KEY (\"createdBy\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"tenant_createdBy_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "tenant_createdBy_fkey",
+          "public",
+          "\"public\".\"tenant\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.tenantMember.tenantMember_tenantId_fkey",
+    "label": "Add foreign key \"tenantMember_tenantId_fkey\" on \"tenantMember\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "tenantMember_tenantId_fkey",
+        "table": "tenantMember"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"tenantMember_tenantId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "tenantMember_tenantId_fkey",
+          "public",
+          "\"public\".\"tenantMember\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"tenantMember_tenantId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"tenantMember\"\nADD CONSTRAINT \"tenantMember_tenantId_fkey\"\nFOREIGN KEY (\"tenantId\")\nREFERENCES \"public\".\"tenant\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"tenantMember_tenantId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "tenantMember_tenantId_fkey",
+          "public",
+          "\"public\".\"tenantMember\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.tenantMember.tenantMember_userId_fkey",
+    "label": "Add foreign key \"tenantMember_userId_fkey\" on \"tenantMember\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "tenantMember_userId_fkey",
+        "table": "tenantMember"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"tenantMember_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "tenantMember_userId_fkey",
+          "public",
+          "\"public\".\"tenantMember\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"tenantMember_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"tenantMember\"\nADD CONSTRAINT \"tenantMember_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"tenantMember_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "tenantMember_userId_fkey",
+          "public",
+          "\"public\".\"tenantMember\""
+        ]
+      }
+    ]
+  }
+]

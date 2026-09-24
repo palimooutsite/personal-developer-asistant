@@ -255,8 +255,8 @@ export default function KnowledgePage() {
               <div className="mt-6 flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3">
                 <p className="text-sm text-zinc-500">Halaman {meta.page} dari {meta.totalPages}</p>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <button type="button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)} className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-semibold disabled:opacity-40">← Sebelumnya</button>
-                  <button type="button" disabled={page >= meta.totalPages} onClick={() => setPage((value) => value + 1)} className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-semibold disabled:opacity-40">Berikutnya →</button>
+                  <button type="button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)} className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-semibold transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:cursor-not-allowed disabled:opacity-40">← Sebelumnya</button>
+                  <button type="button" disabled={page >= meta.totalPages} onClick={() => setPage((value) => value + 1)} className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-semibold transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:cursor-not-allowed disabled:opacity-40">Berikutnya →</button>
                 </div>
               </div>
             )}

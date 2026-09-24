@@ -39,7 +39,8 @@ export function StyledSelect({ value, onChange, options, placeholder='Pilih...',
           <div className="max-h-64 overflow-y-auto">
             {options.length ? options.map(option => (
               <button key={option.value} type="button" onClick={() => { onChange(option.value); setOpen(false); }}
-                aria-selected={option.value === value}\n                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition focus:outline-none focus:ring-2 focus:ring-blue-100 ${option.value === value ? 'bg-blue-50 text-blue-700' : 'text-zinc-700 hover:bg-zinc-50'}`}>
+                aria-selected={option.value === value}
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition focus:outline-none focus:ring-2 focus:ring-blue-100 ${option.value === value ? 'bg-blue-50 text-blue-700' : 'text-zinc-700 hover:bg-zinc-50'}`}>
                 {option.icon ? <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${option.value === value ? 'bg-blue-100 text-blue-600' : 'bg-zinc-100 text-zinc-500'}`}>{option.icon}</span> : null}
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold">{option.label}</span>

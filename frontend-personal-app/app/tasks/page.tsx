@@ -67,7 +67,7 @@ export default function TasksPage() {
   async function handleAddAssignee(){if(!assigneeTask||!assigneeUserId)return;try{setAssigneeSaving(true);setError('');await addTaskAssignee(projectId,assigneeTask.id,assigneeUserId);const m=members.find(x=>x.userId===assigneeUserId);if(m){const a={taskId:assigneeTask.id,projectId,userId:m.userId,username:m.user.username,email:m.user.email,name:m.user.name};setTasks(c=>c.map(t=>t.id===assigneeTask.id?{...t,assignees:[...(t.assignees??[]),a]}:t));setAssigneeTask(c=>c?{...c,assignees:[...(c.assignees??[]),a]}:c);}setAssigneeUserId('');}catch(e){setError(e instanceof Error?e.message:'Gagal menambahkan assignee');}finally{setAssigneeSaving(false);}}
   async function handleRemoveAssignee(userId:string){if(!assigneeTask)return;try{setAssigneeSaving(true);setError('');await removeTaskAssignee(projectId,assigneeTask.id,userId);setTasks(c=>c.map(t=>t.id===assigneeTask.id?{...t,assignees:(t.assignees??[]).filter(a=>a.userId!==userId)}:t));setAssigneeTask(c=>c?{...c,assignees:(c.assignees??[]).filter(a=>a.userId!==userId)}:c);}catch(e){setError(e instanceof Error?e.message:'Gagal menghapus assignee');}finally{setAssigneeSaving(false);}}
 
-  return <main className="min-h-screen bg-[#f6f7fb] px-4 py-5 text-zinc-950 sm:px-6 sm:py-6 lg:px-8 lg:py-10"><div className="mx-auto max-w-7xl">
+  return <main className="min-h-screen bg-[#f6f7fb] px-4 py-5 text-zinc-950 sm:px-6 sm:py-6 lg:px-8 2xl:px-10 lg:py-10"><div className="mx-auto w-full max-w-[1600px]">
     <ModuleHeader
       icon="✓"
       label="TASKS"

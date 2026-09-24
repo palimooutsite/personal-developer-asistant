@@ -45,7 +45,7 @@ export function DocumentEditForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-2xl border border-amber-100 bg-white p-4 shadow-sm sm:p-6"
+      className="bg-white p-4 sm:p-6"
     >
       <div className="mb-5">
         <p className="text-xs font-bold uppercase tracking-wider text-amber-600">

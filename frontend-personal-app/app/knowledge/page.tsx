@@ -79,7 +79,6 @@ export default function KnowledgePage() {
     setReadingArticle(null);
     resetForm();
     setShowForm(true);
-    setTimeout(() => document.getElementById('knowledge-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
   }
 
   function openEdit(article: KnowledgeArticle) {
@@ -90,7 +89,6 @@ export default function KnowledgePage() {
     setSummary(article.summary ?? '');
     setContent(article.content);
     setShowForm(true);
-    setTimeout(() => document.getElementById('knowledge-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -117,7 +115,6 @@ export default function KnowledgePage() {
     setEditingId(null);
     setReadingArticle(article);
     setError('');
-    setTimeout(() => document.getElementById('knowledge-reader')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
   }
 
   async function handleDelete(article: KnowledgeArticle) {
@@ -162,17 +159,10 @@ export default function KnowledgePage() {
 
         {error && <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
-        {readingArticle && !showForm && (
-          <KnowledgeReader
-            article={readingArticle}
-            tags={articleTags[readingArticle.id] ?? []}
-            onBack={() => setReadingArticle(null)}
-            onEdit={() => openEdit(readingArticle)}
-          />
-        )}
-
         {showForm && (
-          <KnowledgeForm
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/50 p-0 backdrop-blur-sm sm:items-center sm:p-4" role="dialog" aria-modal="true">
+            <div className="max-h-[95vh] w-full overflow-y-auto sm:max-w-4xl sm:rounded-2xl">
+              <KnowledgeForm
             editingId={editingId}
             title={title}
             slug={slug}
@@ -185,6 +175,17 @@ export default function KnowledgePage() {
             onContentChange={setContent}
             onSubmit={handleSubmit}
             onClose={resetForm}
+          />
+            </div>
+          </div>
+        )}
+
+        {readingArticle && !showForm && (
+          <KnowledgeReader
+            article={readingArticle}
+            tags={articleTags[readingArticle.id] ?? []}
+            onBack={() => setReadingArticle(null)}
+            onEdit={() => openEdit(readingArticle)}
           />
         )}
 

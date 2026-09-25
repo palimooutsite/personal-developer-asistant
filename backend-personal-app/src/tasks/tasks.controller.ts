@@ -69,6 +69,7 @@ export class TasksController {
       projectId,
       taskId,
       req.user.userId,
+      req.tenant.tenantId,
       body,
     );
   }
@@ -84,6 +85,7 @@ export class TasksController {
       projectId,
       taskId,
       req.user.userId,
+      req.tenant.tenantId,
       body,
     );
   }
@@ -129,6 +131,7 @@ export class TasksController {
       projectId,
       taskId,
       req.user.userId,
+      req.tenant.tenantId,
     );
   }
 

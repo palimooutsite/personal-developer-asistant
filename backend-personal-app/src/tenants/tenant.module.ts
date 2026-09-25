@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 
 import { TenantController } from './tenant.controller.js';
 import { TenantService } from './tenant.service.js';
+import { TenantContextGuard } from './guard/tenant-context.guard.js';
 
 @Module({
   imports: [
@@ -15,8 +16,9 @@ import { TenantService } from './tenant.service.js';
   controllers: [TenantController],
   providers: [
     TenantService,
+    TenantContextGuard,
     PrismaService,
   ],
-  exports: [TenantService],
+  exports: [TenantService, TenantContextGuard],
 })
 export class TenantModule {}

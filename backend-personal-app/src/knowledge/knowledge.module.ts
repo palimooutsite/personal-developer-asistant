@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
-
+import { TenantModule } from '../tenants/tenant.module.js';
 import { KnowledgeController } from './knowledge.controller.js';
 import { KnowledgeService } from './knowledge.service.js';
 import { TagsController } from './tags.controller.js';
@@ -14,6 +14,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
     PassportModule.register({
       defaultStrategy: 'jwt',
     }),
+    TenantModule
   ],
   controllers: [
     KnowledgeController,

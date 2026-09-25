@@ -25,57 +25,86 @@ export class KnowledgeService {
 
   async create(
     userId: string,
+    tenantId: string,
     data: CreateKnowledgeArticleDto,
   ): Promise<KnowledgeArticleResponse> {
-    const existing = await this.prisma.client.orm.public.KnowledgeArticle
-      .where({ slug: data.slug })
-      .select('id')
-      .first();
+    const existing =
+      await this.prisma.client.orm.public.KnowledgeArticle
+        .where({
+          tenantId,
+          slug: data.slug,
+        })
+        .select('id')
+        .first();
 
     if (existing) {
-      throw new ConflictException('Slug artikel sudah digunakan');
+      throw new ConflictException(
+        'Slug artikel sudah digunakan',
+      );
     }
 
-    const article = await this.prisma.client.orm.public.KnowledgeArticle.create({
-      title: data.title,
-      slug: data.slug,
-      content: data.content,
-      summary: data.summary,
-      createdBy: userId,
-    });
+    const article =
+      await this.prisma.client.orm.public.KnowledgeArticle.create({
+        title: data.title,
+        slug: data.slug,
+        content: data.content,
+        summary: data.summary,
+        createdBy: userId,
+        tenantId,
+      });
 
     return article;
   }
 
   async findAll(
     userId: string,
-    query: { search?: string; tag?: string; page?: number; limit?: number } = {},
+    tenantId: string,
+    query: {
+      search?: string;
+      tag?: string;
+      page?: number;
+      limit?: number;
+    } = {},
   ): Promise<{
     data: KnowledgeArticleResponse[];
-    meta: { page: number; limit: number; total: number; totalPages: number };
+    meta: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
   }> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const search = query.search?.trim().toLowerCase();
     const tag = query.tag?.trim().toLowerCase();
 
-    let articles = await this.prisma.client.orm.public.KnowledgeArticle
-      .where({ createdBy: userId })
-      .select(
-        'id',
-        'title',
-        'slug',
-        'content',
-        'summary',
-        'createdBy',
-        'createdAt',
-        'updatedAt',
-      )
-      .all();
+    let articles =
+      await this.prisma.client.orm.public.KnowledgeArticle
+        .where({
+          tenantId,
+          createdBy: userId,
+        })
+        .select(
+          'id',
+          'title',
+          'slug',
+          'content',
+          'summary',
+          'createdBy',
+          'createdAt',
+          'updatedAt',
+        )
+        .all();
 
     if (search) {
       articles = articles.filter((article) =>
-        [article.title, article.slug, article.content, article.summary ?? '']
+        [
+          article.title,
+          article.slug,
+          article.content,
+          article.summary ?? '',
+        ]
           .join(' ')
           .toLowerCase()
           .includes(search),
@@ -83,53 +112,88 @@ export class KnowledgeService {
     }
 
     if (tag) {
-      const tags = await this.prisma.client.orm.public.Tag
-        .where({ name: tag })
-        .select('id')
-        .first();
+      const tags =
+        await this.prisma.client.orm.public.Tag
+          .where({
+            tenantId,
+            name: tag,
+          })
+          .select('id')
+          .first();
 
       if (!tags) {
         articles = [];
       } else {
-        const taggedArticles = await this.prisma.client.orm.public.KnowledgeArticleTag
-          .where({ tagId: tags.id })
-          .select('articleId')
-          .all();
-        const ids = new Set(taggedArticles.map((item) => item.articleId));
-        articles = articles.filter((article) => ids.has(article.id));
+        const taggedArticles =
+          await this.prisma.client.orm.public.KnowledgeArticleTag
+            .where({
+              tagId: tags.id,
+            })
+            .select('articleId')
+            .all();
+
+        const ids = new Set(
+          taggedArticles.map(
+            (item) => item.articleId,
+          ),
+        );
+
+        articles = articles.filter(
+          (article) => ids.has(article.id),
+        );
       }
     }
 
     const total = articles.length;
-    const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
+    const totalPages =
+      total === 0
+        ? 0
+        : Math.ceil(total / limit);
+
     const start = (page - 1) * limit;
 
     return {
-      data: articles.slice(start, start + limit),
-      meta: { page, limit, total, totalPages },
+      data: articles.slice(
+        start,
+        start + limit,
+      ),
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
     };
   }
 
   async findOne(
     userId: string,
+    tenantId: string,
     id: string,
   ): Promise<KnowledgeArticleResponse> {
-    const article = await this.prisma.client.orm.public.KnowledgeArticle
-      .where({ id, createdBy: userId })
-      .select(
-        'id',
-        'title',
-        'slug',
-        'content',
-        'summary',
-        'createdBy',
-        'createdAt',
-        'updatedAt',
-      )
-      .first();
+    const article =
+      await this.prisma.client.orm.public.KnowledgeArticle
+        .where({
+          id,
+          tenantId,
+          createdBy: userId,
+        })
+        .select(
+          'id',
+          'title',
+          'slug',
+          'content',
+          'summary',
+          'createdBy',
+          'createdAt',
+          'updatedAt',
+        )
+        .first();
 
     if (!article) {
-      throw new NotFoundException('Artikel knowledge tidak ditemukan');
+      throw new NotFoundException(
+        'Artikel knowledge tidak ditemukan',
+      );
     }
 
     return article;
@@ -137,59 +201,97 @@ export class KnowledgeService {
 
   async update(
     userId: string,
+    tenantId: string,
     id: string,
     data: UpdateKnowledgeArticleDto,
   ): Promise<KnowledgeArticleResponse> {
-    const article = await this.prisma.client.orm.public.KnowledgeArticle
-      .where({ id, createdBy: userId })
-      .select('id')
-      .first();
-
-    if (!article) {
-      throw new NotFoundException('Artikel knowledge tidak ditemukan');
-    }
-
-    if (data.slug !== undefined) {
-      const existing = await this.prisma.client.orm.public.KnowledgeArticle
-        .where({ slug: data.slug })
+    const article =
+      await this.prisma.client.orm.public.KnowledgeArticle
+        .where({
+          id,
+          tenantId,
+          createdBy: userId,
+        })
         .select('id')
         .first();
 
+    if (!article) {
+      throw new NotFoundException(
+        'Artikel knowledge tidak ditemukan',
+      );
+    }
+
+    if (data.slug !== undefined) {
+      const existing =
+        await this.prisma.client.orm.public.KnowledgeArticle
+          .where({
+            tenantId,
+            slug: data.slug,
+          })
+          .select('id')
+          .first();
+
       if (existing && existing.id !== id) {
-        throw new ConflictException('Slug artikel sudah digunakan');
+        throw new ConflictException(
+          'Slug artikel sudah digunakan',
+        );
       }
     }
 
-    const updated = await this.prisma.client.orm.public.KnowledgeArticle
-      .where({ id, createdBy: userId })
-      .update({
-        title: data.title,
-        slug: data.slug,
-        content: data.content,
-        summary: data.summary,
-      });
+    const updated =
+      await this.prisma.client.orm.public.KnowledgeArticle
+        .where({
+          id,
+          tenantId,
+          createdBy: userId,
+        })
+        .update({
+          title: data.title,
+          slug: data.slug,
+          content: data.content,
+          summary: data.summary,
+        });
 
     if (!updated) {
-      throw new NotFoundException('Artikel knowledge tidak ditemukan');
+      throw new NotFoundException(
+        'Artikel knowledge tidak ditemukan',
+      );
     }
 
     return updated;
   }
 
-  async remove(userId: string, id: string): Promise<{ message: string }> {
-    const article = await this.prisma.client.orm.public.KnowledgeArticle
-      .where({ id, createdBy: userId })
-      .select('id')
-      .first();
+  async remove(
+    userId: string,
+    tenantId: string,
+    id: string,
+  ): Promise<{ message: string }> {
+    const article =
+      await this.prisma.client.orm.public.KnowledgeArticle
+        .where({
+          id,
+          tenantId,
+          createdBy: userId,
+        })
+        .select('id')
+        .first();
 
     if (!article) {
-      throw new NotFoundException('Artikel knowledge tidak ditemukan');
+      throw new NotFoundException(
+        'Artikel knowledge tidak ditemukan',
+      );
     }
 
     await this.prisma.client.orm.public.KnowledgeArticle
-      .where({ id, createdBy: userId })
+      .where({
+        id,
+        tenantId,
+        createdBy: userId,
+      })
       .delete();
 
-    return { message: 'Artikel knowledge berhasil dihapus' };
+    return {
+      message: 'Artikel knowledge berhasil dihapus',
+    };
   }
 }

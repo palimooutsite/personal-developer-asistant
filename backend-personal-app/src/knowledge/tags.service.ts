@@ -19,11 +19,17 @@ export interface TagResponse {
 export class TagsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: CreateTagDto): Promise<TagResponse> {
+  async create(
+    tenantId: string,
+    data: CreateTagDto,
+  ): Promise<TagResponse> {
     const name = data.name.trim();
 
     const existing = await this.prisma.client.orm.public.Tag
-      .where({ name })
+      .where({
+        tenantId,
+        name,
+      })
       .select('id')
       .first();
 
@@ -31,19 +37,41 @@ export class TagsService {
       throw new ConflictException('Tag sudah digunakan');
     }
 
-    return this.prisma.client.orm.public.Tag.create({ name });
+    return this.prisma.client.orm.public.Tag.create({
+      tenantId,
+      name,
+    });
   }
 
-  async findAll(): Promise<TagResponse[]> {
+  async findAll(
+    tenantId: string,
+  ): Promise<TagResponse[]> {
     return this.prisma.client.orm.public.Tag
-      .select('id', 'name', 'createdAt', 'updatedAt')
+      .where({ tenantId })
+      .select(
+        'id',
+        'name',
+        'createdAt',
+        'updatedAt',
+      )
       .all();
   }
 
-  async findOne(id: string): Promise<TagResponse> {
+  async findOne(
+    tenantId: string,
+    id: string,
+  ): Promise<TagResponse> {
     const tag = await this.prisma.client.orm.public.Tag
-      .where({ id })
-      .select('id', 'name', 'createdAt', 'updatedAt')
+      .where({
+        id,
+        tenantId,
+      })
+      .select(
+        'id',
+        'name',
+        'createdAt',
+        'updatedAt',
+      )
       .first();
 
     if (!tag) {
@@ -53,12 +81,23 @@ export class TagsService {
     return tag;
   }
 
-  async update(id: string, data: UpdateTagDto): Promise<TagResponse> {
-    const tag = await this.findOne(id);
+  async update(
+    tenantId: string,
+    id: string,
+    data: UpdateTagDto,
+  ): Promise<TagResponse> {
+    const tag = await this.findOne(
+      tenantId,
+      id,
+    );
+
     const name = data.name.trim();
 
     const existing = await this.prisma.client.orm.public.Tag
-      .where({ name })
+      .where({
+        tenantId,
+        name,
+      })
       .select('id')
       .first();
 
@@ -67,8 +106,13 @@ export class TagsService {
     }
 
     const updated = await this.prisma.client.orm.public.Tag
-      .where({ id })
-      .update({ name });
+      .where({
+        id,
+        tenantId,
+      })
+      .update({
+        name,
+      });
 
     if (!updated) {
       throw new NotFoundException('Tag tidak ditemukan');
@@ -77,11 +121,19 @@ export class TagsService {
     return updated;
   }
 
-  async remove(id: string): Promise<{ message: string }> {
-    await this.findOne(id);
+  async remove(
+    tenantId: string,
+    id: string,
+  ): Promise<{ message: string }> {
+    await this.findOne(
+      tenantId,
+      id,
+    );
 
     const usage = await this.prisma.client.orm.public.KnowledgeArticleTag
-      .where({ tagId: id })
+      .where({
+        tagId: id,
+      })
       .select('id')
       .first();
 
@@ -92,7 +144,9 @@ export class TagsService {
     }
 
     const snippetUsage = await this.prisma.client.orm.public.SnippetTag
-      .where({ tagId: id })
+      .where({
+        tagId: id,
+      })
       .select('id')
       .first();
 
@@ -102,8 +156,15 @@ export class TagsService {
       );
     }
 
-    await this.prisma.client.orm.public.Tag.where({ id }).delete();
+    await this.prisma.client.orm.public.Tag
+      .where({
+        id,
+        tenantId,
+      })
+      .delete();
 
-    return { message: 'Tag berhasil dihapus' };
+    return {
+      message: 'Tag berhasil dihapus',
+    };
   }
 }

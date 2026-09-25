@@ -68,7 +68,7 @@ export class TasksService {
     await this.requireMutationAccess(projectId, userId, tenantId);
 
     const project = await this.prisma.client.orm.public.Project
-      .where({ id: projectId })
+      .where({ id: projectId, tenantId })
       .select('id')
       .first();
 

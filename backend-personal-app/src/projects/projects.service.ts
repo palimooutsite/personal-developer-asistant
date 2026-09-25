@@ -22,6 +22,7 @@ export interface ProjectResponse {
     role: string;
   };
 }
+
 export interface ProjectListItem {
   id: string;
   name: string;
@@ -30,6 +31,7 @@ export interface ProjectListItem {
   createdBy: string;
   role: string;
 }
+
 export interface ProjectMemberListItem {
   id: string;
   projectId: string;
@@ -42,6 +44,7 @@ export interface ProjectMemberListItem {
     name: string | null;
   };
 }
+
 @Injectable()
 export class ProjectsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -49,12 +52,14 @@ export class ProjectsService {
   async create(
     data: CreateProjectDto,
     userId: string,
+    tenantId: string,
   ): Promise<ProjectResponse> {
     return this.prisma.client.transaction(async (tx) => {
       const project = await tx.orm.public.Project.create({
         name: data.name,
         description: data.description,
         createdBy: userId,
+        tenantId,
       });
 
       await tx.orm.public.ProjectMember.create({
@@ -80,9 +85,10 @@ export class ProjectsService {
   async update(
     projectId: string,
     userId: string,
+    tenantId: string,
     data: UpdateProjectDto,
   ): Promise<ProjectListItem> {
-    const membership = await this.getMembership(projectId, userId);
+    const membership = await this.getMembership(projectId, userId, tenantId);
 
     if (membership.role !== 'OWNER' && membership.role !== 'ADMIN') {
       throw new ForbiddenException(
@@ -96,21 +102,16 @@ export class ProjectsService {
       status?: UpdateProjectDto['status'];
     } = {};
 
-    if (data.name !== undefined) {
-      updateData.name = data.name;
-    }
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.status !== undefined) updateData.status = data.status;
 
-    if (data.description !== undefined) {
-      updateData.description = data.description;
-    }
-
-    if (data.status !== undefined) {
-      updateData.status = data.status;
-    }
-
-    const updated = await this.prisma.client.orm.public.Project.where({
-      id: projectId,
-    }).update(updateData);
+    const updated = await this.prisma.client.orm.public.Project
+      .where({
+        id: projectId,
+        tenantId,
+      })
+      .update(updateData);
 
     if (!updated) {
       throw new NotFoundException(
@@ -127,11 +128,13 @@ export class ProjectsService {
       role: membership.role,
     };
   }
+
   async remove(
     projectId: string,
     userId: string,
+    tenantId: string,
   ): Promise<{ message: string }> {
-    const membership = await this.getMembership(projectId, userId);
+    const membership = await this.getMembership(projectId, userId, tenantId);
 
     if (membership.role !== 'OWNER') {
       throw new ForbiddenException('Hanya OWNER yang dapat menghapus project');
@@ -140,46 +143,38 @@ export class ProjectsService {
     return this.prisma.client.transaction(async (tx) => {
       const project = await tx.orm.public.Project.where({
         id: projectId,
+        tenantId,
       }).first();
 
       if (!project) {
         throw new NotFoundException('Project tidak ditemukan');
       }
 
-      await tx.orm.public.ProjectMember.where({
-        projectId,
-      }).delete();
+      await tx.orm.public.ProjectMember.where({ projectId }).delete();
+      await tx.orm.public.Project.where({ id: projectId, tenantId }).delete();
 
-      await tx.orm.public.Project.where({
-        id: projectId,
-      }).delete();
-
-      return {
-        message: 'Project berhasil dihapus',
-      };
+      return { message: 'Project berhasil dihapus' };
     });
   }
-  async findAll(userId: string): Promise<ProjectListItem[]> {
-    const memberships = await this.prisma.client.orm.public.ProjectMember.where(
-      {
-        userId,
-      },
-    )
+
+  async findAll(userId: string, tenantId: string): Promise<ProjectListItem[]> {
+    const memberships = await this.prisma.client.orm.public.ProjectMember
+      .where({ userId })
       .select('projectId', 'role')
       .all();
 
     const results: ProjectListItem[] = [];
 
     for (const membership of memberships) {
-      const project = await this.prisma.client.orm.public.Project.where({
-        id: membership.projectId,
-      })
+      const project = await this.prisma.client.orm.public.Project
+        .where({
+          id: membership.projectId,
+          tenantId,
+        })
         .select('id', 'name', 'description', 'status', 'createdBy')
         .first();
 
-      if (!project) {
-        continue;
-      }
+      if (!project) continue;
 
       results.push({
         id: project.id,
@@ -193,21 +188,19 @@ export class ProjectsService {
 
     return results;
   }
-  async findOne(projectId: string, userId: string): Promise<ProjectListItem> {
-    const membership = await this.prisma.client.orm.public.ProjectMember.where({
-      projectId,
-      userId,
-    })
-      .select('projectId', 'role')
-      .first();
 
-    if (!membership) {
-      throw new ForbiddenException('Anda bukan member project ini');
-    }
+  async findOne(
+    projectId: string,
+    userId: string,
+    tenantId: string,
+  ): Promise<ProjectListItem> {
+    const membership = await this.getMembership(projectId, userId, tenantId);
 
-    const project = await this.prisma.client.orm.public.Project.where({
-      id: projectId,
-    })
+    const project = await this.prisma.client.orm.public.Project
+      .where({
+        id: projectId,
+        tenantId,
+      })
       .select('id', 'name', 'description', 'status', 'createdBy')
       .first();
 
@@ -224,11 +217,29 @@ export class ProjectsService {
       role: membership.role,
     };
   }
-  private async getMembership(projectId: string, userId: string) {
-    const membership = await this.prisma.client.orm.public.ProjectMember.where({
-      projectId,
-      userId,
-    })
+
+  private async getMembership(
+    projectId: string,
+    userId: string,
+    tenantId: string,
+  ) {
+    const project = await this.prisma.client.orm.public.Project
+      .where({
+        id: projectId,
+        tenantId,
+      })
+      .select('id')
+      .first();
+
+    if (!project) {
+      throw new ForbiddenException('Project bukan bagian dari workspace aktif');
+    }
+
+    const membership = await this.prisma.client.orm.public.ProjectMember
+      .where({
+        projectId,
+        userId,
+      })
       .select('projectId', 'userId', 'role')
       .first();
 
@@ -238,30 +249,28 @@ export class ProjectsService {
 
     return membership;
   }
+
   async findMembers(
     projectId: string,
     currentUserId: string,
+    tenantId: string,
   ): Promise<ProjectMemberListItem[]> {
-    await this.getMembership(projectId, currentUserId);
+    await this.getMembership(projectId, currentUserId, tenantId);
 
-    const members =
-      await this.prisma.client.orm.public.ProjectMember
-        .where({ projectId })
-        .select('id', 'projectId', 'userId', 'role')
-        .all();
+    const members = await this.prisma.client.orm.public.ProjectMember
+      .where({ projectId })
+      .select('id', 'projectId', 'userId', 'role')
+      .all();
 
     const results: ProjectMemberListItem[] = [];
 
     for (const member of members) {
-      const user =
-        await this.prisma.client.orm.public.User
-          .where({ id: member.userId })
-          .select('id', 'username', 'email', 'name')
-          .first();
+      const user = await this.prisma.client.orm.public.User
+        .where({ id: member.userId })
+        .select('id', 'username', 'email', 'name')
+        .first();
 
-      if (!user) {
-        continue;
-      }
+      if (!user) continue;
 
       results.push({
         id: member.id,
@@ -284,11 +293,13 @@ export class ProjectsService {
     projectId: string,
     currentUserId: string,
     targetUserId: string,
+    tenantId: string,
     data: UpdateProjectMemberDto,
   ): Promise<ProjectMemberListItem> {
     const currentMembership = await this.getMembership(
       projectId,
       currentUserId,
+      tenantId,
     );
 
     if (
@@ -300,35 +311,22 @@ export class ProjectsService {
       );
     }
 
-    const targetMembership =
-      await this.prisma.client.orm.public.ProjectMember
-        .where({
-          projectId,
-          userId: targetUserId,
-        })
-        .select('id', 'projectId', 'userId', 'role')
-        .first();
+    const targetMembership = await this.prisma.client.orm.public.ProjectMember
+      .where({ projectId, userId: targetUserId })
+      .select('id', 'projectId', 'userId', 'role')
+      .first();
 
     if (!targetMembership) {
-      throw new NotFoundException(
-        'Member tidak ditemukan pada project ini',
-      );
+      throw new NotFoundException('Member tidak ditemukan pada project ini');
     }
 
     if (targetMembership.role === 'OWNER') {
-      throw new ForbiddenException(
-        'Role OWNER tidak dapat diubah',
-      );
+      throw new ForbiddenException('Role OWNER tidak dapat diubah');
     }
 
-    const updated =
-      await this.prisma.client.orm.public.ProjectMember
-        .where({
-          id: targetMembership.id,
-        })
-        .update({
-          role: data.role,
-        });
+    const updated = await this.prisma.client.orm.public.ProjectMember
+      .where({ id: targetMembership.id })
+      .update({ role: data.role });
 
     if (!updated) {
       throw new NotFoundException(
@@ -336,19 +334,12 @@ export class ProjectsService {
       );
     }
 
-    const user =
-      await this.prisma.client.orm.public.User
-        .where({
-          id: updated.userId,
-        })
-        .select('id', 'username', 'email', 'name')
-        .first();
+    const user = await this.prisma.client.orm.public.User
+      .where({ id: updated.userId })
+      .select('id', 'username', 'email', 'name')
+      .first();
 
-    if (!user) {
-      throw new NotFoundException(
-        'User tidak ditemukan',
-      );
-    }
+    if (!user) throw new NotFoundException('User tidak ditemukan');
 
     return {
       id: updated.id,
@@ -368,10 +359,12 @@ export class ProjectsService {
     projectId: string,
     currentUserId: string,
     targetUserId: string,
+    tenantId: string,
   ): Promise<{ message: string }> {
     const currentMembership = await this.getMembership(
       projectId,
       currentUserId,
+      tenantId,
     );
 
     if (
@@ -383,33 +376,22 @@ export class ProjectsService {
       );
     }
 
-    const targetMembership =
-      await this.prisma.client.orm.public.ProjectMember
-        .where({
-          projectId,
-          userId: targetUserId,
-        })
-        .select('id', 'projectId', 'userId', 'role')
-        .first();
+    const targetMembership = await this.prisma.client.orm.public.ProjectMember
+      .where({ projectId, userId: targetUserId })
+      .select('id', 'projectId', 'userId', 'role')
+      .first();
 
     if (!targetMembership) {
-      throw new NotFoundException(
-        'Member tidak ditemukan pada project ini',
-      );
+      throw new NotFoundException('Member tidak ditemukan pada project ini');
     }
 
     if (targetMembership.role === 'OWNER') {
-      throw new ForbiddenException(
-        'OWNER tidak dapat dihapus dari project',
-      );
+      throw new ForbiddenException('OWNER tidak dapat dihapus dari project');
     }
 
-    const deleted =
-      await this.prisma.client.orm.public.ProjectMember
-        .where({
-          id: targetMembership.id,
-        })
-        .delete();
+    const deleted = await this.prisma.client.orm.public.ProjectMember
+      .where({ id: targetMembership.id })
+      .delete();
 
     if (!deleted) {
       throw new NotFoundException(
@@ -417,17 +399,20 @@ export class ProjectsService {
       );
     }
 
-    return {
-      message: 'Member berhasil dihapus dari project',
-    };
+    return { message: 'Member berhasil dihapus dari project' };
   }
 
   async addMembers(
     projectId: string,
     currentUserId: string,
     members: AddProjectMemberDto[],
+    tenantId: string,
   ): Promise<ProjectMemberListItem[]> {
-    const membership = await this.getMembership(projectId, currentUserId);
+    const membership = await this.getMembership(
+      projectId,
+      currentUserId,
+      tenantId,
+    );
 
     if (membership.role !== 'OWNER' && membership.role !== 'ADMIN') {
       throw new ForbiddenException(
@@ -440,7 +425,9 @@ export class ProjectsService {
     );
 
     return this.prisma.client.transaction(async (tx) => {
-      const project = await tx.orm.public.Project.where({ id: projectId }).first();
+      const project = await tx.orm.public.Project
+        .where({ id: projectId, tenantId })
+        .first();
 
       if (!project) {
         throw new NotFoundException('Project tidak ditemukan');
@@ -449,19 +436,23 @@ export class ProjectsService {
       const results: ProjectMemberListItem[] = [];
 
       for (const memberInput of uniqueMembers) {
-        const userId = memberInput.userId;
-        const user = await tx.orm.public.User.where({ id: userId })
+        const user = await tx.orm.public.User
+          .where({ id: memberInput.userId })
           .select('id', 'username', 'email', 'name')
           .first();
 
         if (!user) {
-          throw new NotFoundException(`User tidak ditemukan: ${userId}`);
+          throw new NotFoundException(
+            `User tidak ditemukan: ${memberInput.userId}`,
+          );
         }
 
-        const existingMember = await tx.orm.public.ProjectMember.where({
-          projectId,
-          userId,
-        }).first();
+        const existingMember = await tx.orm.public.ProjectMember
+          .where({
+            projectId,
+            userId: memberInput.userId,
+          })
+          .first();
 
         if (existingMember) {
           throw new ConflictException(
@@ -471,7 +462,7 @@ export class ProjectsService {
 
         const member = await tx.orm.public.ProjectMember.create({
           projectId,
-          userId,
+          userId: memberInput.userId,
           role: memberInput.role,
         });
 
@@ -494,88 +485,68 @@ export class ProjectsService {
   }
 
   async addMember(
-  projectId: string,
-  currentUserId: string,
-  data: AddProjectMemberDto,
-) {
-  const membership = await this.getMembership(
-    projectId,
-    currentUserId,
-  );
-
-  if (
-    membership.role !== 'OWNER' &&
-    membership.role !== 'ADMIN'
-  ) {
-    throw new ForbiddenException(
-      'Anda tidak memiliki izin untuk menambahkan member',
+    projectId: string,
+    currentUserId: string,
+    data: AddProjectMemberDto,
+    tenantId: string,
+  ): Promise<ProjectMemberListItem> {
+    const membership = await this.getMembership(
+      projectId,
+      currentUserId,
+      tenantId,
     );
-  }
 
-  const project =
-    await this.prisma.client.orm.public.Project
-      .where({
-        id: projectId,
-      })
+    if (
+      membership.role !== 'OWNER' &&
+      membership.role !== 'ADMIN'
+    ) {
+      throw new ForbiddenException(
+        'Anda tidak memiliki izin untuk menambahkan member',
+      );
+    }
+
+    const project = await this.prisma.client.orm.public.Project
+      .where({ id: projectId, tenantId })
       .first();
 
-  if (!project) {
-    throw new NotFoundException(
-      'Project tidak ditemukan',
-    );
-  }
+    if (!project) {
+      throw new NotFoundException('Project tidak ditemukan');
+    }
 
-  const user =
-    await this.prisma.client.orm.public.User
-      .where({
-        id: data.userId,
-      })
-      .select(
-        'id',
-        'username',
-        'email',
-        'name',
-      )
+    const user = await this.prisma.client.orm.public.User
+      .where({ id: data.userId })
+      .select('id', 'username', 'email', 'name')
       .first();
 
-  if (!user) {
-    throw new NotFoundException(
-      'User tidak ditemukan',
-    );
-  }
+    if (!user) {
+      throw new NotFoundException('User tidak ditemukan');
+    }
 
-  const existingMember =
-    await this.prisma.client.orm.public.ProjectMember
-      .where({
-        projectId,
-        userId: data.userId,
-      })
+    const existingMember = await this.prisma.client.orm.public.ProjectMember
+      .where({ projectId, userId: data.userId })
       .first();
 
-  if (existingMember) {
-    throw new ConflictException(
-      'User sudah menjadi member project',
-    );
-  }
+    if (existingMember) {
+      throw new ConflictException('User sudah menjadi member project');
+    }
 
-  const member =
-    await this.prisma.client.orm.public.ProjectMember.create({
+    const member = await this.prisma.client.orm.public.ProjectMember.create({
       projectId,
       userId: data.userId,
       role: data.role,
     });
 
-  return {
-    id: member.id,
-    projectId: member.projectId,
-    userId: member.userId,
-    role: member.role,
-    user: {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      name: user.name,
-    },
-  };
-}
+    return {
+      id: member.id,
+      projectId: member.projectId,
+      userId: member.userId,
+      role: member.role,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        name: user.name,
+      },
+    };
+  }
 }

@@ -111,7 +111,7 @@ model Project {
   references: [id]
 )
 
-  tenant Tenant? @relation(
+  tenant Tenant @relation(
     fields: [tenantId],
     references: [id]
   )

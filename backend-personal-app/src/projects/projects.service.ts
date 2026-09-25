@@ -447,6 +447,20 @@ export class ProjectsService {
           );
         }
 
+        const tenantMember = await tx.orm.public.TenantMember
+          .where({
+            tenantId,
+            userId: memberInput.userId,
+          })
+          .select('tenantId', 'userId')
+          .first();
+
+        if (!tenantMember) {
+          throw new ForbiddenException(
+            `User ${user.username} bukan member workspace aktif`,
+          );
+        }
+
         const existingMember = await tx.orm.public.ProjectMember
           .where({
             projectId,
@@ -520,6 +534,20 @@ export class ProjectsService {
 
     if (!user) {
       throw new NotFoundException('User tidak ditemukan');
+    }
+
+    const tenantMember = await this.prisma.client.orm.public.TenantMember
+      .where({
+        tenantId,
+        userId: data.userId,
+      })
+      .select('tenantId', 'userId')
+      .first();
+
+    if (!tenantMember) {
+      throw new ForbiddenException(
+        'User bukan member workspace aktif',
+      );
     }
 
     const existingMember = await this.prisma.client.orm.public.ProjectMember

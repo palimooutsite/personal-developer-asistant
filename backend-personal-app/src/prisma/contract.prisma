@@ -70,6 +70,8 @@ model Tenant {
 
   members TenantMember[]
   projects Project[]
+  knowledgeArticles KnowledgeArticle[]
+  tags Tag[]
 
   @@index([createdBy])
 }
@@ -192,10 +194,11 @@ model TaskAssignee {
 model KnowledgeArticle {
   id          String            @id @default(uuid())
   title       String
-  slug        String            @unique
+  slug        String
   content     String
   summary     String?
   createdBy   String
+  tenantId    String
   createdAt   TimestamptzString @default(now())
   updatedAt   temporal.updatedAtString()
 
@@ -204,17 +207,34 @@ model KnowledgeArticle {
     references: [id]
   )
 
+  tenant Tenant @relation(
+    fields: [tenantId],
+    references: [id]
+  )
+
   tags KnowledgeArticleTag[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
 }
 
 model Tag {
   id        String            @id @default(uuid())
-  name      String            @unique
+  name      String
+  tenantId  String
   createdAt TimestamptzString @default(now())
   updatedAt temporal.updatedAtString()
 
   knowledgeArticles KnowledgeArticleTag[]
   snippetTags       SnippetTag[]
+
+  tenant Tenant @relation(
+    fields: [tenantId],
+    references: [id]
+  )
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
 }
 
 model KnowledgeArticleTag {

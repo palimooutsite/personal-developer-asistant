@@ -1,0 +1,512 @@
+[
+  {
+    "id": "dropConstraint.knowledgeArticle.knowledgeArticle_slug_key",
+    "label": "Drop constraint \"knowledgeArticle_slug_key\" on \"knowledgeArticle\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "knowledgeArticle_slug_key",
+        "table": "knowledgeArticle"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"knowledgeArticle_slug_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "knowledgeArticle_slug_key",
+          "public",
+          "\"public\".\"knowledgeArticle\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"knowledgeArticle_slug_key\"",
+        "sql": "ALTER TABLE \"public\".\"knowledgeArticle\" DROP CONSTRAINT \"knowledgeArticle_slug_key\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"knowledgeArticle_slug_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "knowledgeArticle_slug_key",
+          "public",
+          "\"public\".\"knowledgeArticle\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropConstraint.tag.tag_name_key",
+    "label": "Drop constraint \"tag_name_key\" on \"tag\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "tag_name_key",
+        "table": "tag"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"tag_name_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "tag_name_key",
+          "public",
+          "\"public\".\"tag\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"tag_name_key\"",
+        "sql": "ALTER TABLE \"public\".\"tag\" DROP CONSTRAINT \"tag_name_key\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"tag_name_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "tag_name_key",
+          "public",
+          "\"public\".\"tag\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.knowledgeArticle.tenantId",
+    "label": "Add column \"tenantId\" to \"knowledgeArticle\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "tenantId",
+        "table": "knowledgeArticle"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"tenantId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "knowledgeArticle",
+          "tenantId"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"tenantId\"",
+        "sql": "ALTER TABLE \"public\".\"knowledgeArticle\" ADD COLUMN \"tenantId\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"tenantId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "knowledgeArticle",
+          "tenantId"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.setNotNull.knowledgeArticle.tenantId",
+    "label": "Set NOT NULL on \"knowledgeArticle\".\"tenantId\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "tenantId",
+        "table": "knowledgeArticle"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"tenantId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "knowledgeArticle",
+          "tenantId"
+        ]
+      },
+      {
+        "description": "ensure no NULL values in \"tenantId\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"knowledgeArticle\" WHERE \"tenantId\" IS NULL) AS \"result\"",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"tenantId\"",
+        "sql": "ALTER TABLE \"public\".\"knowledgeArticle\" ALTER COLUMN \"tenantId\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"tenantId\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "knowledgeArticle",
+          "tenantId",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.tag.tenantId",
+    "label": "Add column \"tenantId\" to \"tag\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "tenantId",
+        "table": "tag"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"tenantId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "tag",
+          "tenantId"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"tenantId\"",
+        "sql": "ALTER TABLE \"public\".\"tag\" ADD COLUMN \"tenantId\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"tenantId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "tag",
+          "tenantId"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.setNotNull.tag.tenantId",
+    "label": "Set NOT NULL on \"tag\".\"tenantId\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "tenantId",
+        "table": "tag"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"tenantId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "tag",
+          "tenantId"
+        ]
+      },
+      {
+        "description": "ensure no NULL values in \"tenantId\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"tag\" WHERE \"tenantId\" IS NULL) AS \"result\"",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"tenantId\"",
+        "sql": "ALTER TABLE \"public\".\"tag\" ALTER COLUMN \"tenantId\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"tenantId\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "tag",
+          "tenantId",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.knowledgeArticle.knowledgeArticle_tenantId_slug_key",
+    "label": "Add unique constraint on \"knowledgeArticle\" (tenantId, slug)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "knowledgeArticle_tenantId_slug_key",
+        "table": "knowledgeArticle"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"knowledgeArticle_tenantId_slug_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "knowledgeArticle_tenantId_slug_key",
+          "public",
+          "\"public\".\"knowledgeArticle\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"knowledgeArticle_tenantId_slug_key\"",
+        "sql": "ALTER TABLE \"public\".\"knowledgeArticle\" ADD CONSTRAINT \"knowledgeArticle_tenantId_slug_key\" UNIQUE (\"tenantId\", \"slug\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"knowledgeArticle_tenantId_slug_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "knowledgeArticle_tenantId_slug_key",
+          "public",
+          "\"public\".\"knowledgeArticle\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.tag.tag_tenantId_name_key",
+    "label": "Add unique constraint on \"tag\" (tenantId, name)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "tag_tenantId_name_key",
+        "table": "tag"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"tag_tenantId_name_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "tag_tenantId_name_key",
+          "public",
+          "\"public\".\"tag\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"tag_tenantId_name_key\"",
+        "sql": "ALTER TABLE \"public\".\"tag\" ADD CONSTRAINT \"tag_tenantId_name_key\" UNIQUE (\"tenantId\", \"name\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"tag_tenantId_name_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "tag_tenantId_name_key",
+          "public",
+          "\"public\".\"tag\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.knowledgeArticle.knowledgeArticle_tenantId_idx_c93ed4f1",
+    "label": "Create index \"knowledgeArticle_tenantId_idx_c93ed4f1\" on \"knowledgeArticle\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "knowledgeArticle_tenantId_idx_c93ed4f1",
+        "table": "knowledgeArticle"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"knowledgeArticle_tenantId_idx_c93ed4f1\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"knowledgeArticle_tenantId_idx_c93ed4f1\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"knowledgeArticle_tenantId_idx_c93ed4f1\"",
+        "sql": "CREATE INDEX \"knowledgeArticle_tenantId_idx_c93ed4f1\" ON \"public\".\"knowledgeArticle\" (\"tenantId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"knowledgeArticle_tenantId_idx_c93ed4f1\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"knowledgeArticle_tenantId_idx_c93ed4f1\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.tag.tag_tenantId_idx_c93ed4f1",
+    "label": "Create index \"tag_tenantId_idx_c93ed4f1\" on \"tag\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "tag_tenantId_idx_c93ed4f1",
+        "table": "tag"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"tag_tenantId_idx_c93ed4f1\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"tag_tenantId_idx_c93ed4f1\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"tag_tenantId_idx_c93ed4f1\"",
+        "sql": "CREATE INDEX \"tag_tenantId_idx_c93ed4f1\" ON \"public\".\"tag\" (\"tenantId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"tag_tenantId_idx_c93ed4f1\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"tag_tenantId_idx_c93ed4f1\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.knowledgeArticle.knowledgeArticle_tenantId_fkey",
+    "label": "Add foreign key \"knowledgeArticle_tenantId_fkey\" on \"knowledgeArticle\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "knowledgeArticle_tenantId_fkey",
+        "table": "knowledgeArticle"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"knowledgeArticle_tenantId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "knowledgeArticle_tenantId_fkey",
+          "public",
+          "\"public\".\"knowledgeArticle\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"knowledgeArticle_tenantId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"knowledgeArticle\"\nADD CONSTRAINT \"knowledgeArticle_tenantId_fkey\"\nFOREIGN KEY (\"tenantId\")\nREFERENCES \"public\".\"tenant\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"knowledgeArticle_tenantId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "knowledgeArticle_tenantId_fkey",
+          "public",
+          "\"public\".\"knowledgeArticle\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.tag.tag_tenantId_fkey",
+    "label": "Add foreign key \"tag_tenantId_fkey\" on \"tag\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "tag_tenantId_fkey",
+        "table": "tag"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"tag_tenantId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "tag_tenantId_fkey",
+          "public",
+          "\"public\".\"tag\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"tag_tenantId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"tag\"\nADD CONSTRAINT \"tag_tenantId_fkey\"\nFOREIGN KEY (\"tenantId\")\nREFERENCES \"public\".\"tenant\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"tag_tenantId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "tag_tenantId_fkey",
+          "public",
+          "\"public\".\"tag\""
+        ]
+      }
+    ]
+  }
+]

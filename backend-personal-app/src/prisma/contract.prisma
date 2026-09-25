@@ -72,6 +72,7 @@ model Tenant {
   projects Project[]
   knowledgeArticles KnowledgeArticle[]
   tags Tag[]
+  codeSnippets CodeSnippet[]
 
   @@index([createdBy])
 }
@@ -264,6 +265,7 @@ model CodeSnippet {
   code        String
   description String?
   createdBy   String
+  tenantId    String
   createdAt   TimestamptzString @default(now())
   updatedAt   temporal.updatedAtString()
 
@@ -272,7 +274,14 @@ model CodeSnippet {
     references: [id]
   )
 
+  tenant Tenant @relation(
+    fields: [tenantId],
+    references: [id]
+  )
+
   tags SnippetTag[]
+
+  @@index([tenantId])
 }
 
 model SnippetTag {

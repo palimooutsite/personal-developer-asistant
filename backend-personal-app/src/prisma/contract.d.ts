@@ -34,7 +34,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'44cc6b4d1e757d9746e9b6e942d48e86a8c43dfcafb89a62360554649cf560fe'>;
+  StorageHashBase<'ba622efbcaec4323ef3988f26e452dc4e8a3e2fb8113ba611e45309531ef8480'>;
 export type ExecutionHash =
   ExecutionHashBase<'b64a607aee2e618691e1b1bf32a573e897181439e5540ec61549a04bcd4b7ba9'>;
 export type ProfileHash =
@@ -249,6 +249,7 @@ export type FieldOutputTypes = {
       readonly code: CodecTypes['pg/text@1']['output'];
       readonly description: CodecTypes['pg/text@1']['output'] | null;
       readonly createdBy: CodecTypes['pg/text@1']['output'];
+      readonly tenantId: CodecTypes['pg/text@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
@@ -366,6 +367,7 @@ export type FieldInputTypes = {
       readonly code: CodecTypes['pg/text@1']['input'];
       readonly description: CodecTypes['pg/text@1']['input'] | null;
       readonly createdBy: CodecTypes['pg/text@1']['input'];
+      readonly tenantId: CodecTypes['pg/text@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
@@ -483,6 +485,7 @@ export type StorageColumnTypes = {
       readonly description: CodecTypes['pg/text@1']['output'] | null;
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly language: CodecTypes['pg/text@1']['output'];
+      readonly tenantId: CodecTypes['pg/text@1']['output'];
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
@@ -600,6 +603,7 @@ export type StorageColumnInputTypes = {
       readonly description: CodecTypes['pg/text@1']['input'] | null;
       readonly id: CodecTypes['pg/text@1']['input'];
       readonly language: CodecTypes['pg/text@1']['input'];
+      readonly tenantId: CodecTypes['pg/text@1']['input'];
       readonly title: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
@@ -742,12 +746,14 @@ export namespace Models {
     createdBy: CodecTypes['pg/text@1']['output'];
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    codeSnippets: public_CodeSnippet[];
     creator: public_User;
     knowledgeArticles: public_KnowledgeArticle[];
     members: public_TenantMember[];
     projects: public_Project[];
     tags: public_Tag[];
-    readonly [RelationKeys]?: 'creator' | 'knowledgeArticles' | 'members' | 'projects' | 'tags';
+    readonly [RelationKeys]?:
+      'codeSnippets' | 'creator' | 'knowledgeArticles' | 'members' | 'projects' | 'tags';
   };
   export type public_TenantMember = {
     id: CodecTypes['pg/text@1']['output'];
@@ -855,11 +861,13 @@ export namespace Models {
     code: CodecTypes['pg/text@1']['output'];
     description: CodecTypes['pg/text@1']['output'] | null;
     createdBy: CodecTypes['pg/text@1']['output'];
+    tenantId: CodecTypes['pg/text@1']['output'];
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     author: public_User;
     tags: public_SnippetTag[];
-    readonly [RelationKeys]?: 'author' | 'tags';
+    tenant: public_Tenant;
+    readonly [RelationKeys]?: 'author' | 'tags' | 'tenant';
   };
   export type public_SnippetTag = {
     id: CodecTypes['pg/text@1']['output'];
@@ -954,6 +962,11 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
                 };
+                readonly tenantId: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
                 readonly createdAt: {
                   readonly nativeType: 'timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -969,6 +982,12 @@ type ContractBase = Omit<
               primaryKey: { readonly columns: readonly ['id'] };
               uniques: readonly [];
               indexes: readonly [
+                {
+                  readonly name: 'codeSnippet_tenantId_idx_c93ed4f1';
+                  readonly prefix: 'codeSnippet_tenantId_idx';
+                  readonly columns: readonly ['tenantId'];
+                  readonly unique: false;
+                },
                 {
                   readonly name: 'codeSnippet_createdBy_idx_ba0f792f';
                   readonly prefix: 'codeSnippet_createdBy_idx';
@@ -986,6 +1005,18 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'user';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'codeSnippet';
+                    readonly columns: readonly ['tenantId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'tenant';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -1971,6 +2002,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly tenantId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -2007,6 +2042,18 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['snippetId'];
                 };
               };
+              readonly tenant: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Tenant';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['tenantId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
             };
             readonly storage: {
               readonly table: 'codeSnippet';
@@ -2018,6 +2065,7 @@ type ContractBase = Omit<
                 readonly code: { readonly column: 'code' };
                 readonly description: { readonly column: 'description' };
                 readonly createdBy: { readonly column: 'createdBy' };
+                readonly tenantId: { readonly column: 'tenantId' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };
@@ -2756,6 +2804,17 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly codeSnippets: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'CodeSnippet';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['tenantId'];
+                };
+              };
               readonly creator: {
                 readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
                 readonly cardinality: 'N:1';

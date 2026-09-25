@@ -5,9 +5,10 @@ import { SnippetTagsController } from './snippet-tags.controller.js';
 import { SnippetsService } from './snippets.service.js';
 import { SnippetTagsService } from './snippet-tags.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { TenantModule } from '../tenants/tenant.module.js';
 
 @Module({
-  imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
+  imports: [PassportModule.register({ defaultStrategy: 'jwt' }), TenantModule],
   controllers: [SnippetsController, SnippetTagsController],
   providers: [SnippetsService, SnippetTagsService, PrismaService],
 })

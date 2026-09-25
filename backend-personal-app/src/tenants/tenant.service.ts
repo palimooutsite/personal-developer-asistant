@@ -170,6 +170,24 @@ export class TenantService {
     };
   }
 
+
+  async getMembershipForContext(
+    tenantId: string,
+    userId: string,
+  ) {
+    return this.prisma.client.orm.public.TenantMember
+      .where({
+        tenantId,
+        userId,
+      })
+      .select(
+        'tenantId',
+        'userId',
+        'role',
+      )
+      .first();
+  }
+
   private async getMembership(
     tenantId: string,
     userId: string,

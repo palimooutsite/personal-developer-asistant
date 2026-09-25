@@ -684,6 +684,13 @@
                   "plane": "domain"
                 }
               },
+              "tenantId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "updatedAt": {
                 "nullable": false,
                 "type": {
@@ -738,6 +745,22 @@
                   "model": "Task",
                   "namespace": "public"
                 }
+              },
+              "tenant": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "tenantId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Tenant",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -759,6 +782,9 @@
                 },
                 "status": {
                   "column": "status"
+                },
+                "tenantId": {
+                  "column": "tenantId"
                 },
                 "updatedAt": {
                   "column": "updatedAt"
@@ -1399,6 +1425,21 @@
                 },
                 "to": {
                   "model": "TenantMember",
+                  "namespace": "public"
+                }
+              },
+              "projects": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "tenantId"
+                  ]
+                },
+                "to": {
+                  "model": "Project",
                   "namespace": "public"
                 }
               }
@@ -2154,6 +2195,11 @@
                     "plane": "storage"
                   }
                 },
+                "tenantId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
                 "updatedAt": {
                   "codecId": "pg/timestamptz-string@1",
                   "nativeType": "timestamptz",
@@ -2176,6 +2222,22 @@
                     "namespaceId": "public",
                     "tableName": "user"
                   }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "tenantId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "project"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "tenant"
+                  }
                 }
               ],
               "indexes": [
@@ -2185,6 +2247,14 @@
                   ],
                   "name": "project_createdBy_idx_ba0f792f",
                   "prefix": "project_createdBy_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenantId"
+                  ],
+                  "name": "project_tenantId_idx_c93ed4f1",
+                  "prefix": "project_tenantId_idx",
                   "unique": false
                 }
               ],
@@ -3005,7 +3075,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "b96f86d6b04226943c1cc822c2755a56a448519be7240c160f09e8720ad6931b"
+    "storageHash": "b82e9c50b4bd4b0f6b33bdb7dc1b50df29a3bf98e2df387ad4987f4d3fcccb73"
   },
   "execution": {
     "executionHash": "b64a607aee2e618691e1b1bf32a573e897181439e5540ec61549a04bcd4b7ba9",

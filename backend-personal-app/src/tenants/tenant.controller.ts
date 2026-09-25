@@ -12,6 +12,7 @@ import {
 
 import type { AuthRequest } from '../auth/types/auth-request.js';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard.js';
+import { TenantContextGuard } from './guard/tenant-context.guard.js';
 
 import {
   TenantListItem,
@@ -43,6 +44,7 @@ export class TenantController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, TenantContextGuard)
   async findOne(
     @Param('id') id: string,
     @Req() req: AuthRequest,

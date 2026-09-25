@@ -102,7 +102,7 @@ model Project {
   description String?
   status      ProjectStatus @default(PLANNED)
   createdBy   String
-  tenantId    String?
+  tenantId    String
   createdAt   TimestamptzString  @default(now())
   updatedAt   temporal.updatedAtString()
 

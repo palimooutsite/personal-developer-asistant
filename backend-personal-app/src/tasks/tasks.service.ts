@@ -62,9 +62,10 @@ export class TasksService {
   async create(
     projectId: string,
     userId: string,
+    tenantId: string,
     data: CreateTaskDto,
   ): Promise<TaskResponse> {
-    await this.requireMutationAccess(projectId, userId);
+    await this.requireMutationAccess(projectId, userId, tenantId);
 
     const project = await this.prisma.client.orm.public.Project
       .where({ id: projectId })
@@ -90,11 +91,12 @@ export class TasksService {
   async findAll(
     projectId: string,
     userId: string,
+    tenantId: string,
     page = 1,
     limit = 10,
     all = false,
   ): Promise<TaskPaginatedResponse | TaskListResponse[]> {
-    await this.requireProjectMembership(projectId, userId);
+    await this.requireProjectMembership(projectId, userId, tenantId);
 
     const project = await this.prisma.client.orm.public.Project
       .where({ id: projectId })
@@ -175,10 +177,11 @@ export class TasksService {
     projectId: string,
     taskId: string,
     userId: string,
+    tenantId: string,
   ): Promise<TaskResponse> {
-    await this.requireProjectMembership(projectId, userId);
+    await this.requireProjectMembership(projectId, userId, tenantId);
 
-    const task = await this.findTask(projectId, taskId);
+    const task = await this.findTask(projectId, taskId, tenantId);
 
     return this.toTaskResponse(task);
   }
@@ -187,11 +190,12 @@ export class TasksService {
     projectId: string,
     taskId: string,
     userId: string,
+    tenantId: string,
     data: UpdateTaskDto,
   ): Promise<TaskResponse> {
-    await this.requireMutationAccess(projectId, userId);
+    await this.requireMutationAccess(projectId, userId, tenantId);
 
-    await this.findTask(projectId, taskId);
+    await this.findTask(projectId, taskId, tenantId);
 
     const updateData: {
       title?: string;
@@ -222,10 +226,11 @@ export class TasksService {
     projectId: string,
     taskId: string,
     userId: string,
+    tenantId: string,
     data: AddTaskAssigneeDto,
   ): Promise<{ taskId: string; userId: string }> {
-    await this.requireMutationAccess(projectId, userId);
-    await this.findTask(projectId, taskId);
+    await this.requireMutationAccess(projectId, userId, tenantId);
+    await this.findTask(projectId, taskId, tenantId);
 
     const assigneeMember = await this.prisma.client.orm.public.ProjectMember
       .where({
@@ -268,9 +273,10 @@ export class TasksService {
     projectId: string,
     taskId: string,
     userId: string,
+    tenantId: string,
   ): Promise<TaskAssigneeResponse[]> {
-    await this.requireProjectMembership(projectId, userId);
-    await this.findTask(projectId, taskId);
+    await this.requireProjectMembership(projectId, userId, tenantId);
+    await this.findTask(projectId, taskId, tenantId);
 
     const assignees = await this.prisma.client.orm.public.TaskAssignee
       .where({ taskId, projectId })
@@ -305,9 +311,10 @@ export class TasksService {
     taskId: string,
     assigneeUserId: string,
     userId: string,
+    tenantId: string,
   ): Promise<{ message: string }> {
-    await this.requireMutationAccess(projectId, userId);
-    await this.findTask(projectId, taskId);
+    await this.requireMutationAccess(projectId, userId, tenantId);
+    await this.findTask(projectId, taskId, tenantId);
 
     const assignee = await this.prisma.client.orm.public.TaskAssignee
       .where({
@@ -339,9 +346,10 @@ export class TasksService {
     projectId: string,
     taskId: string,
     userId: string,
+    tenantId: string,
   ): Promise<{ message: string }> {
-    await this.requireMutationAccess(projectId, userId);
-    await this.findTask(projectId, taskId);
+    await this.requireMutationAccess(projectId, userId, tenantId);
+    await this.findTask(projectId, taskId, tenantId);
 
     await this.prisma.client.orm.public.Task
       .where({ id: taskId, projectId })
@@ -350,7 +358,20 @@ export class TasksService {
     return { message: 'Task berhasil dihapus' };
   }
 
-  private async requireProjectMembership(projectId: string, userId: string) {
+  private async requireProjectMembership(
+    projectId: string,
+    userId: string,
+    tenantId: string,
+  ) {
+    const project = await this.prisma.client.orm.public.Project
+      .where({ id: projectId, tenantId })
+      .select('id')
+      .first();
+
+    if (!project) {
+      throw new ForbiddenException('Project bukan bagian dari workspace aktif');
+    }
+
     const membership = await this.prisma.client.orm.public.ProjectMember
       .where({ projectId, userId })
       .select('projectId', 'userId', 'role')
@@ -366,8 +387,9 @@ export class TasksService {
   private async requireMutationAccess(
     projectId: string,
     userId: string,
+    tenantId: string,
   ) {
-    const membership = await this.requireProjectMembership(projectId, userId);
+    const membership = await this.requireProjectMembership(projectId, userId, tenantId);
 
     if (
       membership.role !== 'OWNER' &&
@@ -382,7 +404,16 @@ export class TasksService {
     return membership as typeof membership & { role: TaskMutationRole };
   }
 
-  private async findTask(projectId: string, taskId: string) {
+  private async findTask(projectId: string, taskId: string, tenantId: string) {
+    const project = await this.prisma.client.orm.public.Project
+      .where({ id: projectId, tenantId })
+      .select('id')
+      .first();
+
+    if (!project) {
+      throw new ForbiddenException('Project bukan bagian dari workspace aktif');
+    }
+
     const task = await this.prisma.client.orm.public.Task
       .where({
         id: taskId,

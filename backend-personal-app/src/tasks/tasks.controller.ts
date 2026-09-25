@@ -118,6 +118,7 @@ export class TasksController {
       taskId,
       assigneeUserId,
       req.user.userId,
+      req.tenant.tenantId,
     );
   }
 
@@ -145,6 +146,7 @@ export class TasksController {
       projectId,
       taskId,
       req.user.userId,
+      req.tenant.tenantId,
     );
   }
 }

@@ -383,6 +383,13 @@
                   "kind": "scalar"
                 }
               },
+              "tenantId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "title": {
                 "nullable": false,
                 "type": {
@@ -414,6 +421,22 @@
                   "model": "User",
                   "namespace": "public"
                 }
+              },
+              "tenant": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "tenantId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Tenant",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -441,6 +464,9 @@
                 },
                 "mimeType": {
                   "column": "mimeType"
+                },
+                "tenantId": {
+                  "column": "tenantId"
                 },
                 "title": {
                   "column": "title"
@@ -1506,6 +1532,21 @@
                   "namespace": "public"
                 }
               },
+              "documents": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "tenantId"
+                  ]
+                },
+                "to": {
+                  "model": "Document",
+                  "namespace": "public"
+                }
+              },
               "knowledgeArticles": {
                 "cardinality": "1:N",
                 "on": {
@@ -2067,6 +2108,11 @@
                   "nativeType": "text",
                   "nullable": false
                 },
+                "tenantId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
                 "title": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -2094,6 +2140,22 @@
                     "namespaceId": "public",
                     "tableName": "user"
                   }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "tenantId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "document"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "tenant"
+                  }
                 }
               ],
               "indexes": [
@@ -2103,6 +2165,14 @@
                   ],
                   "name": "document_createdBy_idx_ba0f792f",
                   "prefix": "document_createdBy_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenantId"
+                  ],
+                  "name": "document_tenantId_idx_c93ed4f1",
+                  "prefix": "document_tenantId_idx",
                   "unique": false
                 }
               ],
@@ -3289,7 +3359,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "ba622efbcaec4323ef3988f26e452dc4e8a3e2fb8113ba611e45309531ef8480"
+    "storageHash": "73923a610bcb6c3b4bcfb1829c19d42b160a5f0ae41ba69d09df19d78c80bba4"
   },
   "execution": {
     "executionHash": "b64a607aee2e618691e1b1bf32a573e897181439e5540ec61549a04bcd4b7ba9",

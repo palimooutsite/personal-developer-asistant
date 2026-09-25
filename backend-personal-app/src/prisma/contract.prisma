@@ -73,7 +73,7 @@ model Tenant {
   knowledgeArticles KnowledgeArticle[]
   tags Tag[]
   codeSnippets CodeSnippet[]
-
+  documents Document[]
   @@index([createdBy])
 }
 
@@ -312,6 +312,7 @@ model Document {
   mimeType    String
   fileSize    String
   createdBy   String
+  tenantId    String
   createdAt   TimestamptzString @default(now())
   updatedAt   temporal.updatedAtString()
 
@@ -319,4 +320,11 @@ model Document {
     fields: [createdBy],
     references: [id]
   )
+
+  tenant Tenant @relation(
+    fields: [tenantId],
+    references: [id]
+  )
+
+  @@index([tenantId])
 }

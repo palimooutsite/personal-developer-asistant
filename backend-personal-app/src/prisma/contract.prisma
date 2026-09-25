@@ -69,6 +69,7 @@ model Tenant {
   )
 
   members TenantMember[]
+  projects Project[]
 
   @@index([createdBy])
 }

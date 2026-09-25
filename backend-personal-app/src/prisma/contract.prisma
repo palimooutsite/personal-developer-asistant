@@ -101,6 +101,7 @@ model Project {
   description String?
   status      ProjectStatus @default(PLANNED)
   createdBy   String
+  tenantId    String?
   createdAt   TimestamptzString  @default(now())
   updatedAt   temporal.updatedAtString()
 
@@ -108,6 +109,12 @@ model Project {
   fields: [createdBy],
   references: [id]
 )
+
+  tenant Tenant? @relation(
+    fields: [tenantId],
+    references: [id]
+  )
+
   members ProjectMember[]
   tasks   Task[]
 }

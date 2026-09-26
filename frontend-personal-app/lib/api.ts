@@ -9,6 +9,7 @@ export class ApiError extends Error {
 }
 
 const API_PREFIX = '/backend-api';
+const TENANT_KEY = 'pda_active_tenant_id';
 
 export async function apiRequest<T>(
   path: string,
@@ -19,6 +20,11 @@ export async function apiRequest<T>(
       ? window.localStorage.getItem('pda_access_token')
       : null;
 
+  const activeTenantId =
+    typeof window !== 'undefined'
+      ? window.localStorage.getItem(TENANT_KEY)
+      : null;
+
   const headers = new Headers(options.headers);
 
   if (options.body && !(options.body instanceof FormData)) {
@@ -27,6 +33,10 @@ export async function apiRequest<T>(
 
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  if (activeTenantId) {
+    headers.set('X-Tenant-Id', activeTenantId);
   }
 
   const response = await fetch(`${API_PREFIX}${path}`, {
@@ -52,6 +62,8 @@ export async function apiRequest<T>(
       !path.startsWith('/auth/register') &&
       window.location.pathname !== '/login'
     ) {
+      window.localStorage.removeItem('pda_access_token');
+      window.localStorage.removeItem(TENANT_KEY);
       window.location.replace('/login');
     }
 

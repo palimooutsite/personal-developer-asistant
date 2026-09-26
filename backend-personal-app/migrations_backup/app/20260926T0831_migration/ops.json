@@ -1,0 +1,344 @@
+[
+  {
+    "id": "column.public.codeSnippet.tenantId",
+    "label": "Add column \"tenantId\" to \"codeSnippet\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "tenantId",
+        "table": "codeSnippet"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"tenantId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "codeSnippet",
+          "tenantId"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"tenantId\"",
+        "sql": "ALTER TABLE \"public\".\"codeSnippet\" ADD COLUMN \"tenantId\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"tenantId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "codeSnippet",
+          "tenantId"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.setNotNull.codeSnippet.tenantId",
+    "label": "Set NOT NULL on \"codeSnippet\".\"tenantId\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "tenantId",
+        "table": "codeSnippet"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"tenantId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "codeSnippet",
+          "tenantId"
+        ]
+      },
+      {
+        "description": "ensure no NULL values in \"tenantId\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"codeSnippet\" WHERE \"tenantId\" IS NULL) AS \"result\"",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"tenantId\"",
+        "sql": "ALTER TABLE \"public\".\"codeSnippet\" ALTER COLUMN \"tenantId\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"tenantId\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "codeSnippet",
+          "tenantId",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.document.tenantId",
+    "label": "Add column \"tenantId\" to \"document\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "tenantId",
+        "table": "document"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"tenantId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "document",
+          "tenantId"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"tenantId\"",
+        "sql": "ALTER TABLE \"public\".\"document\" ADD COLUMN \"tenantId\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"tenantId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "document",
+          "tenantId"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.setNotNull.document.tenantId",
+    "label": "Set NOT NULL on \"document\".\"tenantId\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "tenantId",
+        "table": "document"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"tenantId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "document",
+          "tenantId"
+        ]
+      },
+      {
+        "description": "ensure no NULL values in \"tenantId\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"document\" WHERE \"tenantId\" IS NULL) AS \"result\"",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"tenantId\"",
+        "sql": "ALTER TABLE \"public\".\"document\" ALTER COLUMN \"tenantId\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"tenantId\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "document",
+          "tenantId",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.codeSnippet.codeSnippet_tenantId_idx_c93ed4f1",
+    "label": "Create index \"codeSnippet_tenantId_idx_c93ed4f1\" on \"codeSnippet\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "codeSnippet_tenantId_idx_c93ed4f1",
+        "table": "codeSnippet"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"codeSnippet_tenantId_idx_c93ed4f1\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"codeSnippet_tenantId_idx_c93ed4f1\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"codeSnippet_tenantId_idx_c93ed4f1\"",
+        "sql": "CREATE INDEX \"codeSnippet_tenantId_idx_c93ed4f1\" ON \"public\".\"codeSnippet\" (\"tenantId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"codeSnippet_tenantId_idx_c93ed4f1\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"codeSnippet_tenantId_idx_c93ed4f1\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.document.document_tenantId_idx_c93ed4f1",
+    "label": "Create index \"document_tenantId_idx_c93ed4f1\" on \"document\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "document_tenantId_idx_c93ed4f1",
+        "table": "document"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"document_tenantId_idx_c93ed4f1\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"document_tenantId_idx_c93ed4f1\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"document_tenantId_idx_c93ed4f1\"",
+        "sql": "CREATE INDEX \"document_tenantId_idx_c93ed4f1\" ON \"public\".\"document\" (\"tenantId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"document_tenantId_idx_c93ed4f1\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"document_tenantId_idx_c93ed4f1\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.codeSnippet.codeSnippet_tenantId_fkey",
+    "label": "Add foreign key \"codeSnippet_tenantId_fkey\" on \"codeSnippet\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "codeSnippet_tenantId_fkey",
+        "table": "codeSnippet"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"codeSnippet_tenantId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "codeSnippet_tenantId_fkey",
+          "public",
+          "\"public\".\"codeSnippet\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"codeSnippet_tenantId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"codeSnippet\"\nADD CONSTRAINT \"codeSnippet_tenantId_fkey\"\nFOREIGN KEY (\"tenantId\")\nREFERENCES \"public\".\"tenant\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"codeSnippet_tenantId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "codeSnippet_tenantId_fkey",
+          "public",
+          "\"public\".\"codeSnippet\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.document.document_tenantId_fkey",
+    "label": "Add foreign key \"document_tenantId_fkey\" on \"document\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "document_tenantId_fkey",
+        "table": "document"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"document_tenantId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "document_tenantId_fkey",
+          "public",
+          "\"public\".\"document\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"document_tenantId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"document\"\nADD CONSTRAINT \"document_tenantId_fkey\"\nFOREIGN KEY (\"tenantId\")\nREFERENCES \"public\".\"tenant\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"document_tenantId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "document_tenantId_fkey",
+          "public",
+          "\"public\".\"document\""
+        ]
+      }
+    ]
+  }
+]

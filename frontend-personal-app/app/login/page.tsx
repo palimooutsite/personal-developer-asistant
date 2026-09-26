@@ -19,7 +19,7 @@ export default function LoginPage() {
 
     try {
       await login(username, password);
-      router.push('/');
+      router.replace('/workspace-selection');
       router.refresh();
     } catch (err) {
       if (err instanceof ApiError) {
@@ -37,59 +37,25 @@ export default function LoginPage() {
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-sm ring-1 ring-zinc-200">
         <div className="mb-8">
           <p className="text-sm font-medium text-zinc-500">Personal Developer Assistant</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950">
-            Login
-          </h1>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950">Login</h1>
           <p className="mt-2 text-sm text-zinc-500">
-            Masuk untuk mengakses project, task, knowledge, snippet, dan document.
+            Masuk untuk memilih workspace dan melanjutkan ke dashboard.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="username" className="mb-2 block text-sm font-medium text-zinc-800">
-              Username
-            </label>
-            <input
-              id="username"
-              name="username"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              autoComplete="username"
-              required
-              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200"
-              placeholder="developer"
-            />
+            <label htmlFor="username" className="mb-2 block text-sm font-medium text-zinc-800">Username</label>
+            <input id="username" name="username" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200" placeholder="developer" />
           </div>
-
           <div>
-            <label htmlFor="password" className="mb-2 block text-sm font-medium text-zinc-800">
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="current-password"
-              required
-              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200"
-              placeholder="••••••••"
-            />
+            <label htmlFor="password" className="mb-2 block text-sm font-medium text-zinc-800">Password</label>
+            <input id="password" name="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200" placeholder="••••••••" />
           </div>
 
-          {error ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
-          ) : null}
+          {error ? <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-xl bg-zinc-950 px-4 py-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+          <button type="submit" disabled={loading} className="w-full rounded-xl bg-zinc-950 px-4 py-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50">
             {loading ? 'Memproses...' : 'Login'}
           </button>
         </form>

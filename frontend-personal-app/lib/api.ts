@@ -19,37 +19,6 @@ function isPublicPath(path: string): boolean {
   );
 }
 
-async function ensureActiveTenant(token: string): Promise<string | null> {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  const existingTenantId = window.localStorage.getItem(TENANT_KEY);
-
-  if (existingTenantId) {
-    return existingTenantId;
-  }
-
-  const response = await fetch(`${API_PREFIX}/tenants`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    return null;
-  }
-
-  const tenants = (await response.json()) as Array<{ id: string }>;
-  const tenantId = tenants[0]?.id ?? null;
-
-  if (tenantId) {
-    window.localStorage.setItem(TENANT_KEY, tenantId);
-  }
-
-  return tenantId;
-}
-
 export async function apiRequest<T>(
   path: string,
   options: RequestInit = {},
@@ -63,10 +32,6 @@ export async function apiRequest<T>(
     typeof window !== 'undefined'
       ? window.localStorage.getItem(TENANT_KEY)
       : null;
-
-  if (token && !isPublicPath(path) && !activeTenantId) {
-    activeTenantId = await ensureActiveTenant(token);
-  }
 
   const headers = new Headers(options.headers);
 

@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ApiError } from '../../lib/api';
 import {
   clearActiveTenantId,
@@ -26,17 +26,18 @@ interface TenantContextValue {
   loading: boolean;
   error: string | null;
   refreshTenants: () => Promise<void>;
-  selectTenant: (tenantId: string) => void;
+  selectTenant: (tenantId: string, redirect?: boolean) => void;
 }
 
 const TenantContext = createContext<TenantContextValue | null>(null);
 
+const SELECTION_PATH = '/workspace-selection';
+
 export function TenantProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [activeTenantId, setActiveTenantIdState] = useState<string | null>(
-    null,
-  );
+  const [activeTenantId, setActiveTenantIdState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,9 +59,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         (tenant) => tenant.id === storedTenantId,
       );
 
-      const nextTenantId = storedTenantExists
-        ? storedTenantId
-        : result[0]?.id ?? null;
+      const nextTenantId = storedTenantExists ? storedTenantId : null;
 
       if (nextTenantId) {
         setActiveTenantId(nextTenantId);
@@ -69,6 +68,20 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       }
 
       setActiveTenantIdState(nextTenantId);
+
+      if (
+        result.length === 0 &&
+        pathname !== SELECTION_PATH &&
+        pathname !== '/tenants'
+      ) {
+        router.replace(SELECTION_PATH);
+      } else if (
+        result.length > 0 &&
+        !nextTenantId &&
+        pathname !== SELECTION_PATH
+      ) {
+        router.replace(SELECTION_PATH);
+      }
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         clearActiveTenantId();
@@ -84,28 +97,32 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [pathname]);
+  }, [pathname, router]);
 
   useEffect(() => {
     void refreshTenants();
   }, [refreshTenants]);
 
-  const selectTenant = useCallback((tenantId: string) => {
-    const tenant = tenants.find((item) => item.id === tenantId);
+  const selectTenant = useCallback(
+    (tenantId: string, redirect = true) => {
+      const tenant = tenants.find((item) => item.id === tenantId);
 
-    if (!tenant) {
-      return;
-    }
+      if (!tenant) {
+        return;
+      }
 
-    setActiveTenantId(tenantId);
-    setActiveTenantIdState(tenantId);
+      setActiveTenantId(tenantId);
+      setActiveTenantIdState(tenantId);
 
-    window.location.reload();
-  }, [tenants]);
+      if (redirect) {
+        router.push('/');
+      }
+    },
+    [router, tenants],
+  );
 
   const activeTenant = useMemo(
-    () =>
-      tenants.find((tenant) => tenant.id === activeTenantId) ?? null,
+    () => tenants.find((tenant) => tenant.id === activeTenantId) ?? null,
     [activeTenantId, tenants],
   );
 

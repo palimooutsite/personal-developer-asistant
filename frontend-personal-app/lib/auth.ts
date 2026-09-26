@@ -1,4 +1,5 @@
 import { apiRequest } from './api';
+import { clearActiveTenantId } from './tenant';
 
 const TOKEN_KEY = 'pda_access_token';
 
@@ -23,12 +24,14 @@ export async function login(
   });
 
   window.localStorage.setItem(TOKEN_KEY, response.accessToken);
+  clearActiveTenantId();
 
   return response;
 }
 
 export function logout(): void {
   window.localStorage.removeItem(TOKEN_KEY);
+  clearActiveTenantId();
 }
 
 export async function getCurrentUser(): Promise<CurrentUser> {

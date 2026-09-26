@@ -99,6 +99,8 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
     setActiveTenantId(tenantId);
     setActiveTenantIdState(tenantId);
+
+    window.location.reload();
   }, [tenants]);
 
   const activeTenant = useMemo(

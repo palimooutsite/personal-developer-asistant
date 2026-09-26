@@ -24,7 +24,7 @@ const modules = [
   { title: 'Knowledge', href: '/knowledge', description: 'Simpan dokumentasi, catatan teknis, dan pengetahuan.', icon: '◈', accent: 'violet' },
   { title: 'Code Snippets', href: '/snippets', description: 'Simpan potongan kode agar mudah digunakan kembali.', icon: '</>', accent: 'emerald' },
   { title: 'Documents', href: '/documents', description: 'Kelola dokumen dan file yang berkaitan dengan pekerjaan.', icon: '▤', accent: 'amber' },
-  { title: 'Workspace & Members', href: '/tenants', description: 'Kelola workspace aktif, anggota, dan role akses.', icon: '⌂', accent: 'cyan' },
+  { title: 'Workspace Settings', href: '/workspace-settings', description: 'Ubah nama workspace dan kelola anggota serta role akses.', icon: '⚙', accent: 'cyan' },
 ] as const;
 
 const statCards = [

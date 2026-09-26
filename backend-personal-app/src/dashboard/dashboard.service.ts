@@ -27,62 +27,86 @@ export interface DashboardResponse {
 export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getSummary(userId: string): Promise<DashboardResponse> {
-    const memberships = await this.prisma.client.orm.public.ProjectMember
-      .where({ userId })
-      .select('projectId')
-      .all();
+  async getSummary(
+    userId: string,
+    tenantId: string,
+  ): Promise<DashboardResponse> {
+    const memberships =
+      await this.prisma.client.orm.public.ProjectMember
+        .where({ userId })
+        .select('projectId')
+        .all();
 
-    const projectIds = memberships.map((item) => item.projectId);
+    const projectIds = memberships.map(
+      (item) => item.projectId,
+    );
 
     const projectIdSet = new Set(projectIds);
 
-    const allProjects = await this.prisma.client.orm.public.Project
-      .select('id', 'status')
-      .all();
+    const allProjects =
+      await this.prisma.client.orm.public.Project
+        .where({ tenantId })
+        .select('id', 'status')
+        .all();
 
     const projects = allProjects.filter((project) =>
       projectIdSet.has(project.id),
     );
 
-    const allTasks = await this.prisma.client.orm.public.Task
-      .select('projectId', 'status', 'priority')
-      .all();
+    const allTasks =
+      await this.prisma.client.orm.public.Task
+        .select('projectId', 'status', 'priority')
+        .all();
 
     const tasks = allTasks.filter((task) =>
       projectIdSet.has(task.projectId),
     );
 
-    const knowledge = await this.prisma.client.orm.public.KnowledgeArticle
-      .where({ createdBy: userId })
-      .select('id')
-      .all();
+    const knowledge =
+      await this.prisma.client.orm.public.KnowledgeArticle
+        .where({
+          tenantId,
+          createdBy: userId,
+        })
+        .select('id')
+        .all();
 
-    const snippets = await this.prisma.client.orm.public.CodeSnippet
-      .where({ createdBy: userId })
-      .select('id', 'language')
-      .all();
+    const snippets =
+      await this.prisma.client.orm.public.CodeSnippet
+        .where({
+          tenantId,
+          createdBy: userId,
+        })
+        .select('id', 'language')
+        .all();
 
-    const tags = await this.prisma.client.orm.public.Tag
-      .select('id')
-      .all();
+    const tags =
+      await this.prisma.client.orm.public.Tag
+        .where({ tenantId })
+        .select('id')
+        .all();
 
     const byStatus: Record<string, number> = {};
     for (const project of projects) {
-      byStatus[project.status] = (byStatus[project.status] ?? 0) + 1;
+      byStatus[project.status] =
+        (byStatus[project.status] ?? 0) + 1;
     }
 
     const taskByStatus: Record<string, number> = {};
     const taskByPriority: Record<string, number> = {};
     for (const task of tasks) {
-      taskByStatus[task.status] = (taskByStatus[task.status] ?? 0) + 1;
-      taskByPriority[task.priority] = (taskByPriority[task.priority] ?? 0) + 1;
+      taskByStatus[task.status] =
+        (taskByStatus[task.status] ?? 0) + 1;
+      taskByPriority[task.priority] =
+        (taskByPriority[task.priority] ?? 0) + 1;
     }
 
     const byLanguage: Record<string, number> = {};
     for (const snippet of snippets) {
-      const language = snippet.language.trim() || 'unknown';
-      byLanguage[language] = (byLanguage[language] ?? 0) + 1;
+      const language =
+        snippet.language.trim() || 'unknown';
+      byLanguage[language] =
+        (byLanguage[language] ?? 0) + 1;
     }
 
     return {

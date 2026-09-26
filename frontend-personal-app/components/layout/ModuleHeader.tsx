@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { TenantSwitcher } from '../providers/TenantSwitcher';
 
 type ModuleAccent = 'indigo' | 'blue' | 'violet' | 'emerald' | 'amber' | 'cyan';
 
@@ -33,18 +34,19 @@ export function ModuleHeader({
 }: ModuleHeaderProps) {
   return (
     <header className="mb-8">
-      <Link
-        href="/"
-        className="mb-4 inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-200"
-      >
-        ← Kembali ke Menu
-      </Link>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Link
+          href="/"
+          className="inline-flex w-fit items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+        >
+          ← Kembali ke Menu
+        </Link>
+        <TenantSwitcher />
+      </div>
 
       <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div
-            className={`mb-3 inline-flex items-center gap-2 rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm ${ACCENT_STYLES[accent]}`}
-          >
+          <div className={`mb-3 inline-flex items-center gap-2 rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm ${ACCENT_STYLES[accent]}`}>
             <span className="flex h-5 w-5 items-center justify-center rounded-md bg-white/15 text-[10px]">
               {icon}
             </span>

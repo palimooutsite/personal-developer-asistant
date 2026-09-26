@@ -2,18 +2,12 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ApiError } from '../../../lib/api';
-import {
-  addTenantMember,
-  getTenantMembers,
-  removeTenantMember,
-  updateTenant,
-  updateTenantMemberRole,
-  type TenantMember,
-} from '../../../lib/tenant';
-import { searchUsers, type UserPickerItem } from '../../../lib/users';
-import { useTenant } from '../../../components/providers/TenantProvider';
-import { ModuleHeader } from '../../../components/layout/ModuleHeader';
+import { addTenantMember, getTenantMembers, removeTenantMember, TenantMember, updateTenant, updateTenantMemberRole } from '@/lib/tenant';
+import { searchUsers, UserPickerItem } from '@/lib/users';
+import { useTenant } from '@/components/providers/TenantProvider';
+import { ApiError } from '@/lib/api';
+import { ModuleHeader } from '@/components/layout/ModuleHeader';
+
 
 export default function WorkspaceSettingsPage() {
   const router = useRouter();

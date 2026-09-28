@@ -1,36 +1,3 @@
-            <form onSubmit={inviteMember} className="border-b border-zinc-100 bg-zinc-50 p-5 sm:p-6">
-              <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_150px_auto]">
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(event) => setInviteEmail(event.target.value)}
-                  placeholder="email.member@example.com"
-                  required
-                  maxLength={255}
-                  className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-900"
-                />
-
-                <select
-                  value={role}
-                  onChange={(event) => setRole(event.target.value as 'ADMIN' | 'MEMBER')}
-                  className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold"
-                >
-                  <option value="MEMBER">MEMBER</option>
-                  <option value="ADMIN">ADMIN</option>
-                </select>
-
-                <button
-                  type="submit"
-                  disabled={saving || !inviteEmail.trim()}
-                  className="rounded-xl bg-cyan-700 px-5 py-3 text-sm font-semibold text-white hover:bg-cyan-800 disabled:opacity-50"
-                >
-                  Send Invitation
-                </button>
-              </div>
-              <p className="mt-2 text-xs text-zinc-500">
-                Invitation berlaku 7 hari dan hanya dapat digunakan oleh akun dengan email yang sama.
-              </p>
-            </form>
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
@@ -221,67 +188,6 @@ export default function WorkspaceSettingsPage() {
           </div>
 
           {canManage ? (
-            <form onSubmit={inviteMember} className="border-b border-zinc-100 bg-zinc-50 p-5 sm:p-6">
-              <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_150px_auto]">
-                <div className="relative">
-                  <input
-                    value={selectedUser ? selectedUser.name || selectedUser.username : search}
-                    onChange={(event) => {
-                      setSelectedUser(null);
-                      setSearch(event.target.value);
-                    }}
-                    placeholder="Cari username, nama, atau email..."
-                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-900"
-                  />
-                  {!selectedUser && results.length > 0 ? (
-                    <div className="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl">
-                      {results.map((user) => (
-                        <button
-                          key={user.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setSearch('');
-                            setResults([]);
-                          }}
-                          className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-zinc-50"
-                        >
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cyan-50 text-xs font-bold text-cyan-700">
-                            {(user.name || user.username).charAt(0).toUpperCase()}
-                          </span>
-                          <span className="min-w-0">
-                            <span className="block truncate text-sm font-semibold">{user.name || user.username}</span>
-                            <span className="block truncate text-xs text-zinc-400">@{user.username} · {user.email}</span>
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-
-                <select
-                  value={role}
-                  onChange={(event) => setRole(event.target.value as 'ADMIN' | 'MEMBER')}
-                  className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold"
-                >
-                  <option value="MEMBER">MEMBER</option>
-                  <option value="ADMIN">ADMIN</option>
-                </select>
-
-                <button
-                  type="submit"
-                  disabled={saving || !selectedUser}
-                  className="rounded-xl bg-cyan-700 px-5 py-3 text-sm font-semibold text-white hover:bg-cyan-800 disabled:opacity-50"
-                >
-                  Invite Member
-                </button>
-              </div>
-              {selectedUser ? (
-                <p className="mt-2 text-xs text-zinc-500">
-                  User terpilih: <span className="font-semibold">{selectedUser.name || selectedUser.username}</span>
-                </p>
-              ) : null}
-            </form>
           ) : (
             <div className="bg-zinc-50 px-5 py-4 text-sm text-zinc-500 sm:px-6">
               Hanya OWNER atau ADMIN yang dapat mengelola member.

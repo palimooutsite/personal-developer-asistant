@@ -1,9 +1,41 @@
+            <form onSubmit={inviteMember} className="border-b border-zinc-100 bg-zinc-50 p-5 sm:p-6">
+              <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_150px_auto]">
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(event) => setInviteEmail(event.target.value)}
+                  placeholder="email.member@example.com"
+                  required
+                  maxLength={255}
+                  className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-900"
+                />
+
+                <select
+                  value={role}
+                  onChange={(event) => setRole(event.target.value as 'ADMIN' | 'MEMBER')}
+                  className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold"
+                >
+                  <option value="MEMBER">MEMBER</option>
+                  <option value="ADMIN">ADMIN</option>
+                </select>
+
+                <button
+                  type="submit"
+                  disabled={saving || !inviteEmail.trim()}
+                  className="rounded-xl bg-cyan-700 px-5 py-3 text-sm font-semibold text-white hover:bg-cyan-800 disabled:opacity-50"
+                >
+                  Send Invitation
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-zinc-500">
+                Invitation berlaku 7 hari dan hanya dapat digunakan oleh akun dengan email yang sama.
+              </p>
+            </form>
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { addTenantMember, getTenantMembers, removeTenantMember, TenantMember, updateTenant, updateTenantMemberRole } from '@/lib/tenant';
-import { searchUsers, UserPickerItem } from '@/lib/users';
+import { createTenantInvitation, getTenantMembers, removeTenantMember, TenantMember, updateTenant, updateTenantMemberRole } from '@/lib/tenant';
 import { useTenant } from '@/components/providers/TenantProvider';
 import { ApiError } from '@/lib/api';
 import { ModuleHeader } from '@/components/layout/ModuleHeader';
@@ -17,9 +49,7 @@ export default function WorkspaceSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [workspaceName, setWorkspaceName] = useState('');
-  const [search, setSearch] = useState('');
-  const [results, setResults] = useState<UserPickerItem[]>([]);
-  const [selectedUser, setSelectedUser] = useState<UserPickerItem | null>(null);
+  const [inviteEmail, setInviteEmail] = useState('');
   const [role, setRole] = useState<'ADMIN' | 'MEMBER'>('MEMBER');
 
   const canManage = activeTenant?.role === 'OWNER' || activeTenant?.role === 'ADMIN';
@@ -47,29 +77,6 @@ export default function WorkspaceSettingsPage() {
     void loadMembers();
   }, [activeTenant?.id, activeTenant?.name]);
 
-  useEffect(() => {
-    if (!canManage || !activeTenant || !search.trim()) {
-      setResults([]);
-      return;
-    }
-
-    const timer = window.setTimeout(async () => {
-      try {
-        const response = await searchUsers(
-          search,
-          1,
-          10,
-          members.map((member) => member.userId),
-        );
-        setResults(response.data);
-      } catch {
-        setResults([]);
-      }
-    }, 300);
-
-    return () => window.clearTimeout(timer);
-  }, [search, canManage, activeTenant?.id, members]);
-
   async function saveWorkspace(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!activeTenant || !canManage || !workspaceName.trim()) return;
@@ -88,16 +95,13 @@ export default function WorkspaceSettingsPage() {
 
   async function inviteMember(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!activeTenant || !canManage || !selectedUser) return;
+    if (!activeTenant || !canManage || !inviteEmail.trim()) return;
 
     setSaving(true);
     setError('');
     try {
-      const member = await addTenantMember(activeTenant.id, selectedUser.id, role);
-      setMembers((current) => [...current, member]);
-      setSelectedUser(null);
-      setSearch('');
-      setResults([]);
+      await createTenantInvitation(activeTenant.id, inviteEmail.trim(), role);
+      setInviteEmail('');
       setRole('MEMBER');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal mengundang member.');
@@ -212,7 +216,7 @@ export default function WorkspaceSettingsPage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Members</p>
             <h2 className="mt-1 text-xl font-bold">Invite & Manage Members</h2>
             <p className="mt-1 text-sm text-zinc-500">
-              Tambahkan user yang sudah terdaftar ke workspace ini.
+              Masukkan email anggota. Invitation akan dikirim ke email tersebut.
             </p>
           </div>
 

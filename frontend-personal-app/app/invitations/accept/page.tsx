@@ -1,19 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { acceptTenantInvitation } from '@/lib/tenant';
 import { isAuthenticated } from '@/lib/auth';
 import { ApiError } from '@/lib/api';
 
 export default function AcceptInvitationPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [status, setStatus] = useState('Memproses invitation...');
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const token = searchParams.get('token');
+    const token = new URLSearchParams(window.location.search).get('token');
 
     if (!token) {
       setError('Token invitation tidak ditemukan.');
@@ -41,7 +40,7 @@ export default function AcceptInvitationPage() {
         );
       }
     })();
-  }, [router, searchParams]);
+  }, [router]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-zinc-100 px-4">

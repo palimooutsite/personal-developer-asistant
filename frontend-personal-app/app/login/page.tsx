@@ -58,6 +58,13 @@ export default function LoginPage() {
           <button type="submit" disabled={loading} className="w-full rounded-xl bg-zinc-950 px-4 py-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50">
             {loading ? 'Memproses...' : 'Login'}
           </button>
+
+          <p className="text-center text-sm text-zinc-500">
+            Belum punya akun?{' '}
+            <a href="/register" className="font-semibold text-zinc-950 hover:underline">
+              Register
+            </a>
+          </p>
         </form>
       </div>
     </main>

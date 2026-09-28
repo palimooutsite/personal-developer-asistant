@@ -99,3 +99,29 @@ export function setActiveTenantId(tenantId: string): void {
 export function clearActiveTenantId(): void {
   window.localStorage.removeItem(TENANT_KEY);
 }
+
+export async function createTenantInvitation(
+  tenantId: string,
+  email: string,
+  role: 'ADMIN' | 'MEMBER',
+): Promise<{ message: string; email: string; role: string }> {
+  return apiRequest<{ message: string; email: string; role: string }>(
+    `/tenants/${tenantId}/invitations`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ email, role }),
+    },
+  );
+}
+
+export async function acceptTenantInvitation(
+  token: string,
+): Promise<{ message: string; tenantId: string; role: string }> {
+  return apiRequest<{ message: string; tenantId: string; role: string }>(
+    '/tenants/invitations/accept',
+    {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    },
+  );
+}

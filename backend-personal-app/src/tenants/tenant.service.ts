@@ -10,6 +10,9 @@ import { CreateTenantDto } from './dto/create-tenant.dto.js';
 import { UpdateTenantDto } from './dto/update-tenant.dto.js';
 import { AddTenantMemberDto } from './dto/add-tenant-member.dto.js';
 import { UpdateTenantMemberDto } from './dto/update-tenant-member.dto.js';
+import { CreateTenantInvitationDto } from './dto/create-tenant-invitation.dto.js';
+import { EmailService } from '../email/email.service.js';
+import { randomBytes } from 'node:crypto';
 
 export interface TenantListItem {
   id: string;
@@ -33,7 +36,10 @@ export interface TenantResponse extends TenantListItem {}
 
 @Injectable()
 export class TenantService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly emailService: EmailService,
+  ) {}
 
   async create(
     data: CreateTenantDto,

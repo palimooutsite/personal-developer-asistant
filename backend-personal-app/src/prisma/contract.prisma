@@ -50,6 +50,7 @@ model User {
   projectMembers    ProjectMember[]
   createdTenants Tenant[]
   tenantMembers TenantMember[]
+  sentInvitations TenantInvitation[]
   createdTasks      Task[]
   knowledgeArticles KnowledgeArticle[]
   codeSnippets CodeSnippet[]
@@ -69,6 +70,7 @@ model Tenant {
   )
 
   members TenantMember[]
+  invitations TenantInvitation[]
   projects Project[]
   knowledgeArticles KnowledgeArticle[]
   tags Tag[]
@@ -97,6 +99,34 @@ model TenantMember {
 
   @@unique([tenantId, userId])
   @@index([userId])
+}
+
+
+model TenantInvitation {
+  id          String            @id @default(uuid())
+  tenantId    String
+  email       String
+  role        TenantRole
+  token       String            @unique
+  invitedBy   String
+  expiresAt   TimestamptzString
+  acceptedAt  TimestamptzString?
+  createdAt   TimestamptzString  @default(now())
+  updatedAt   temporal.updatedAtString()
+
+  tenant Tenant @relation(
+    fields: [tenantId],
+    references: [id]
+  )
+
+  inviter User @relation(
+    fields: [invitedBy],
+    references: [id]
+  )
+
+  @@index([tenantId])
+  @@index([email])
+  @@index([expiresAt])
 }
 
 model Project {

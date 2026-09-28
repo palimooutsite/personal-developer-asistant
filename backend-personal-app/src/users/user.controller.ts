@@ -1,46 +1,27 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard.js';
+import { TenantContextGuard } from '../tenants/guard/tenant-context.guard.js';
+import type { TenantRequest } from '../tenants/types/tenant-request.js';
 import { UsersService } from './user.service.js';
+
 @Controller('users')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, TenantContextGuard)
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
   ) {}
 
-  @Post()
-  async createUser(
-    @Body()
-    body: {
-      username: string;
-      email: string;
-      passwordHash: string;
-      name?: string;
-    },
-  ) {
-    return this.usersService.createUser(body);
-  }
-
-  @Get()
-  async findAll() {
-    return this.usersService.findAll();
-  }
-
   @Get('search')
   async search(
-    @Query('search') search?: string,
+    @Query('search') search: string | undefined,
     @Query('page') page = '1',
     @Query('limit') limit = '5',
     @Query('excludeUserIds') excludeUserIds = '',
+    @Req() req: TenantRequest,
   ) {
     return this.usersService.searchUsers(
+      req.tenant.tenantId,
+      req.user.userId,
       search,
       Number(page),
       Number(limit),

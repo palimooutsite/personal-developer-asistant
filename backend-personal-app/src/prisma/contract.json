@@ -48,6 +48,10 @@
       "model": "Tenant",
       "namespace": "public"
     },
+    "tenantInvitation": {
+      "model": "TenantInvitation",
+      "namespace": "public"
+    },
     "tenantMember": {
       "model": "TenantMember",
       "namespace": "public"
@@ -1547,6 +1551,21 @@
                   "namespace": "public"
                 }
               },
+              "invitations": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "tenantId"
+                  ]
+                },
+                "to": {
+                  "model": "TenantInvitation",
+                  "namespace": "public"
+                }
+              },
               "knowledgeArticles": {
                 "cardinality": "1:N",
                 "on": {
@@ -1628,6 +1647,156 @@
               },
               "namespaceId": "public",
               "table": "tenant"
+            }
+          },
+          "TenantInvitation": {
+            "fields": {
+              "acceptedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "email": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "expiresAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "invitedBy": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "role": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "TenantRole",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "tenantId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "token": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "inviter": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "invitedBy"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              },
+              "tenant": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "tenantId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Tenant",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "acceptedAt": {
+                  "column": "acceptedAt"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "email": {
+                  "column": "email"
+                },
+                "expiresAt": {
+                  "column": "expiresAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "invitedBy": {
+                  "column": "invitedBy"
+                },
+                "role": {
+                  "column": "role"
+                },
+                "tenantId": {
+                  "column": "tenantId"
+                },
+                "token": {
+                  "column": "token"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "tenantInvitation"
             }
           },
           "TenantMember": {
@@ -1895,6 +2064,21 @@
                 },
                 "to": {
                   "model": "ProjectMember",
+                  "namespace": "public"
+                }
+              },
+              "sentInvitations": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "invitedBy"
+                  ]
+                },
+                "to": {
+                  "model": "TenantInvitation",
                   "namespace": "public"
                 }
               },
@@ -3126,6 +3310,157 @@
               },
               "uniques": []
             },
+            "tenantInvitation": {
+              "checks": [
+                {
+                  "expression": "\"role\" IN ('OWNER', 'ADMIN', 'MEMBER')",
+                  "name": "tenantInvitation_role_check_50a44636",
+                  "prefix": "tenantInvitation_role_check"
+                }
+              ],
+              "columns": {
+                "acceptedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "email": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "expiresAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "invitedBy": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "role": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "TenantRole",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "tenantId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "token": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "tenantId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "tenantInvitation"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "tenant"
+                  }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "invitedBy"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "tenantInvitation"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "email"
+                  ],
+                  "name": "tenantInvitation_email_idx_46df9cad",
+                  "prefix": "tenantInvitation_email_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "expiresAt"
+                  ],
+                  "name": "tenantInvitation_expiresAt_idx_6b6b8c10",
+                  "prefix": "tenantInvitation_expiresAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "invitedBy"
+                  ],
+                  "name": "tenantInvitation_invitedBy_idx_8266eaa5",
+                  "prefix": "tenantInvitation_invitedBy_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenantId"
+                  ],
+                  "name": "tenantInvitation_tenantId_idx_c93ed4f1",
+                  "prefix": "tenantInvitation_tenantId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "token"
+                  ]
+                }
+              ]
+            },
             "tenantMember": {
               "checks": [
                 {
@@ -3359,10 +3694,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "73923a610bcb6c3b4bcfb1829c19d42b160a5f0ae41ba69d09df19d78c80bba4"
+    "storageHash": "59d38c67af522997833b997c88dea9f8b64a1dcbfab8393373b05391bb8a539d"
   },
   "execution": {
-    "executionHash": "b64a607aee2e618691e1b1bf32a573e897181439e5540ec61549a04bcd4b7ba9",
+    "executionHash": "0ba7cfb3c287cbbf9b2b51fe49f3c26cb3e69e3d4547c06d2386450b352f1884",
     "mutations": {
       "defaults": [
         {
@@ -3604,6 +3939,32 @@
             "column": "updatedAt",
             "namespace": "public",
             "table": "tenant"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "tenantInvitation"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "tenantInvitation"
           }
         },
         {

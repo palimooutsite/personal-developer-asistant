@@ -7,11 +7,35 @@ export interface LoginResponse {
   accessToken: string;
 }
 
+export interface RegisterResponse {
+  id: string;
+  username: string;
+  email: string;
+  name: string | null;
+}
+
 export interface CurrentUser {
   id: string;
   username: string;
   email: string;
   name: string | null;
+}
+
+export async function register(
+  username: string,
+  email: string,
+  password: string,
+  name?: string,
+): Promise<RegisterResponse> {
+  return apiRequest<RegisterResponse>('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({
+      username,
+      email,
+      password,
+      name: name?.trim() || undefined,
+    }),
+  });
 }
 
 export async function login(

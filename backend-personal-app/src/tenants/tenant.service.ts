@@ -526,4 +526,190 @@ async removeMember(
     message: 'Member berhasil dihapus dari workspace',
   };
 }
+  async createInvitation(
+    tenantId: string,
+    currentUserId: string,
+    data: CreateTenantInvitationDto,
+  ): Promise<{ message: string; email: string; role: string }> {
+    const membership = await this.getMembership(tenantId, currentUserId);
+
+    if (membership.role !== 'OWNER' && membership.role !== 'ADMIN') {
+      throw new ForbiddenException(
+        'Anda tidak memiliki izin untuk mengundang member',
+      );
+    }
+
+    const email = data.email.trim().toLowerCase();
+
+    const user = await this.prisma.client.orm.public.User
+      .where({ email })
+      .select('id', 'email')
+      .first();
+
+    if (user) {
+      const existingMember =
+        await this.prisma.client.orm.public.TenantMember
+          .where({ tenantId, userId: user.id })
+          .first();
+
+      if (existingMember) {
+        throw new ConflictException(
+          'Email tersebut sudah menjadi member workspace',
+        );
+      }
+    }
+
+    const tenant = await this.prisma.client.orm.public.Tenant
+      .where({ id: tenantId })
+      .select('id', 'name')
+      .first();
+
+    if (!tenant) {
+      throw new NotFoundException('Workspace tidak ditemukan');
+    }
+
+    const inviter = await this.prisma.client.orm.public.User
+      .where({ id: currentUserId })
+      .select('name', 'username')
+      .first();
+
+    const oldInvitation =
+      await this.prisma.client.orm.public.TenantInvitation
+        .where({ tenantId, email })
+        .select('id')
+        .first();
+
+    if (oldInvitation) {
+      await this.prisma.client.orm.public.TenantInvitation
+        .where({ id: oldInvitation.id })
+        .delete();
+    }
+
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date(
+      Date.now() + 7 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+
+    await this.prisma.client.orm.public.TenantInvitation.create({
+      tenantId,
+      email,
+      role: data.role,
+      token,
+      invitedBy: currentUserId,
+      expiresAt,
+    });
+
+    const frontendUrl = (
+      process.env.FRONTEND_URL ?? 'http://localhost:3000'
+    ).replace(/\/$/, '');
+
+    const acceptUrl =
+      `${frontendUrl}/invitations/accept?token=${encodeURIComponent(token)}`;
+
+    try {
+      await this.emailService.sendTenantInvitation({
+        to: email,
+        tenantName: tenant.name,
+        role: data.role,
+        inviterName:
+          inviter?.name ??
+          inviter?.username ??
+          'Workspace admin',
+        acceptUrl,
+      });
+    } catch (error) {
+      await this.prisma.client.orm.public.TenantInvitation
+        .where({ token })
+        .delete();
+      throw error;
+    }
+
+    return {
+      message: 'Invitation berhasil dikirim',
+      email,
+      role: data.role,
+    };
+  }
+
+  async acceptInvitation(
+    token: string,
+    userId: string,
+  ): Promise<{ message: string; tenantId: string; role: string }> {
+    const invitation =
+      await this.prisma.client.orm.public.TenantInvitation
+        .where({ token })
+        .select(
+          'id',
+          'tenantId',
+          'email',
+          'role',
+          'expiresAt',
+          'acceptedAt',
+        )
+        .first();
+
+    if (!invitation) {
+      throw new NotFoundException('Invitation tidak ditemukan');
+    }
+
+    if (invitation.acceptedAt) {
+      throw new ConflictException('Invitation sudah digunakan');
+    }
+
+    if (
+      new Date(
+        invitation.expiresAt as string | Date,
+      ).getTime() <= Date.now()
+    ) {
+      throw new ForbiddenException('Invitation sudah kedaluwarsa');
+    }
+
+    const user = await this.prisma.client.orm.public.User
+      .where({ id: userId })
+      .select('id', 'email')
+      .first();
+
+    if (!user) {
+      throw new NotFoundException('User tidak ditemukan');
+    }
+
+    if (user.email.toLowerCase() !== invitation.email.toLowerCase()) {
+      throw new ForbiddenException(
+        'Invitation ini dikirim ke email yang berbeda',
+      );
+    }
+
+    const existingMember =
+      await this.prisma.client.orm.public.TenantMember
+        .where({
+          tenantId: invitation.tenantId,
+          userId,
+        })
+        .first();
+
+    if (existingMember) {
+      throw new ConflictException(
+        'Anda sudah menjadi member workspace ini',
+      );
+    }
+
+    await this.prisma.client.orm.public.TenantMember.create({
+      tenantId: invitation.tenantId,
+      userId,
+      role: invitation.role,
+    });
+
+    await this.prisma.client.orm.public.TenantInvitation
+      .where({ id: invitation.id })
+      .update({
+        acceptedAt: new Date().toISOString(),
+      });
+
+    return {
+      message: 'Invitation berhasil diterima',
+      tenantId: invitation.tenantId,
+      role: invitation.role,
+    };
+  }
+
 }

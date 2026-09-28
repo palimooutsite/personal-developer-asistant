@@ -1,13 +1,17 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { FormEvent, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ApiError } from '../../lib/api';
 import { login } from '../../lib/auth';
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const [invitation, setInvitation] = useState<string | null>(null);
+
+  useEffect(() => {
+    setInvitation(new URLSearchParams(window.location.search).get('invitation'));
+  }, []);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -20,7 +24,7 @@ export default function LoginPage() {
 
     try {
       await login(username, password);
-      const invitation = searchParams.get('invitation');
+      const invitation = new URLSearchParams(window.location.search).get('invitation');
       router.replace(
         invitation
           ? `/invitations/accept?token=${encodeURIComponent(invitation)}`
@@ -67,7 +71,7 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-zinc-500">
             Belum punya akun?{' '}
-            <a href={`/register${searchParams.get('invitation') ? `?invitation=${encodeURIComponent(searchParams.get('invitation')!)}` : ''}`} className="font-semibold text-zinc-950 hover:underline">
+            <a href={`/register${invitation ? `?invitation=${encodeURIComponent(invitation)}` : ''}`} className="font-semibold text-zinc-950 hover:underline">
               Register
             </a>
           </p>

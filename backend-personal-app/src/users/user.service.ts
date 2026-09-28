@@ -50,6 +50,8 @@ export class UsersService {
   }
 
   async searchUsers(
+    tenantId: string,
+    currentUserId: string,
     search?: string,
     page = 1,
     limit = 5,
@@ -58,7 +60,36 @@ export class UsersService {
     data: UserResponse[];
     meta: { page: number; limit: number; total: number; totalPages: number };
   }> {
-    const users = await this.findAll();
+    const membership = await this.prisma.client.orm.public.TenantMember
+      .where({
+        tenantId,
+        userId: currentUserId,
+      })
+      .select('role')
+      .first();
+
+    if (!membership) {
+      throw new ForbiddenException('Anda bukan member workspace ini');
+    }
+
+    if (membership.role !== 'OWNER' && membership.role !== 'ADMIN') {
+      throw new ForbiddenException(
+        'Anda tidak memiliki izin untuk mencari user',
+      );
+    }
+
+    const tenantMembers = await this.prisma.client.orm.public.TenantMember
+      .where({ tenantId })
+      .select('userId')
+      .all();
+
+    const workspaceMemberIds = new Set(
+      tenantMembers.map((member) => member.userId),
+    );
+
+    const users = (await this.findAll()).filter(
+      (user) => !workspaceMemberIds.has(user.id),
+    );
     const keyword = search?.trim().toLowerCase();
     const normalizedPage = Math.max(1, page);
     const normalizedLimit = Math.min(10, Math.max(1, limit));

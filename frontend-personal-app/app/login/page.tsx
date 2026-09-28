@@ -1,12 +1,13 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ApiError } from '../../lib/api';
 import { login } from '../../lib/auth';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -19,7 +20,12 @@ export default function LoginPage() {
 
     try {
       await login(username, password);
-      router.replace('/workspace-selection');
+      const invitation = searchParams.get('invitation');
+      router.replace(
+        invitation
+          ? `/invitations/accept?token=${encodeURIComponent(invitation)}`
+          : '/workspace-selection',
+      );
       router.refresh();
     } catch (err) {
       if (err instanceof ApiError) {
@@ -61,7 +67,7 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-zinc-500">
             Belum punya akun?{' '}
-            <a href="/register" className="font-semibold text-zinc-950 hover:underline">
+            <a href={`/register${searchParams.get('invitation') ? `?invitation=${encodeURIComponent(searchParams.get('invitation')!)}` : ''}`} className="font-semibold text-zinc-950 hover:underline">
               Register
             </a>
           </p>

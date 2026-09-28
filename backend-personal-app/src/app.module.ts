@@ -13,6 +13,7 @@ import { SnippetsModule } from './snippets/snippets.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 import { DocumentsModule } from './documents/documents.module.js';
 import { TenantModule } from './tenants/tenant.module.js';
+import { EmailModule } from './email/email.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -28,6 +29,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     PrismaModule,
     HealthModule,
     TenantModule,
+    EmailModule,
     UsersModule,
     AuthModule,
     ProjectsModule,

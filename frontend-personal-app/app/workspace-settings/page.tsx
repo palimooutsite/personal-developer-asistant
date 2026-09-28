@@ -188,6 +188,39 @@ export default function WorkspaceSettingsPage() {
           </div>
 
           {canManage ? (
+            <form onSubmit={inviteMember} className="border-b border-zinc-100 bg-zinc-50 p-5 sm:p-6">
+              <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_150px_auto]">
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(event) => setInviteEmail(event.target.value)}
+                  placeholder="email.member@example.com"
+                  required
+                  maxLength={255}
+                  className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-900"
+                />
+
+                <select
+                  value={role}
+                  onChange={(event) => setRole(event.target.value as 'ADMIN' | 'MEMBER')}
+                  className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold"
+                >
+                  <option value="MEMBER">MEMBER</option>
+                  <option value="ADMIN">ADMIN</option>
+                </select>
+
+                <button
+                  type="submit"
+                  disabled={saving || !inviteEmail.trim()}
+                  className="rounded-xl bg-cyan-700 px-5 py-3 text-sm font-semibold text-white hover:bg-cyan-800 disabled:opacity-50"
+                >
+                  Send Invitation
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-zinc-500">
+                Invitation berlaku 7 hari dan hanya dapat digunakan oleh akun dengan email yang sama.
+              </p>
+            </form>
           ) : (
             <div className="bg-zinc-50 px-5 py-4 text-sm text-zinc-500 sm:px-6">
               Hanya OWNER atau ADMIN yang dapat mengelola member.

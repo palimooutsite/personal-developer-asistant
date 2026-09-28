@@ -68,7 +68,8 @@ export async function apiRequest<T>(
       typeof window !== 'undefined' &&
       !path.startsWith('/auth/login') &&
       !path.startsWith('/auth/register') &&
-      window.location.pathname !== '/login'
+      window.location.pathname !== '/login' &&
+      window.location.pathname !== '/register'
     ) {
       window.localStorage.removeItem('pda_access_token');
       window.localStorage.removeItem(TENANT_KEY);

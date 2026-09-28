@@ -42,7 +42,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const refreshTenants = useCallback(async () => {
-    if (pathname === '/login') {
+    if (pathname === '/login' || pathname === '/register') {
       setLoading(false);
       return;
     }

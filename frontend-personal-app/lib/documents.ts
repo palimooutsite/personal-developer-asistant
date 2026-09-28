@@ -1,4 +1,5 @@
 import { apiRequest } from './api';
+import { getActiveTenantId } from './tenant';
 
 export interface DocumentItem {
   id: string;
@@ -41,9 +42,20 @@ export async function openDocumentFile(id: string, fileName: string) {
   const token = typeof window !== 'undefined'
     ? window.localStorage.getItem('pda_access_token')
     : null;
+  const tenantId = getActiveTenantId();
+
+  const headers: Record<string, string> = {};
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  if (tenantId) {
+    headers['X-Tenant-Id'] = tenantId;
+  }
 
   const response = await fetch(getDocumentFileUrl(id), {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    headers,
   });
 
   if (!response.ok) {

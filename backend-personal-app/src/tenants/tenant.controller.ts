@@ -26,6 +26,7 @@ import { CreateTenantDto } from './dto/create-tenant.dto.js';
 import { UpdateTenantDto } from './dto/update-tenant.dto.js';
 import { AddTenantMemberDto } from './dto/add-tenant-member.dto.js';
 import { UpdateTenantMemberDto } from './dto/update-tenant-member.dto.js';
+import { CreateTenantInvitationDto } from './dto/create-tenant-invitation.dto.js';
 
 @Controller('tenants')
 @UseGuards(JwtAuthGuard)
@@ -89,6 +90,19 @@ async findMembers(
   );
 }
 
+@Post(':id/invitations')
+async createInvitation(
+  @Param('id') id: string,
+  @Body() body: CreateTenantInvitationDto,
+  @Req() req: AuthRequest,
+): Promise<{ message: string; email: string; role: string }> {
+  return this.tenantService.createInvitation(
+    id,
+    req.user.userId,
+    body,
+  );
+}
+
 @Post(':id/members')
 async addMember(
   @Param('id') id: string,
@@ -114,6 +128,17 @@ async updateMemberRole(
     req.user.userId,
     userId,
     body,
+  );
+}
+
+@Post('/invitations/accept')
+async acceptInvitation(
+  @Body() body: { token: string },
+  @Req() req: AuthRequest,
+): Promise<{ message: string; tenantId: string; role: string }> {
+  return this.tenantService.acceptInvitation(
+    body.token,
+    req.user.userId,
   );
 }
 

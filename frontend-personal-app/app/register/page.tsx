@@ -7,6 +7,9 @@ import { register } from '../../lib/auth';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const invitation = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('invitation')
+    : null;
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -28,7 +31,11 @@ export default function RegisterPage() {
 
     try {
       await register(username.trim(), email.trim(), password, name);
-      router.replace('/login?registered=1');
+      router.replace(
+        invitation
+          ? `/login?registered=1&invitation=${encodeURIComponent(invitation)}`
+          : '/login?registered=1',
+      );
     } catch (err) {
       setError(
         err instanceof ApiError

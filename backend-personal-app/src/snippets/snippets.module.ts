@@ -6,6 +6,7 @@ import { SnippetsService } from './snippets.service.js';
 import { SnippetTagsService } from './snippet-tags.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { TenantModule } from '../tenants/tenant.module.js';
+import { TenantRoleModule } from '../tenants/roles/tenant-role.module.js';
 
 @Module({
   imports: [PassportModule.register({ defaultStrategy: 'jwt' }), TenantModule],

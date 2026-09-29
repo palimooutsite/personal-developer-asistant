@@ -141,6 +141,7 @@ export class UsersService {
       'username',
       'email',
       'name',
+      'avatarUrl',
     )
     .first();
 

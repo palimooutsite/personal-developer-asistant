@@ -40,6 +40,8 @@ import { UploadDocumentDto } from './dto/upload-document.dto.js';
 
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard.js';
 import { TenantContextGuard } from '../tenants/guard/tenant-context.guard.js';
+import { PermissionGuard } from '../tenants/roles/permission.guard.js';
+import { RequirePermission } from '../tenants/roles/require-permission.decorator.js';
 
 import type { TenantRequest } from '../tenants/types/tenant-request.js';
 
@@ -67,6 +69,7 @@ mkdirSync(
 @UseGuards(
   JwtAuthGuard,
   TenantContextGuard,
+  PermissionGuard,
 )
 export class DocumentsController {
   constructor(
@@ -74,6 +77,7 @@ export class DocumentsController {
   ) {}
 
   @Post('upload')
+  @RequirePermission('DOCUMENTS', 'CREATE')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
@@ -160,6 +164,7 @@ export class DocumentsController {
   }
 
   @Post()
+  @RequirePermission('DOCUMENTS', 'CREATE')
   create(
     @Body()
     body: CreateDocumentDto,
@@ -175,6 +180,7 @@ export class DocumentsController {
   }
 
   @Get()
+  @RequirePermission('DOCUMENTS', 'READ')
   findAll(
     @Req()
     req: TenantRequest,
@@ -186,6 +192,7 @@ export class DocumentsController {
   }
 
   @Get(':id/file')
+  @RequirePermission('DOCUMENTS', 'READ')
   async file(
     @Param('id')
     id: string,
@@ -215,6 +222,7 @@ export class DocumentsController {
   }
 
   @Get(':id')
+  @RequirePermission('DOCUMENTS', 'READ')
   findOne(
     @Param('id')
     id: string,
@@ -230,6 +238,7 @@ export class DocumentsController {
   }
 
   @Patch(':id')
+  @RequirePermission('DOCUMENTS', 'UPDATE')
   update(
     @Param('id')
     id: string,
@@ -249,6 +258,7 @@ export class DocumentsController {
   }
 
   @Delete(':id')
+  @RequirePermission('DOCUMENTS', 'DELETE')
   remove(
     @Param('id')
     id: string,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { acceptTenantInvitation } from '@/lib/tenant';
 import { isAuthenticated } from '@/lib/auth';
@@ -24,12 +24,8 @@ export default function AcceptInvitationPage() {
   const [status, setStatus] = useState('Memverifikasi invitation...');
   const [error, setError] = useState('');
 
-  const tokenFromUrl = useMemo(
-    () => new URLSearchParams(window.location.search).get('token'),
-    [],
-  );
-
   useEffect(() => {
+    const tokenFromUrl = new URLSearchParams(window.location.search).get('token');
     const token = tokenFromUrl || window.sessionStorage.getItem('pda_pending_invitation_token');
 
     if (!token) {
@@ -58,7 +54,7 @@ export default function AcceptInvitationPage() {
         setError(err instanceof ApiError ? err.message : 'Gagal menerima invitation. Silakan coba lagi.');
       }
     })();
-  }, [router, tokenFromUrl]);
+  }, [router]);
 
   const isNotFound = error.toLowerCase().includes('tidak ditemukan');
 

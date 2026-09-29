@@ -24,6 +24,8 @@ import { ProjectMembersModal } from '../../components/projects/ProjectMembersMod
 import { ProjectStats } from '../../components/projects/ProjectStats';
 import { ModuleHeader } from '../../components/layout/ModuleHeader';
 import { Modal } from '../../components/ui/Modal';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { Toast } from '../../components/ui/Toast';
 
 type EditableRole = Exclude<ProjectRole, 'OWNER'>;
 
@@ -43,6 +45,8 @@ export default function ProjectsPage() {
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [memberLoading, setMemberLoading] = useState(false);
   const [memberSaving, setMemberSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
+  const [toast, setToast] = useState('');
 
   async function loadProjects() {
     setLoading(true);
@@ -143,12 +147,13 @@ export default function ProjectsPage() {
   }
 
   async function handleRemoveMember(member: ProjectMember) {
-    if (!memberProject || !window.confirm('Hapus member "' + (member.user.name || member.user.username) + '" dari project?')) return;
+    if (!memberProject) return;
     try {
       setMemberSaving(true);
       setError('');
       await removeProjectMember(memberProject.id, member.userId);
       setMembers((current) => current.filter((item) => item.userId !== member.userId));
+      setToast('Member berhasil dihapus dari project.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal menghapus member.');
     } finally {
@@ -176,10 +181,16 @@ export default function ProjectsPage() {
   }
 
   async function handleDelete(project: Project) {
-    if (!window.confirm(`Hapus project "${project.name}"?`)) return;
+    setDeleteTarget(project);
+  }
+
+  async function confirmDeleteProject() {
+    if (!deleteTarget) return;
     setError('');
     try {
-      await deleteProject(project.id);
+      await deleteProject(deleteTarget.id);
+      setDeleteTarget(null);
+      setToast('Project "' + deleteTarget.name + '" berhasil dihapus.');
       await loadProjects();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal menghapus project.');
@@ -294,6 +305,15 @@ export default function ProjectsPage() {
           )}
         </section>
       </div>
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Hapus project?"
+        description={deleteTarget ? 'Project "' + deleteTarget.name + '" akan dihapus. Data yang terkait project ini dapat ikut terdampak.' : ''}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => void confirmDeleteProject()}
+      />
+      <Toast message={toast} open={Boolean(toast)} onClose={() => setToast('')} />
 
       {memberProject ? (
         <ProjectMembersModal

@@ -58,6 +58,24 @@ export class AuthService {
     };
   }
 
+  async updateProfile(userId: string, data: { name?: string }): Promise<RegisterUserResponse & { avatarUrl: string | null }> {
+    const user = await this.usersService.updateProfile(userId, data);
+    return user;
+  }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const user = await this.usersService.findByIdWithPassword(userId);
+    if (!user) throw new UnauthorizedException('User tidak ditemukan');
+    const valid = await argon2.verify(user.passwordHash, currentPassword);
+    if (!valid) throw new UnauthorizedException('Password saat ini salah');
+    const passwordHash = await argon2.hash(newPassword);
+    await this.usersService.updatePassword(userId, passwordHash);
+  }
+
+  async updateAvatar(userId: string, avatarUrl: string): Promise<RegisterUserResponse & { avatarUrl: string | null }> {
+    return this.usersService.updateAvatar(userId, avatarUrl);
+  }
+
   async login(
   data: LoginUserInput,
 ): Promise<LoginUserResponse> {

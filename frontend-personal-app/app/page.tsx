@@ -25,6 +25,7 @@ const modules = [
   { title: 'Code Snippets', href: '/snippets', description: 'Simpan potongan kode agar mudah digunakan kembali.', icon: '</>', accent: 'emerald' },
   { title: 'Documents', href: '/documents', description: 'Kelola dokumen dan file yang berkaitan dengan pekerjaan.', icon: '▤', accent: 'amber' },
   { title: 'Workspace Settings', href: '/workspace-settings', description: 'Ubah nama workspace dan kelola anggota serta role akses.', icon: '⚙', accent: 'cyan' },
+  { title: 'Account Settings', href: '/account-settings', description: 'Kelola profil, foto, dan keamanan akun pribadi.', icon: '◉', accent: 'blue' },
 ] as const;
 
 const statCards = [

@@ -81,7 +81,7 @@ export default function TasksPage() {
       description="Kelola pekerjaan project, deadline, prioritas, dan status task dalam satu tempat."
       accent="blue"
       action={
-        <>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <StyledSelect
             value={projectId}
             onChange={value=>{setProjectId(value);closeForm();}}
@@ -98,7 +98,7 @@ export default function TasksPage() {
           >
             + Task Baru
           </button>
-        </>
+        </div>
       }
     />
     {error&&<div className="mb-6 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 sm:flex-row sm:items-center sm:justify-between">

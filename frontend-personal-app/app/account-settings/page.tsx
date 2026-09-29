@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { ApiError } from '../../lib/api';
 import { getCurrentUser, type CurrentUser } from '../../lib/auth';
 import { changePassword, removeAvatar, updateProfile, uploadAvatar } from '../../lib/account';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { Toast } from '../../components/ui/Toast';
 
 export default function AccountSettingsPage() {
   const router = useRouter();
@@ -22,6 +24,8 @@ export default function AccountSettingsPage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
+  const [removeAvatarConfirm, setRemoveAvatarConfirm] = useState(false);
+  const [toast, setToast] = useState('');
 
   useEffect(() => {
     void (async () => {
@@ -50,7 +54,8 @@ export default function AccountSettingsPage() {
       const updated = await updateProfile(name);
       setUser(updated);
       setName(updated.name ?? '');
-      setProfileMessage('Profil berhasil diperbarui.');
+      setProfileMessage('');
+      setToast('Profil berhasil diperbarui.');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Profil gagal diperbarui.');
     } finally {
@@ -74,7 +79,8 @@ export default function AccountSettingsPage() {
     setError('');
     try {
       setUser(await uploadAvatar(file));
-      setProfileMessage('Foto profil berhasil diperbarui.');
+      setProfileMessage('');
+      setToast('Foto profil berhasil diperbarui.');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Foto profil gagal diunggah.');
     } finally {
@@ -85,12 +91,14 @@ export default function AccountSettingsPage() {
 
   async function handleRemoveAvatar() {
     if (!user?.avatarUrl || removingAvatar) return;
-    if (!window.confirm('Hapus foto profil?')) return;
+    setRemoveAvatarConfirm(true);
     setRemovingAvatar(true);
     setError('');
     try {
       setUser(await removeAvatar());
-      setProfileMessage('Foto profil berhasil dihapus.');
+      setProfileMessage('');
+      setToast('Foto profil berhasil dihapus.');
+      setRemoveAvatarConfirm(false);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Foto profil gagal dihapus.');
     } finally {
@@ -116,7 +124,8 @@ export default function AccountSettingsPage() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmation('');
-      setPasswordMessage('Password berhasil diubah.');
+      setPasswordMessage('');
+      setToast('Password berhasil diubah.');
     } catch (err) {
       setPasswordError(err instanceof ApiError ? err.message : 'Password gagal diubah.');
     } finally {
@@ -225,6 +234,15 @@ export default function AccountSettingsPage() {
           <p className="mt-2 text-sm leading-6 text-amber-800">Untuk keamanan akun dan kebutuhan SaaS, email akan diperlakukan sebagai identitas login. Fitur ganti email sebaiknya ditambahkan nanti dengan verifikasi email baru dan konfirmasi password.</p>
         </section>
       </div>
+      <ConfirmDialog
+        open={removeAvatarConfirm}
+        title="Hapus foto profil?"
+        description="Foto profil akan dihapus dari akun dan file foto di server juga akan dibersihkan."
+        onClose={() => setRemoveAvatarConfirm(false)}
+        onConfirm={() => void handleRemoveAvatar()}
+        loading={removingAvatar}
+      />
+      <Toast message={toast} open={Boolean(toast)} onClose={() => setToast('')} />
     </main>
   );
 }

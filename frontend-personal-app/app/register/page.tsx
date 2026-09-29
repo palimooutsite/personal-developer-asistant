@@ -8,7 +8,8 @@ import { register } from '../../lib/auth';
 export default function RegisterPage() {
   const router = useRouter();
   const invitation = typeof window !== 'undefined'
-    ? new URLSearchParams(window.location.search).get('invitation')
+    ? new URLSearchParams(window.location.search).get('invitation') ||
+      window.sessionStorage.getItem('pda_pending_invitation_token')
     : null;
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -161,7 +162,10 @@ export default function RegisterPage() {
 
           <p className="text-center text-sm text-zinc-500">
             Sudah punya akun?{' '}
-            <a href="/login" className="font-semibold text-zinc-950 hover:underline">
+            <a
+              href={invitation ? `/login?invitation=${encodeURIComponent(invitation)}` : '/login'}
+              className="font-semibold text-zinc-950 hover:underline"
+            >
               Login
             </a>
           </p>

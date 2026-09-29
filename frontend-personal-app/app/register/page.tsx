@@ -74,7 +74,7 @@ export default function RegisterPage() {
               onChange={(event) => setName(event.target.value)}
               autoComplete="name"
               maxLength={100}
-              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200"
+              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-950 placeholder:text-zinc-400 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200"
               placeholder="Nama Anda"
             />
           </div>
@@ -90,7 +90,7 @@ export default function RegisterPage() {
               autoComplete="username"
               maxLength={50}
               required
-              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200"
+              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-950 placeholder:text-zinc-400 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200"
               placeholder="developer"
             />
           </div>
@@ -107,7 +107,7 @@ export default function RegisterPage() {
               autoComplete="email"
               maxLength={255}
               required
-              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200"
+              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-950 placeholder:text-zinc-400 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200"
               placeholder="you@example.com"
             />
           </div>
@@ -125,7 +125,7 @@ export default function RegisterPage() {
               minLength={8}
               maxLength={100}
               required
-              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200"
+              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-950 placeholder:text-zinc-400 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200"
               placeholder="Minimal 8 karakter"
             />
           </div>
@@ -141,7 +141,7 @@ export default function RegisterPage() {
               onChange={(event) => setPasswordConfirmation(event.target.value)}
               autoComplete="new-password"
               required
-              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200"
+              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-950 placeholder:text-zinc-400 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200"
               placeholder="Ulangi password"
             />
           </div>

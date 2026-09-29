@@ -12,7 +12,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { extname } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, unlink } from 'node:fs';
 import { diskStorage } from 'multer';
 
 import { AuthService } from './auth.service.js';
@@ -83,6 +83,26 @@ export class AuthController {
       body.newPassword,
     );
     return { message: 'Password berhasil diubah' };
+  }
+
+  @Post('avatar/remove')
+  @UseGuards(JwtAuthGuard)
+  async removeAvatar(@Req() req: AuthRequest) {
+    const user = await this.usersService.findById(req.user.userId);
+    if (!user) {
+      throw new BadRequestException('User tidak ditemukan');
+    }
+
+    if (user.avatarUrl?.startsWith('/backend-api/uploads/avatars/')) {
+      const filename = user.avatarUrl.split('/').pop();
+      if (filename) {
+        await new Promise<void>((resolve) => {
+          unlink('uploads/avatars/' + filename, () => resolve());
+        });
+      }
+    }
+
+    return this.authService.removeAvatar(req.user.userId);
   }
 
   @Post('avatar')

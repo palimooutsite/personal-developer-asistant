@@ -14,6 +14,8 @@ export interface TenantMember {
   tenantId: string;
   userId: string;
   role: string;
+  roleId: string | null;
+  roleName: string;
   user: {
     id: string;
     username: string;
@@ -52,24 +54,24 @@ export async function getTenantMembers(
 export async function addTenantMember(
   tenantId: string,
   userId: string,
-  role: 'ADMIN' | 'MEMBER',
+  roleId: string,
 ): Promise<TenantMember> {
   return apiRequest<TenantMember>(`/tenants/${tenantId}/members`, {
     method: 'POST',
-    body: JSON.stringify({ userId, role }),
+    body: JSON.stringify({ userId, roleId }),
   });
 }
 
 export async function updateTenantMemberRole(
   tenantId: string,
   userId: string,
-  role: 'ADMIN' | 'MEMBER',
+  roleId: string,
 ): Promise<TenantMember> {
   return apiRequest<TenantMember>(
     `/tenants/${tenantId}/members/${userId}`,
     {
       method: 'PATCH',
-      body: JSON.stringify({ role }),
+      body: JSON.stringify({ roleId }),
     },
   );
 }
@@ -103,13 +105,13 @@ export function clearActiveTenantId(): void {
 export async function createTenantInvitation(
   tenantId: string,
   email: string,
-  role: 'ADMIN' | 'MEMBER',
+  roleId: string,
 ): Promise<{ message: string; email: string; role: string }> {
   return apiRequest<{ message: string; email: string; role: string }>(
     `/tenants/${tenantId}/invitations`,
     {
       method: 'POST',
-      body: JSON.stringify({ email, role }),
+      body: JSON.stringify({ email, roleId }),
     },
   );
 }
@@ -124,4 +126,75 @@ export async function acceptTenantInvitation(
       body: JSON.stringify({ token }),
     },
   );
+}
+
+export type PermissionModule =
+  | 'DASHBOARD'
+  | 'PROJECTS'
+  | 'TASKS'
+  | 'KNOWLEDGE'
+  | 'CODE_SNIPPETS'
+  | 'DOCUMENTS'
+  | 'PROJECT_MEMBERS'
+  | 'WORKSPACE_MEMBERS'
+  | 'WORKSPACE_SETTINGS';
+
+export interface TenantRolePermission {
+  id: string;
+  module: PermissionModule;
+  canCreate: boolean;
+  canRead: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
+}
+
+export interface TenantRole {
+  id: string;
+  tenantId: string;
+  name: string;
+  description: string | null;
+  isSystem: boolean;
+  permissions: TenantRolePermission[];
+}
+
+export interface RolePermissionInput {
+  module: PermissionModule;
+  canCreate?: boolean;
+  canRead?: boolean;
+  canUpdate?: boolean;
+  canDelete?: boolean;
+}
+
+export async function getTenantRoles(tenantId: string): Promise<TenantRole[]> {
+  return apiRequest<TenantRole[]>(`/tenants/${tenantId}/roles`);
+}
+
+export async function createTenantRole(
+  tenantId: string,
+  data: { name: string; description?: string; permissions: RolePermissionInput[] },
+): Promise<TenantRole> {
+  return apiRequest<TenantRole>(`/tenants/${tenantId}/roles`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateTenantRole(
+  tenantId: string,
+  roleId: string,
+  data: { name: string; description?: string; permissions: RolePermissionInput[] },
+): Promise<TenantRole> {
+  return apiRequest<TenantRole>(`/tenants/${tenantId}/roles/${roleId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteTenantRole(
+  tenantId: string,
+  roleId: string,
+): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>(`/tenants/${tenantId}/roles/${roleId}`, {
+    method: 'DELETE',
+  });
 }

@@ -25,6 +25,8 @@ export interface TenantMemberListItem {
   tenantId: string;
   userId: string;
   role: string;
+  roleId: string | null;
+  roleName: string;
   user: {
     id: string;
     username: string;
@@ -190,6 +192,7 @@ export class TenantService {
         'tenantId',
         'userId',
         'role',
+        'roleId',
       )
       .first();
   }
@@ -238,6 +241,7 @@ export class TenantService {
         'tenantId',
         'userId',
         'role',
+        'roleId',
       )
       .all();
 
@@ -266,6 +270,8 @@ export class TenantService {
       tenantId: member.tenantId,
       userId: member.userId,
       role: member.role,
+      roleId: member.roleId ?? null,
+      roleName: member.role,
       user: {
         id: user.id,
         username: user.username,
@@ -330,12 +336,28 @@ async addMember(
     );
   }
 
+  if (data.roleId) {
+    const customRole =
+      await this.prisma.client.orm.public.TenantCustomRole
+        .where({ id: data.roleId, tenantId })
+        .first();
+
+    if (!customRole) {
+      throw new NotFoundException('Role tidak ditemukan pada workspace ini');
+    }
+
+    if (customRole.isSystem) {
+      throw new ForbiddenException('System role tidak dapat diberikan kepada member biasa');
+    }
+  }
+
   const member =
     await this.prisma.client.orm.public.TenantMember
       .create({
         tenantId,
         userId: data.userId,
-        role: data.role,
+        role: 'MEMBER',
+        roleId: data.roleId ?? null,
       });
 
   return {
@@ -343,6 +365,8 @@ async addMember(
     tenantId: member.tenantId,
     userId: member.userId,
     role: member.role,
+    roleId: member.roleId ?? null,
+    roleName: member.role,
     user: {
       id: user.id,
       username: user.username,
@@ -407,13 +431,27 @@ async updateMemberRole(
     );
   }
 
+  const customRole =
+    await this.prisma.client.orm.public.TenantCustomRole
+      .where({ id: data.roleId, tenantId })
+      .first();
+
+  if (!customRole) {
+    throw new NotFoundException('Role tidak ditemukan pada workspace ini');
+  }
+
+  if (customRole.isSystem) {
+    throw new ForbiddenException('System role tidak dapat diberikan kepada member');
+  }
+
   const updated =
     await this.prisma.client.orm.public.TenantMember
       .where({
         id: targetMembership.id,
       })
       .update({
-        role: data.role,
+        role: 'MEMBER',
+        roleId: data.roleId,
       });
 
   if (!updated) {
@@ -446,6 +484,8 @@ async updateMemberRole(
     tenantId: updated.tenantId,
     userId: updated.userId,
     role: updated.role,
+    roleId: updated.roleId ?? null,
+    roleName: customRole.name,
     user: {
       id: user.id,
       username: user.username,
@@ -539,6 +579,23 @@ async removeMember(
       );
     }
 
+    if (!data.roleId) {
+      throw new ForbiddenException('Role wajib dipilih');
+    }
+
+    const customRole =
+      await this.prisma.client.orm.public.TenantCustomRole
+        .where({ id: data.roleId, tenantId })
+        .first();
+
+    if (!customRole) {
+      throw new NotFoundException('Role tidak ditemukan pada workspace ini');
+    }
+
+    if (customRole.isSystem) {
+      throw new ForbiddenException('System role tidak dapat dipilih untuk invitation');
+    }
+
     const email = data.email.trim().toLowerCase();
 
     const user = await this.prisma.client.orm.public.User
@@ -593,7 +650,8 @@ async removeMember(
     await this.prisma.client.orm.public.TenantInvitation.create({
       tenantId,
       email,
-      role: data.role,
+      role: 'MEMBER',
+      roleId: data.roleId,
       token,
       invitedBy: currentUserId,
       expiresAt,
@@ -610,7 +668,7 @@ async removeMember(
       await this.emailService.sendTenantInvitation({
         to: email,
         tenantName: tenant.name,
-        role: data.role,
+        role: customRole.name,
         inviterName:
           inviter?.name ??
           inviter?.username ??
@@ -627,7 +685,7 @@ async removeMember(
     return {
       message: 'Invitation berhasil dikirim',
       email,
-      role: data.role,
+      role: customRole.name,
     };
   }
 
@@ -643,6 +701,7 @@ async removeMember(
           'tenantId',
           'email',
           'role',
+          'roleId',
           'expiresAt',
           'acceptedAt',
         )
@@ -696,7 +755,8 @@ async removeMember(
     await this.prisma.client.orm.public.TenantMember.create({
       tenantId: invitation.tenantId,
       userId,
-      role: invitation.role,
+      role: 'MEMBER',
+      roleId: invitation.roleId ?? null,
     });
 
     await this.prisma.client.orm.public.TenantInvitation
@@ -708,7 +768,7 @@ async removeMember(
     return {
       message: 'Invitation berhasil diterima',
       tenantId: invitation.tenantId,
-      role: invitation.role,
+      role: invitation.roleId ?? invitation.role,
     };
   }
 

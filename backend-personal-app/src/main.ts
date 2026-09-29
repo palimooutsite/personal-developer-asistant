@@ -1,6 +1,5 @@
 import { ValidationPipe } from '@nestjs/common';
 import { join } from 'node:path';
-import { ExpressAdapter } from '@nestjs/platform-express';
 import express from 'express';
 import { NestFactory } from '@nestjs/core';
 import { AppModule, ObserveInstrument } from './app.module.js';

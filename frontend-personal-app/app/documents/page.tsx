@@ -235,10 +235,12 @@ export default function DocumentsPage() {
               {search ? 'Coba gunakan kata kunci pencarian yang berbeda.' : 'Upload document pertama Anda untuk mulai membangun document library.'}
             </p>
             {!search ? (
-              {can('DOCUMENTS', 'CREATE') ? <button type="button" onClick={startCreate}
-                className="mt-5 rounded-xl bg-amber-600 px-5 py-3 text-sm font-bold text-white hover:bg-amber-700">
-                + Upload Document
-              </button>
+              can('DOCUMENTS', 'CREATE') ? (
+                <button type="button" onClick={startCreate}
+                  className="mt-5 rounded-xl bg-amber-600 px-5 py-3 text-sm font-bold text-white hover:bg-amber-700">
+                  + Upload Document
+                </button>
+              ) : null
             ) : null}
           </div>
         ) : (

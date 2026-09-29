@@ -10,7 +10,10 @@ export default function LoginPage() {
   const [invitation, setInvitation] = useState<string | null>(null);
 
   useEffect(() => {
-    setInvitation(new URLSearchParams(window.location.search).get('invitation'));
+    const params = new URLSearchParams(window.location.search);
+    const queryInvitation = params.get('invitation');
+    const pendingInvitation = window.sessionStorage.getItem('pda_pending_invitation_token');
+    setInvitation(queryInvitation || pendingInvitation);
   }, []);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -24,7 +27,9 @@ export default function LoginPage() {
 
     try {
       await login(username, password);
-      const invitation = new URLSearchParams(window.location.search).get('invitation');
+      const invitation =
+        new URLSearchParams(window.location.search).get('invitation') ||
+        window.sessionStorage.getItem('pda_pending_invitation_token');
       router.replace(
         invitation
           ? `/invitations/accept?token=${encodeURIComponent(invitation)}`

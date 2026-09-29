@@ -105,15 +105,21 @@ export default function WorkspaceSettingsPage() {
     }
   }
 
-  async function removeMember(member: TenantMember) {
-    if (!activeTenant || !canManage || member.role === 'OWNER') return;
+  function removeMember(member: TenantMember) {
+    if (!activeTenant || !canManage || member.role === 'OWNER' || saving) return;
     setRemoveTarget(member);
+  }
+
+  async function confirmRemoveMember() {
+    if (!activeTenant || !canManage || !removeTarget || removeTarget.role === 'OWNER') return;
+
+    setSaving(true);
     setError('');
     try {
-      await removeTenantMember(activeTenant.id, member.userId);
-      setMembers((current) => current.filter((item) => item.userId !== member.userId));
-      setRemoveTarget(null);
+      await removeTenantMember(activeTenant.id, removeTarget.userId);
+      setMembers((current) => current.filter((item) => item.userId !== removeTarget.userId));
       setToast('Member berhasil dihapus dari workspace.');
+      setRemoveTarget(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal menghapus member.');
     } finally {
@@ -290,7 +296,7 @@ export default function WorkspaceSettingsPage() {
         title="Hapus member dari workspace?"
         description={removeTarget ? (removeTarget.user.name || removeTarget.user.username) + ' akan kehilangan akses ke workspace ini. Data akun mereka tidak akan dihapus.' : ''}
         onClose={() => setRemoveTarget(null)}
-        onConfirm={() => void removeMember(removeTarget!)}
+        onConfirm={() => void confirmRemoveMember()}
         loading={saving}
       />
       <Toast message={toast} open={Boolean(toast)} onClose={() => setToast('')} />

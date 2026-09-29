@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import type { DefaultModelRow } from '@prisma/orm-family-sql/orm-client';
 import type { PermissionAction, PermissionModule } from './permission.constants.js';
 import { PERMISSION_MODULES } from './permission.constants.js';
 
@@ -36,7 +37,7 @@ export class TenantRoleService {
     }));
   }
 
-  async ensureSystemRoles(tenantId: string) {
+  async ensureSystemRoles(tenantId: string): Promise<DefaultModelRow> {
     const owner = await this.prisma.client.orm.public.TenantCustomRole
       .where({ tenantId, name: 'Owner' }).first();
     if (owner) return owner;

@@ -7,6 +7,8 @@ import { DocumentCard } from '../../components/documents/DocumentCard';
 import { DocumentForm } from '../../components/documents/DocumentForm';
 import { DocumentEditForm } from '../../components/documents/DocumentEditForm';
 import { ApiError } from '../../lib/api';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { Toast } from '../../components/ui/Toast';
 import {
   deleteDocument,
   getDocuments,
@@ -25,6 +27,8 @@ export default function DocumentsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
+  const [deleteTarget, setDeleteTarget] = useState<DocumentItem | null>(null);
+  const [toast, setToast] = useState('');
   const pageSize = 9;
 
   async function loadDocuments() {
@@ -115,12 +119,15 @@ export default function DocumentsPage() {
     }
   }
 
-  async function handleDelete(document: DocumentItem) {
-    if (!window.confirm(`Hapus document "${document.title}"?`)) return;
+  async function handleDelete(document: DocumentItem) { setDeleteTarget(document); }
 
+  async function confirmDelete() {
+    if (!deleteTarget) return;
     setSaving(true);
     try {
-      await deleteDocument(document.id);
+      await deleteDocument(deleteTarget.id);
+      setDeleteTarget(null);
+      setToast('Document "' + deleteTarget.title + '" berhasil dihapus.');
       await loadDocuments();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Document gagal dihapus.');
@@ -269,6 +276,8 @@ export default function DocumentsPage() {
           </>
         )}
       </div>
+      <ConfirmDialog open={Boolean(deleteTarget)} title="Hapus document?" description={deleteTarget ? 'Document "' + deleteTarget.title + '" akan dihapus dan tidak dapat dikembalikan.' : ''} onClose={()=>setDeleteTarget(null)} onConfirm={()=>void confirmDelete()} loading={saving} />
+      <Toast message={toast} open={Boolean(toast)} onClose={()=>setToast('')} />
     </main>
   );
 }

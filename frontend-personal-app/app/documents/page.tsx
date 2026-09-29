@@ -1,4 +1,5 @@
 'use client';
+import { useTenant } from '../../components/providers/TenantProvider';
 
 import { useEffect, useMemo, useState } from 'react';
 import { ModuleHeader } from '../../components/layout/ModuleHeader';
@@ -19,6 +20,7 @@ import {
 } from '../../lib/documents';
 
 export default function DocumentsPage() {
+  const { can } = useTenant();
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -244,8 +246,8 @@ export default function DocumentsPage() {
                 <DocumentCard
                 key={document.id}
                 document={document}
-                onEdit={() => startEdit(document)}
-                onDelete={() => void handleDelete(document)}
+                onEdit={can('DOCUMENTS', 'UPDATE') ? () => startEdit(document) : undefined}
+                onDelete={can('DOCUMENTS', 'DELETE') ? () => void handleDelete(document) : undefined}
                   onOpen={() => void handleOpen(document)}
                 />
               ))}

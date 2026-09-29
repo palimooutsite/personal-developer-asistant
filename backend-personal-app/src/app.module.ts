@@ -14,6 +14,7 @@ import { DashboardModule } from './dashboard/dashboard.module.js';
 import { DocumentsModule } from './documents/documents.module.js';
 import { TenantModule } from './tenants/tenant.module.js';
 import { EmailModule } from './email/email.module.js';
+import { TenantRoleModule } from './tenants/roles/tenant-role.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -29,6 +30,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     PrismaModule,
     HealthModule,
     TenantModule,
+    TenantRoleModule,
     EmailModule,
     UsersModule,
     AuthModule,

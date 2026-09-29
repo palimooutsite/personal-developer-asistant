@@ -23,3 +23,10 @@ export async function uploadAvatar(file: File): Promise<CurrentUser> {
     body: formData,
   });
 }
+
+
+export async function removeAvatar(): Promise<CurrentUser> {
+  return apiRequest<CurrentUser>('/auth/avatar/remove', {
+    method: 'POST',
+  });
+}

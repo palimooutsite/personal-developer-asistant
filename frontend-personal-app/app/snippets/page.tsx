@@ -19,6 +19,8 @@ import {
   type Tag,
 } from '../../lib/snippets';
 import { ApiError } from '../../lib/api';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { Toast } from '../../components/ui/Toast';
 
 const LANGUAGE_OPTIONS = [
   { value: '', label: 'Semua bahasa', icon: '</>' },
@@ -52,6 +54,8 @@ export default function SnippetsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<CodeSnippet | null>(null);
   const [error, setError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<CodeSnippet | null>(null);
+  const [toast, setToast] = useState('');
 
   const loadSnippets = useCallback(async () => {
     setLoading(true);
@@ -120,11 +124,14 @@ export default function SnippetsPage() {
     }
   }
 
-  async function handleDelete(snippet: CodeSnippet) {
-    if (!window.confirm(`Hapus code snippet "${snippet.title}"?`)) return;
+  async function handleDelete(snippet: CodeSnippet) { setDeleteTarget(snippet); }
 
+  async function confirmDelete() {
+    if (!deleteTarget) return;
     try {
-      await deleteSnippet(snippet.id);
+      await deleteSnippet(deleteTarget.id);
+      setDeleteTarget(null);
+      setToast('Code snippet "' + deleteTarget.title + '" berhasil dihapus.');
       if (snippets.length === 1 && page > 1) setPage(current => current - 1);
       else await loadSnippets();
     } catch (err) {
@@ -281,6 +288,8 @@ export default function SnippetsPage() {
           </>
         )}
       </div>
+      <ConfirmDialog open={Boolean(deleteTarget)} title="Hapus code snippet?" description={deleteTarget ? 'Snippet "' + deleteTarget.title + '" akan dihapus dan tidak dapat dikembalikan.' : ''} onClose={()=>setDeleteTarget(null)} onConfirm={()=>void confirmDelete()} />
+      <Toast message={toast} open={Boolean(toast)} onClose={()=>setToast('')} />
     </main>
   );
 }

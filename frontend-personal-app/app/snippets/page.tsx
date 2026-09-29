@@ -1,4 +1,5 @@
 'use client';
+import { useTenant } from '../../components/providers/TenantProvider';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ModuleHeader } from '../../components/layout/ModuleHeader';
@@ -42,6 +43,7 @@ const LANGUAGE_OPTIONS = [
 ];
 
 export default function SnippetsPage() {
+  const { can } = useTenant();
   const [snippets, setSnippets] = useState<CodeSnippet[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [snippetTags, setSnippetTags] = useState<Record<string, Tag[]>>({});
@@ -267,8 +269,8 @@ export default function SnippetsPage() {
                   snippet={snippet}
                   tags={snippetTags[snippet.id] ?? []}
                   allTags={tags}
-                  onEdit={() => startEdit(snippet)}
-                  onDelete={() => void handleDelete(snippet)}
+                  onEdit={can('CODE_SNIPPETS', 'UPDATE') ? () => startEdit(snippet) : undefined}
+                  onDelete={can('CODE_SNIPPETS', 'DELETE') ? () => void handleDelete(snippet) : undefined}
                   onToggleTag={tag => void toggleTag(snippet.id, tag)}
                 />
               ))}

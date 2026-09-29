@@ -24,8 +24,6 @@ const modules = [
   { title: 'Knowledge', href: '/knowledge', description: 'Simpan dokumentasi, catatan teknis, dan pengetahuan.', icon: '◈', accent: 'violet' },
   { title: 'Code Snippets', href: '/snippets', description: 'Simpan potongan kode agar mudah digunakan kembali.', icon: '</>', accent: 'emerald' },
   { title: 'Documents', href: '/documents', description: 'Kelola dokumen dan file yang berkaitan dengan pekerjaan.', icon: '▤', accent: 'amber' },
-  { title: 'Workspace Settings', href: '/workspace-settings', description: 'Ubah nama workspace dan kelola anggota serta role akses.', icon: '⚙', accent: 'cyan' },
-  { title: 'Account Settings', href: '/account-settings', description: 'Kelola profil, foto, dan keamanan akun pribadi.', icon: '◉', accent: 'blue' },
 ] as const;
 
 const statCards = [
@@ -41,7 +39,6 @@ const accentClasses = {
   violet: { icon: 'bg-violet-50 text-violet-600', ring: 'hover:border-violet-200', link: 'text-violet-600' },
   emerald: { icon: 'bg-emerald-50 text-emerald-600', ring: 'hover:border-emerald-200', link: 'text-emerald-600' },
   amber: { icon: 'bg-amber-50 text-amber-600', ring: 'hover:border-amber-200', link: 'text-amber-600' },
-  cyan: { icon: 'bg-cyan-50 text-cyan-600', ring: 'hover:border-cyan-200', link: 'text-cyan-600' },
 } as const;
 
 export default function HomePage() {
@@ -50,6 +47,7 @@ export default function HomePage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [summaryError, setSummaryError] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
@@ -113,9 +111,69 @@ export default function HomePage() {
               Semua aktivitas development kamu dalam satu tempat.
             </p>
           </div>
-          <button type="button" onClick={handleLogout} className="self-start rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 sm:self-auto">
-            Logout
-          </button>
+
+          <div className="relative self-start sm:self-auto">
+            <button
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={settingsOpen}
+              onClick={() => setSettingsOpen((open) => !open)}
+              className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+            >
+              <span className="text-base leading-none">⚙</span>
+              <span>Settings</span>
+              <span className={'text-xs transition-transform ' + (settingsOpen ? 'rotate-180' : '')}>⌄</span>
+            </button>
+
+            <div
+              className={
+                'absolute right-0 z-20 mt-2 w-64 origin-top-right rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl transition duration-150 ' +
+                (settingsOpen ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-1 opacity-0')
+              }
+              role="menu"
+            >
+              <Link
+                href="/workspace-settings"
+                onClick={() => setSettingsOpen(false)}
+                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition hover:bg-zinc-50"
+                role="menuitem"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600">▣</span>
+                <span>
+                  <span className="block font-semibold text-zinc-900">Workspace Settings</span>
+                  <span className="block text-xs text-zinc-500">Workspace, anggota & role</span>
+                </span>
+              </Link>
+
+              <Link
+                href="/account-settings"
+                onClick={() => setSettingsOpen(false)}
+                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition hover:bg-zinc-50"
+                role="menuitem"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">◉</span>
+                <span>
+                  <span className="block font-semibold text-zinc-900">Account Settings</span>
+                  <span className="block text-xs text-zinc-500">Profil, foto & keamanan</span>
+                </span>
+              </Link>
+
+              <div className="my-1 border-t border-zinc-100" />
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition hover:bg-red-50"
+                role="menuitem"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-600">↪</span>
+                <span>
+                  <span className="block font-semibold text-red-700">Logout</span>
+                  <span className="block text-xs text-zinc-500">Keluar dari akun</span>
+                </span>
+              </button>
+            </div>
+          </div>
         </header>
 
         <section className="mt-7 sm:mt-8">
@@ -248,7 +306,6 @@ export default function HomePage() {
             </div>
           </section>
         )}
-
 
         <section className="mt-8 sm:mt-10">
           <div>

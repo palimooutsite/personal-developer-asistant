@@ -147,17 +147,7 @@ export class TenantService {
       throw new ForbiddenException('Anda bukan member workspace ini');
     }
 
-    const modules = [
-      'DASHBOARD',
-      'PROJECTS',
-      'TASKS',
-      'KNOWLEDGE',
-      'CODE_SNIPPETS',
-      'DOCUMENTS',
-      'PROJECT_MEMBERS',
-      'WORKSPACE_MEMBERS',
-      'WORKSPACE_SETTINGS',
-    ] as const;
+    const modules = PERMISSION_MODULES;
 
     const fullPermission = {
       canCreate: true,
@@ -178,24 +168,26 @@ export class TenantService {
         .select('name')
         .first();
 
-      if (customRole) {
-        roleName = customRole.name;
-        const rows = await this.prisma.client.orm.public.TenantRolePermission
-          .where({ roleId: membership.roleId })
-          .select('module', 'canCreate', 'canRead', 'canUpdate', 'canDelete')
-          .all();
-
-        permissions = modules.map((module) => {
-          const row = rows.find((item) => item.module === module);
-          return {
-            module,
-            canCreate: Boolean(row?.canCreate),
-            canRead: Boolean(row?.canRead),
-            canUpdate: Boolean(row?.canUpdate),
-            canDelete: Boolean(row?.canDelete),
-          };
-        });
+      if (!customRole) {
+        throw new ForbiddenException('Role workspace tidak ditemukan');
       }
+
+      roleName = customRole.name;
+      const rows = await this.prisma.client.orm.public.TenantRolePermission
+        .where({ roleId: membership.roleId })
+        .select('module', 'canCreate', 'canRead', 'canUpdate', 'canDelete')
+        .all();
+
+      permissions = modules.map((module) => {
+        const row = rows.find((item) => item.module === module);
+        return {
+          module,
+          canCreate: Boolean(row?.canCreate),
+          canRead: Boolean(row?.canRead),
+          canUpdate: Boolean(row?.canUpdate),
+          canDelete: Boolean(row?.canDelete),
+        };
+      });
     }
 
     return {
@@ -335,6 +327,7 @@ export class TenantService {
           'tenantId',
           'userId',
           'role',
+          'roleId',
         )
         .first();
 

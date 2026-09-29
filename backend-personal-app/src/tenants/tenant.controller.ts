@@ -44,6 +44,15 @@ export class TenantController {
     );
   }
 
+  @Get(':id/permissions')
+  @UseGuards(JwtAuthGuard, TenantContextGuard)
+  async getPermissions(
+    @Param('id') id: string,
+    @Req() req: AuthRequest,
+  ) {
+    return this.tenantService.getPermissions(id, req.user.userId);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard, TenantContextGuard)
   async findOne(

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ApiError, apiRequest } from '../lib/api';
 import { CurrentUser, getCurrentUser, logout } from '../lib/auth';
+import { useTenant } from '../components/providers/TenantProvider';
 
 type DashboardSummary = {
   projects: { total: number; byStatus: Record<string, number> };
@@ -43,6 +44,7 @@ const accentClasses = {
 
 export default function HomePage() {
   const router = useRouter();
+  const { can, permissionLoading } = useTenant();
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,6 +72,31 @@ export default function HomePage() {
   useEffect(() => {
     void loadDashboard();
   }, [loadDashboard]);
+
+  const visibleModules = useMemo(
+    () => modules.filter((module) => {
+      const permissionModule =
+        module.href === '/projects' ? 'PROJECTS' :
+        module.href === '/tasks' ? 'TASKS' :
+        module.href === '/knowledge' ? 'KNOWLEDGE' :
+        module.href === '/snippets' ? 'CODE_SNIPPETS' :
+        'DOCUMENTS';
+      return can(permissionModule);
+    }),
+    [can],
+  );
+
+  const visibleStatCards = useMemo(
+    () => statCards.filter((card) => {
+      const permissionModule =
+        card.key === 'projects' ? 'PROJECTS' :
+        card.key === 'tasks' ? 'TASKS' :
+        card.key === 'knowledge' ? 'KNOWLEDGE' :
+        'CODE_SNIPPETS';
+      return can(permissionModule);
+    }),
+    [can],
+  );
 
   const totalTaskDone = useMemo(() => summary?.tasks.byStatus?.DONE ?? 0, [summary]);
 
@@ -199,7 +226,7 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {statCards.map((card) => {
+              {visibleStatCards.map((card) => {
                 const styles = accentClasses[card.accent];
                 const value =
                   card.key === 'projects' ? summary?.projects.total ?? 0 :
@@ -315,7 +342,7 @@ export default function HomePage() {
           </div>
 
           <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {modules.map((module) => {
+            {visibleModules.map((module) => {
               const styles = accentClasses[module.accent];
               return (
                 <Link

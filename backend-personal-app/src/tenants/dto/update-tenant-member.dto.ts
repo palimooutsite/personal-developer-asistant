@@ -1,6 +1,6 @@
-import { IsEnum } from 'class-validator';
+import { IsUUID } from 'class-validator';
 
 export class UpdateTenantMemberDto {
-  @IsEnum(['ADMIN', 'MEMBER'])
-  role!: 'ADMIN' | 'MEMBER';
+  @IsUUID()
+  roleId!: string;
 }

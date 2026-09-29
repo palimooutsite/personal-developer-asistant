@@ -1,4 +1,5 @@
 'use client';
+import { useTenant } from '../../components/providers/TenantProvider';
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '../../lib/api';
@@ -23,6 +24,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Toast } from '../../components/ui/Toast';
 
 export default function KnowledgePage() {
+  const { can } = useTenant();
   const [articles, setArticles] = useState<KnowledgeArticle[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [articleTags, setArticleTags] = useState<Record<string, string[]>>({});
@@ -237,8 +239,8 @@ export default function KnowledgePage() {
                     article={article}
                     tags={articleTags[article.id] ?? []}
                     onOpen={() => openReader(article)}
-                    onEdit={() => openEdit(article)}
-                    onDelete={() => void handleDelete(article)}
+                    onEdit={can('KNOWLEDGE', 'UPDATE') ? () => openEdit(article) : undefined}
+                    onDelete={can('KNOWLEDGE', 'DELETE') ? () => void handleDelete(article) : undefined}
                   />
                   {tags.length > 0 && (
                     <div className="mt-2 rounded-xl border border-zinc-200 bg-white px-4 py-3">

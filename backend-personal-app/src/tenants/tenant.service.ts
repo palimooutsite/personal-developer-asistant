@@ -13,6 +13,7 @@ import { UpdateTenantMemberDto } from './dto/update-tenant-member.dto.js';
 import { CreateTenantInvitationDto } from './dto/create-tenant-invitation.dto.js';
 import { EmailService } from '../email/email.service.js';
 import { randomBytes } from 'node:crypto';
+import { PERMISSION_MODULES } from './roles/permission.constants.js';
 
 export interface TenantListItem {
   id: string;
@@ -55,10 +56,29 @@ export class TenantService {
         createdBy: userId,
       });
 
+      const ownerRole = await tx.orm.public.TenantCustomRole.create({
+        tenantId: tenant.id,
+        name: 'Owner',
+        description: 'System role dengan akses penuh workspace.',
+        isSystem: true,
+      });
+
+      for (const module of PERMISSION_MODULES) {
+        await tx.orm.public.TenantRolePermission.create({
+          roleId: ownerRole.id,
+          module,
+          canCreate: true,
+          canRead: true,
+          canUpdate: true,
+          canDelete: true,
+        });
+      }
+
       await tx.orm.public.TenantMember.create({
         tenantId: tenant.id,
         userId,
         role: 'OWNER',
+        roleId: ownerRole.id,
       });
 
       return {

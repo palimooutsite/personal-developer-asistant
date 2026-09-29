@@ -149,7 +149,7 @@ export default function DocumentsPage() {
           description="Simpan dokumentasi, referensi, dan file project penting dalam satu tempat."
           accent="amber"
           action={
-            <button type="button" onClick={startCreate}
+            {can('DOCUMENTS', 'CREATE') ? <button type="button" onClick={startCreate}
               className="w-full rounded-xl bg-amber-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-amber-700 hover:shadow-md sm:w-auto">
               + Upload Document
             </button>
@@ -233,7 +233,7 @@ export default function DocumentsPage() {
               {search ? 'Coba gunakan kata kunci pencarian yang berbeda.' : 'Upload document pertama Anda untuk mulai membangun document library.'}
             </p>
             {!search ? (
-              <button type="button" onClick={startCreate}
+              {can('DOCUMENTS', 'CREATE') ? <button type="button" onClick={startCreate}
                 className="mt-5 rounded-xl bg-amber-600 px-5 py-3 text-sm font-bold text-white hover:bg-amber-700">
                 + Upload Document
               </button>

@@ -21,18 +21,21 @@ import { UpdateCodeSnippetDto } from './dto/update-code-snippet.dto.js';
 import { QuerySnippetDto } from './dto/query-snippet.dto.js';
 
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard.js';
+import { PermissionGuard } from '../tenants/roles/permission.guard.js';
+import { RequirePermission } from '../tenants/roles/require-permission.decorator.js';
 import { TenantContextGuard } from '../tenants/guard/tenant-context.guard.js';
 
 import type { TenantRequest } from '../tenants/types/tenant-request.js';
 
 @Controller('snippets')
-@UseGuards(JwtAuthGuard, TenantContextGuard)
+@UseGuards(JwtAuthGuard, TenantContextGuard, PermissionGuard)
 export class SnippetsController {
   constructor(
     private readonly snippetsService: SnippetsService,
   ) {}
 
   @Post()
+  @RequirePermission('CODE_SNIPPETS', 'CREATE')
   create(
     @Body() body: CreateCodeSnippetDto,
     @Req() req: TenantRequest,
@@ -45,6 +48,7 @@ export class SnippetsController {
   }
 
   @Get()
+  @RequirePermission('CODE_SNIPPETS', 'READ')
   findAll(
     @Query() query: QuerySnippetDto,
     @Req() req: TenantRequest,
@@ -57,6 +61,7 @@ export class SnippetsController {
   }
 
   @Get(':id')
+  @RequirePermission('CODE_SNIPPETS', 'READ')
   findOne(
     @Param('id') id: string,
     @Req() req: TenantRequest,
@@ -69,6 +74,7 @@ export class SnippetsController {
   }
 
   @Patch(':id')
+  @RequirePermission('CODE_SNIPPETS', 'UPDATE')
   update(
     @Param('id') id: string,
     @Body() body: UpdateCodeSnippetDto,
@@ -83,6 +89,7 @@ export class SnippetsController {
   }
 
   @Delete(':id')
+  @RequirePermission('CODE_SNIPPETS', 'DELETE')
   remove(
     @Param('id') id: string,
     @Req() req: TenantRequest,

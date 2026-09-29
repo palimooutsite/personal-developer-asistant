@@ -447,7 +447,7 @@ export default function WorkspaceSettingsPage() {
           </section>
         ) : null}
 
-        {tab === 'roles' && can('WORKSPACE_SETTINGS') ? (
+        {tab === 'roles' && can('WORKSPACE_SETTINGS', 'READ') ? (
           <section className="rounded-2xl border border-zinc-200 bg-white shadow-sm">
             <div className="flex flex-col gap-4 border-b border-zinc-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
               <div>

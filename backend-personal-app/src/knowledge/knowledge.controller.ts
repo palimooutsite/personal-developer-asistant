@@ -21,18 +21,21 @@ import { UpdateKnowledgeArticleDto } from './dto/update-knowledge-article.dto.js
 import { QueryKnowledgeDto } from './dto/query-knowledge.dto.js';
 
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard.js';
+import { PermissionGuard } from '../tenants/roles/permission.guard.js';
+import { RequirePermission } from '../tenants/roles/require-permission.decorator.js';
 import { TenantContextGuard } from '../tenants/guard/tenant-context.guard.js';
 
 import type { TenantRequest } from '../tenants/types/tenant-request.js';
 
 @Controller('knowledge')
-@UseGuards(JwtAuthGuard, TenantContextGuard)
+@UseGuards(JwtAuthGuard, TenantContextGuard, PermissionGuard)
 export class KnowledgeController {
   constructor(
     private readonly knowledgeService: KnowledgeService,
   ) {}
 
   @Post()
+  @RequirePermission('KNOWLEDGE', 'CREATE')
   async create(
     @Body() body: CreateKnowledgeArticleDto,
     @Req() req: TenantRequest,
@@ -45,6 +48,7 @@ export class KnowledgeController {
   }
 
   @Get()
+  @RequirePermission('KNOWLEDGE', 'READ')
   async findAll(
     @Query() query: QueryKnowledgeDto,
     @Req() req: TenantRequest,
@@ -57,6 +61,7 @@ export class KnowledgeController {
   }
 
   @Get(':id')
+  @RequirePermission('KNOWLEDGE', 'READ')
   async findOne(
     @Param('id') id: string,
     @Req() req: TenantRequest,
@@ -69,6 +74,7 @@ export class KnowledgeController {
   }
 
   @Patch(':id')
+  @RequirePermission('KNOWLEDGE', 'UPDATE')
   async update(
     @Param('id') id: string,
     @Body() body: UpdateKnowledgeArticleDto,
@@ -83,6 +89,7 @@ export class KnowledgeController {
   }
 
   @Delete(':id')
+  @RequirePermission('KNOWLEDGE', 'DELETE')
   async remove(
     @Param('id') id: string,
     @Req() req: TenantRequest,

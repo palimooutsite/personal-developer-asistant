@@ -87,7 +87,7 @@ export function SnippetCard({
         <div className="flex items-center justify-between gap-2 border-t border-zinc-100 pt-3">
           <span className="text-xs text-zinc-400">{tags.length} tag terpasang</span>
           <div className="flex gap-2">
-            {onEdit ? <button type="button" onClick={onEdit} className="rounded-lg px-3 py-2 text-xs font-semibold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-100">Edit</button>
+            {onEdit ? <button type="button" onClick={onEdit} className="rounded-lg px-3 py-2 text-xs font-semibold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-100">Edit</button> : null}
             {onDelete ? <button type="button" onClick={onDelete} className="rounded-lg px-3 py-2 text-xs font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-100 focus:outline-none focus:ring-2 focus:ring-red-100">Hapus</button> : null}
           </div>
         </div>

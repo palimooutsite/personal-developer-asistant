@@ -11,8 +11,8 @@ interface ProjectMembersModalProps {
   saving: boolean;
   onClose: () => void;
   onAddMembers?: (users: UserPickerItem[], roles: Record<string, EditableRole>) => Promise<void>;
-  onRoleChange?: (member: ProjectMember, role: EditableRole) => Promise<void>;
-  onRemoveMember?: (member: ProjectMember) => Promise<void>;
+  onRoleChange?: (member: ProjectMember, role: EditableRole) => void | Promise<void>;
+  onRemoveMember?: (member: ProjectMember) => void | Promise<void>;
 }
 
 export function ProjectMembersModal({
@@ -165,10 +165,10 @@ export function ProjectMembersModal({
                   <div className="flex items-center gap-2">
                     {member.role === 'OWNER' ? <span className="rounded-lg bg-zinc-900 px-3 py-2 text-xs font-bold text-white">OWNER</span> : canManage ? (
                       <>
-                        <select disabled={!onRoleChange || saving} value={member.role} disabled={saving} onChange={(e) => void onRoleChange(member, e.target.value as EditableRole)} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold">
+                        <select disabled={!onRoleChange || saving} value={member.role} onChange={(e) => void onRoleChange?.(member, e.target.value as EditableRole)} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold">
                           <option value="ADMIN">ADMIN</option><option value="DEVELOPER">DEVELOPER</option><option value="REVIEWER">REVIEWER</option><option value="VIEWER">VIEWER</option>
                         </select>
-                        <button type="button" disabled={saving} onClick={() => void onRemoveMember(member)} className="rounded-lg border border-red-100 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50">Hapus</button>
+                        <button type="button" disabled={saving} onClick={() => void onRemoveMember?.(member)} className="rounded-lg border border-red-100 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50">Hapus</button>
                       </>
                     ) : <span className="rounded-lg bg-zinc-100 px-3 py-2 text-xs font-bold text-zinc-600">{member.role}</span>}
                   </div>

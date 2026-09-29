@@ -19,6 +19,8 @@ import { KnowledgeReader } from '../../components/knowledge/KnowledgeReader';
 import { KnowledgeForm } from '../../components/knowledge/KnowledgeForm';
 import { ModuleHeader } from '../../components/layout/ModuleHeader';
 import { StyledSelect } from '../../components/ui/StyledSelect';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { Toast } from '../../components/ui/Toast';
 
 export default function KnowledgePage() {
   const [articles, setArticles] = useState<KnowledgeArticle[]>([]);
@@ -38,6 +40,8 @@ export default function KnowledgePage() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<KnowledgeArticle | null>(null);
+  const [toast, setToast] = useState('');
 
   const loadArticles = useCallback(async () => {
     setLoading(true);
@@ -117,10 +121,14 @@ export default function KnowledgePage() {
     setError('');
   }
 
-  async function handleDelete(article: KnowledgeArticle) {
-    if (!window.confirm(`Hapus knowledge "${article.title}"?`)) return;
+  async function handleDelete(article: KnowledgeArticle) { setDeleteTarget(article); }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
     try {
-      await deleteKnowledge(article.id);
+      await deleteKnowledge(deleteTarget.id);
+      setDeleteTarget(null);
+      setToast('Knowledge "' + deleteTarget.title + '" berhasil dihapus.');
       await loadArticles();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Knowledge gagal dihapus.');
@@ -263,6 +271,8 @@ export default function KnowledgePage() {
           </>
         )}
       </div>
+      <ConfirmDialog open={Boolean(deleteTarget)} title="Hapus knowledge?" description={deleteTarget ? 'Artikel "' + deleteTarget.title + '" akan dihapus dan tidak dapat dikembalikan.' : ''} onClose={()=>setDeleteTarget(null)} onConfirm={()=>void confirmDelete()} />
+      <Toast message={toast} open={Boolean(toast)} onClose={()=>setToast('')} />
     </main>
   );
 }

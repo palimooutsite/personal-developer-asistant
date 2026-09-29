@@ -76,6 +76,10 @@ export class AuthService {
     return this.usersService.updateAvatar(userId, avatarUrl);
   }
 
+  async removeAvatar(userId: string): Promise<RegisterUserResponse & { avatarUrl: string | null }> {
+    return this.usersService.updateAvatar(userId, '');
+  }
+
   async login(
   data: LoginUserInput,
 ): Promise<LoginUserResponse> {

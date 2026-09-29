@@ -45,7 +45,8 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     if (
       pathname === '/login' ||
       pathname === '/register' ||
-      pathname === '/invitations/accept'
+      pathname === '/invitations/accept' ||
+      pathname === '/landing'
     ) {
       setLoading(false);
       return;

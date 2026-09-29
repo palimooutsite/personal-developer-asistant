@@ -26,9 +26,9 @@ const isOverdue = (value: string | null, taskStatus: TaskStatus) =>
 interface TaskCardProps {
   task: Task;
   deleting: boolean;
-  onAssignees: (task: Task) => void;
-  onEdit: (task: Task) => void;
-  onDelete: (task: Task) => void;
+  onAssignees?: (task: Task) => void;
+  onEdit?: (task: Task) => void;
+  onDelete?: (task: Task) => void;
 }
 
 export function TaskCard({ task, deleting, onAssignees, onEdit, onDelete }: TaskCardProps) {
@@ -65,11 +65,11 @@ export function TaskCard({ task, deleting, onAssignees, onEdit, onDelete }: Task
         </div>
 
         <div className="grid grid-cols-2 gap-2 sm:flex">
-          <button type="button" onClick={() => onAssignees(task)} className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-100">Assignee</button>
-          <button type="button" onClick={() => onEdit(task)} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-100">Edit</button>
-          <button type="button" onClick={() => onDelete(task)} disabled={deleting} className="col-span-2 rounded-lg border border-red-100 bg-white px-3 py-2 text-xs font-semibold text-red-600 transition hover:border-red-200 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-1">
+          {onAssignees ? <button type="button" onClick={() => onAssignees(task)} className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-100">Assignee</button>
+          {onEdit ? <button type="button" onClick={() => onEdit(task)} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-100">Edit</button>
+          {onDelete ? <button type="button" onClick={() => onDelete(task)} disabled={deleting} className="col-span-2 rounded-lg border border-red-100 bg-white px-3 py-2 text-xs font-semibold text-red-600 transition hover:border-red-200 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-1">
             {deleting ? '...' : 'Hapus'}
-          </button>
+          </button> : null}
         </div>
       </div>
     </article>

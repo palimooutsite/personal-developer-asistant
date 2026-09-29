@@ -138,7 +138,20 @@ export class TenantRoleService {
 
   async replacePermissions(roleId: string, permissions: RolePermissionInput[]) {
     await this.prisma.client.orm.public.TenantRolePermission.where({ roleId }).delete();
+
+    // A role may only have one permission row per module because of
+    // the unique constraint (roleId, module). Normalize the payload first
+    // so duplicate modules from the client cannot cause a 23505 error.
+    const uniquePermissions = new Map<PermissionModule, RolePermissionInput>();
+
     for (const permission of permissions) {
+      if (!PERMISSION_MODULES.includes(permission.module)) {
+        continue;
+      }
+      uniquePermissions.set(permission.module, permission);
+    }
+
+    for (const permission of uniquePermissions.values()) {
       await this.prisma.client.orm.public.TenantRolePermission.create({
         roleId,
         module: permission.module,

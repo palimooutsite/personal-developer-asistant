@@ -169,10 +169,12 @@ export default function SnippetsPage() {
           description="Simpan, cari, dan kelola potongan kode yang sering digunakan agar workflow development lebih cepat."
           accent="emerald"
           action={
-            {can('CODE_SNIPPETS', 'CREATE') ? <button type="button" onClick={startCreate}
-              className="w-full rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 hover:shadow-md sm:w-auto">
-              + Snippet Baru
-            </button>
+            can('CODE_SNIPPETS', 'CREATE') ? (
+              <button type="button" onClick={startCreate}
+                className="w-full rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 hover:shadow-md sm:w-auto">
+                + Snippet Baru
+              </button>
+            ) : null
           }
         />
 

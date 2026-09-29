@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { TenantSwitcher } from '../providers/TenantSwitcher';
 
 type ModuleAccent = 'indigo' | 'blue' | 'violet' | 'emerald' | 'amber' | 'cyan';
 
@@ -41,7 +40,6 @@ export function ModuleHeader({
         >
           ← Kembali ke Menu
         </Link>
-        <TenantSwitcher />
       </div>
 
       <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">

@@ -25,13 +25,16 @@ import { UpdateProjectMemberDto } from './dto/update-project-member.dto.js';
 import type { TenantRequest } from '../tenants/types/tenant-request.js';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard.js';
 import { TenantContextGuard } from '../tenants/guard/tenant-context.guard.js';
+import { PermissionGuard } from '../tenants/roles/permission.guard.js';
+import { RequirePermission } from '../tenants/roles/require-permission.decorator.js';
 
 @Controller('projects')
-@UseGuards(JwtAuthGuard, TenantContextGuard)
+@UseGuards(JwtAuthGuard, TenantContextGuard, PermissionGuard)
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
   @Get()
+  @RequirePermission('PROJECTS', 'READ')
   async findAll(@Req() req: TenantRequest): Promise<ProjectListItem[]> {
     return this.projectsService.findAll(
       req.user.userId,
@@ -40,6 +43,7 @@ export class ProjectsController {
   }
 
   @Get(':id')
+  @RequirePermission('PROJECTS', 'READ')
   async findOne(
     @Param('id') id: string,
     @Req() req: TenantRequest,
@@ -52,6 +56,7 @@ export class ProjectsController {
   }
 
   @Post()
+  @RequirePermission('PROJECTS', 'CREATE')
   async create(
     @Body() body: CreateProjectDto,
     @Req() req: TenantRequest,
@@ -64,6 +69,7 @@ export class ProjectsController {
   }
 
   @Patch(':id')
+  @RequirePermission('PROJECTS', 'UPDATE')
   async update(
     @Param('id') id: string,
     @Body() body: UpdateProjectDto,
@@ -78,6 +84,7 @@ export class ProjectsController {
   }
 
   @Delete(':id')
+  @RequirePermission('PROJECTS', 'DELETE')
   async remove(
     @Param('id') id: string,
     @Req() req: TenantRequest,
@@ -90,6 +97,7 @@ export class ProjectsController {
   }
 
   @Get(':id/members')
+  @RequirePermission('PROJECT_MEMBERS', 'READ')
   async findMembers(
     @Param('id') id: string,
     @Req() req: TenantRequest,
@@ -102,6 +110,7 @@ export class ProjectsController {
   }
 
   @Patch(':id/members/:userId')
+  @RequirePermission('PROJECT_MEMBERS', 'UPDATE')
   async updateMemberRole(
     @Param('id') id: string,
     @Param('userId') userId: string,
@@ -118,6 +127,7 @@ export class ProjectsController {
   }
 
   @Delete(':id/members/:userId')
+  @RequirePermission('PROJECT_MEMBERS', 'DELETE')
   async removeMember(
     @Param('id') id: string,
     @Param('userId') userId: string,
@@ -132,6 +142,7 @@ export class ProjectsController {
   }
 
   @Post(':id/members/bulk')
+  @RequirePermission('PROJECT_MEMBERS', 'CREATE')
   async addMembers(
     @Param('id') id: string,
     @Body() body: AddProjectMembersDto,
@@ -146,6 +157,7 @@ export class ProjectsController {
   }
 
   @Post(':id/members')
+  @RequirePermission('PROJECT_MEMBERS', 'CREATE')
   async addMember(
     @Param('id') id: string,
     @Body() body: AddProjectMemberDto,

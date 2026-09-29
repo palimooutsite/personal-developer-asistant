@@ -217,7 +217,7 @@ export default function ProjectsPage() {
           description="Kelola seluruh project development kamu dalam satu tempat. Pilih project untuk mulai mengatur pekerjaan dan progress."
           accent="indigo"
           action={
-            <button
+            {can('PROJECTS', 'CREATE') || formOpen ? <button
               type="button"
               onClick={formOpen ? closeForm : openCreateForm}
               className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-zinc-950 px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-md sm:w-auto"
@@ -295,9 +295,9 @@ export default function ProjectsPage() {
               <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">
                 Mulai dengan membuat project pertama kamu. Semua project, task, dan aktivitas development bisa dikelola dari sini.
               </p>
-              <button type="button" onClick={openCreateForm} className="mt-5 rounded-xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-200">
+              {can('PROJECTS', 'CREATE') ? <button type="button" onClick={openCreateForm} className="mt-5 rounded-xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-200">
                 + Buat Project Pertama
-              </button>
+              </button> : null}
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

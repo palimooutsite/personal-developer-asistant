@@ -1,9 +1,10 @@
-import { IsEmail, IsIn } from 'class-validator';
+import { IsEmail, IsOptional, IsUUID } from 'class-validator';
 
 export class CreateTenantInvitationDto {
   @IsEmail()
   email!: string;
 
-  @IsIn(['ADMIN', 'MEMBER'])
-  role!: 'ADMIN' | 'MEMBER';
+  @IsUUID()
+  @IsOptional()
+  roleId?: string;
 }

@@ -1,4 +1,5 @@
 'use client';
+import { useTenant } from '../../components/providers/TenantProvider';
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -30,6 +31,7 @@ import { Toast } from '../../components/ui/Toast';
 type EditableRole = Exclude<ProjectRole, 'OWNER'>;
 
 export default function ProjectsPage() {
+  const { can } = useTenant();
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -304,8 +306,8 @@ export default function ProjectsPage() {
                   key={project.id}
                   project={project}
                   onMembers={(item) => void openMembers(item)}
-                  onEdit={startEdit}
-                  onDelete={(item) => void handleDelete(item)}
+                  onEdit={can('PROJECTS', 'UPDATE') ? startEdit : undefined}
+                  onDelete={can('PROJECTS', 'DELETE') ? (item) => void handleDelete(item) : undefined}
                 />
               ))}
             </div>
@@ -337,7 +339,7 @@ export default function ProjectsPage() {
           loading={memberLoading}
           saving={memberSaving}
           onClose={closeMembers}
-          onAddMembers={handleAddMembers}
+          onAddMembers={can('PROJECT_MEMBERS', 'CREATE') ? handleAddMembers : undefined}
           onRoleChange={handleMemberRoleChange}
           onRemoveMember={handleRemoveMember}
         />

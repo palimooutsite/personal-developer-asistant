@@ -318,13 +318,8 @@ async addMember(
       currentUserId,
     );
 
-  if (
-    currentMembership.role !== 'OWNER' &&
-    currentMembership.role !== 'ADMIN'
-  ) {
-    throw new ForbiddenException(
-      'Anda tidak memiliki izin untuk menambahkan member',
-    );
+  if (!(await this.hasWorkspacePermission(tenantId, currentUserId, 'WORKSPACE_MEMBERS', 'CREATE'))) {
+    throw new ForbiddenException('Anda tidak memiliki izin untuk menambahkan member');
   }
 
   const user =

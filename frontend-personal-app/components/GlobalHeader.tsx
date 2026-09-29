@@ -16,7 +16,8 @@ export function GlobalHeader() {
     pathname === '/login' ||
     pathname === '/register' ||
     pathname === '/workspace-selection' ||
-    pathname === '/invitations/accept'
+    pathname === '/invitations/accept' ||
+    pathname === '/landing'
   ) {
     return null;
   }

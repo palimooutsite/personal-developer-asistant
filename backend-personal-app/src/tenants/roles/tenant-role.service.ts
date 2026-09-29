@@ -46,25 +46,125 @@ export class TenantRoleService {
     }));
   }
 
-  async ensureSystemRoles(tenantId: string): Promise<TenantCustomRoleRow> {
-    const owner = await this.prisma.client.orm.public.TenantCustomRole
-      .where({ tenantId, name: 'Owner' }).first();
-    if (owner) return owner;
-
-    const role = await this.prisma.client.orm.public.TenantCustomRole.create({
-      tenantId,
-      name: 'Owner',
-      description: 'System role dengan akses penuh workspace.',
-      isSystem: true,
+  private async ensureSystemRole(
+    tenantId: string,
+    name: string,
+    description: string,
+  ): Promise<TenantCustomRoleRow> {
+    const role = await this.prisma.client.orm.public.TenantCustomRole.upsert({
+      create: {
+        tenantId,
+        name,
+        description,
+        isSystem: true,
+      },
+      update: {
+        description,
+        isSystem: true,
+      },
+      conflictOn: {
+        tenantId,
+        name,
+      },
     });
 
     for (const permission of this.fullPermissions()) {
-      await this.prisma.client.orm.public.TenantRolePermission.create({
-        roleId: role.id,
-        ...permission,
+      await this.prisma.client.orm.public.TenantRolePermission.upsert({
+        create: {
+          roleId: role.id,
+          ...permission,
+        },
+        update: {
+          canCreate: true,
+          canRead: true,
+          canUpdate: true,
+          canDelete: true,
+        },
+        conflictOn: {
+          roleId: role.id,
+          module: permission.module,
+        },
       });
     }
+
     return role;
+  }
+
+  async ensureSystemRoles(tenantId: string): Promise<TenantCustomRoleRow> {
+    const owner = await this.ensureSystemRole(
+      tenantId,
+      'Owner',
+      'System role dengan akses penuh workspace.',
+    );
+
+    await this.ensureSystemRole(
+      tenantId,
+      'Admin',
+      'System role dengan akses penuh workspace untuk administrator.',
+    );
+
+    await this.ensureSystemRole(
+      tenantId,
+      'Member',
+      'System role kompatibilitas untuk member lama workspace.',
+    );
+
+    return owner;
+  }
+
+  async migrateLegacyMembers(tenantId: string) {
+    const ownerRole = await this.ensureSystemRole(
+      tenantId,
+      'Owner',
+      'System role dengan akses penuh workspace.',
+    );
+    const adminRole = await this.ensureSystemRole(
+      tenantId,
+      'Admin',
+      'System role dengan akses penuh workspace untuk administrator.',
+    );
+    const memberRole = await this.ensureSystemRole(
+      tenantId,
+      'Member',
+      'System role kompatibilitas untuk member lama workspace.',
+    );
+
+    const members = await this.prisma.client.orm.public.TenantMember
+      .where({ tenantId })
+      .select('id', 'role', 'roleId')
+      .all();
+
+    let migrated = 0;
+    let alreadyMigrated = 0;
+
+    for (const member of members) {
+      if (member.roleId) {
+        alreadyMigrated += 1;
+        continue;
+      }
+
+      const roleId =
+        member.role === 'OWNER'
+          ? ownerRole.id
+          : member.role === 'ADMIN'
+            ? adminRole.id
+            : memberRole.id;
+
+      const updated = await this.prisma.client.orm.public.TenantMember
+        .where({ id: member.id })
+        .update({ roleId });
+
+      if (updated) {
+        migrated += 1;
+      }
+    }
+
+    return {
+      tenantId,
+      totalMembers: members.length,
+      migrated,
+      alreadyMigrated,
+    };
   }
 
   async list(tenantId: string) {

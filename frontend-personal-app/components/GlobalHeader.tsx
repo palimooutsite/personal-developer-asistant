@@ -10,6 +10,7 @@ export function GlobalHeader() {
   const pathname = usePathname();
   const { tenants, activeTenant, loading, selectTenant } = useTenant();
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   if (
     pathname === '/login' ||
@@ -134,20 +135,72 @@ export function GlobalHeader() {
             ) : null}
           </div>
 
-          <Link
-            href="/account-settings"
-            className="hidden h-10 items-center rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-600 transition hover:border-zinc-300 hover:bg-zinc-50 sm:inline-flex"
-          >
-            Account
-          </Link>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setSettingsOpen((open) => !open)}
+              aria-haspopup="menu"
+              aria-expanded={settingsOpen}
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-600 transition hover:border-zinc-300 hover:bg-zinc-50"
+            >
+              <span>⚙</span>
+              <span>Settings</span>
+              <span className={'text-xs transition-transform ' + (settingsOpen ? 'rotate-180' : '')}>⌄</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="inline-flex h-10 items-center rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
-          >
-            Logout
-          </button>
+            {settingsOpen ? (
+              <>
+                <button
+                  type="button"
+                  aria-label="Tutup menu settings"
+                  className="fixed inset-0 z-40 h-screen w-screen cursor-default"
+                  onClick={() => setSettingsOpen(false)}
+                />
+                <div className="absolute right-0 z-50 mt-2 w-64 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl" role="menu">
+                  <Link
+                    href="/workspace-settings"
+                    onClick={() => setSettingsOpen(false)}
+                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition hover:bg-zinc-50"
+                    role="menuitem"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600">▣</span>
+                    <span>
+                      <span className="block font-semibold text-zinc-900">Workspace Settings</span>
+                      <span className="block text-xs text-zinc-500">Workspace, anggota & role</span>
+                    </span>
+                  </Link>
+
+                  <Link
+                    href="/account-settings"
+                    onClick={() => setSettingsOpen(false)}
+                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition hover:bg-zinc-50"
+                    role="menuitem"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">◉</span>
+                    <span>
+                      <span className="block font-semibold text-zinc-900">Account Settings</span>
+                      <span className="block text-xs text-zinc-500">Profil, foto & keamanan</span>
+                    </span>
+                  </Link>
+
+                  <div className="my-1 border-t border-zinc-100" />
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition hover:bg-red-50"
+                    role="menuitem"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-600">↪</span>
+                    <span>
+                      <span className="block font-semibold text-red-700">Logout</span>
+                      <span className="block text-xs text-zinc-500">Keluar dari akun</span>
+                    </span>
+                  </button>
+                </div>
+              </>
+            ) : null}
+          </div>
         </div>
       </div>
     </header>

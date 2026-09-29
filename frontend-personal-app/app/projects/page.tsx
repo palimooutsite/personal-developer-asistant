@@ -47,6 +47,7 @@ export default function ProjectsPage() {
   const [memberSaving, setMemberSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [toast, setToast] = useState('');
+  const [removeMemberTarget, setRemoveMemberTarget] = useState<ProjectMember | null>(null);
 
   async function loadProjects() {
     setLoading(true);
@@ -146,14 +147,20 @@ export default function ProjectsPage() {
     }
   }
 
-  async function handleRemoveMember(member: ProjectMember) {
-    if (!memberProject) return;
+  function handleRemoveMember(member: ProjectMember) {
+    if (!memberProject || memberSaving) return;
+    setRemoveMemberTarget(member);
+  }
+
+  async function confirmRemoveMember() {
+    if (!memberProject || !removeMemberTarget) return;
     try {
       setMemberSaving(true);
       setError('');
-      await removeProjectMember(memberProject.id, member.userId);
-      setMembers((current) => current.filter((item) => item.userId !== member.userId));
+      await removeProjectMember(memberProject.id, removeMemberTarget.userId);
+      setMembers((current) => current.filter((item) => item.userId !== removeMemberTarget.userId));
       setToast('Member berhasil dihapus dari project.');
+      setRemoveMemberTarget(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal menghapus member.');
     } finally {
@@ -306,6 +313,14 @@ export default function ProjectsPage() {
         </section>
       </div>
 
+      <ConfirmDialog
+        open={Boolean(removeMemberTarget)}
+        title="Hapus member dari project?"
+        description={removeMemberTarget ? (removeMemberTarget.user.name || removeMemberTarget.user.username) + ' akan kehilangan akses ke project ini. Data akun dan workspace tidak akan dihapus.' : ''}
+        onClose={() => setRemoveMemberTarget(null)}
+        onConfirm={() => void confirmRemoveMember()}
+        loading={memberSaving}
+      />
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         title="Hapus project?"

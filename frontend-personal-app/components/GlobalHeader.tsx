@@ -1,0 +1,155 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useTenant } from './providers/TenantProvider';
+import { logout } from '../lib/auth';
+
+export function GlobalHeader() {
+  const pathname = usePathname();
+  const { tenants, activeTenant, loading, selectTenant } = useTenant();
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
+
+  if (
+    pathname === '/login' ||
+    pathname === '/register' ||
+    pathname === '/workspace-selection' ||
+    pathname === '/invitations/accept'
+  ) {
+    return null;
+  }
+
+  function handleLogout() {
+    logout();
+    window.location.href = '/login';
+  }
+
+  return (
+    <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/95 backdrop-blur">
+      <div className="mx-auto flex min-h-16 w-full max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 2xl:px-10">
+        <Link href="/" className="flex min-w-0 items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-sm font-bold text-white">
+            PDA
+          </span>
+          <span className="hidden text-sm font-bold text-zinc-900 sm:block">
+            Personal Developer Assistant
+          </span>
+        </Link>
+
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setWorkspaceOpen((open) => !open)}
+              disabled={loading || tenants.length === 0}
+              aria-haspopup="menu"
+              aria-expanded={workspaceOpen}
+              className="inline-flex min-w-0 max-w-[240px] items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-left transition hover:border-zinc-300 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-sm font-bold text-cyan-700">
+                {activeTenant?.name?.charAt(0).toUpperCase() ?? 'W'}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                  Workspace
+                </span>
+                <span className="block truncate text-sm font-semibold text-zinc-800">
+                  {loading ? 'Memuat...' : activeTenant?.name ?? 'Pilih workspace'}
+                </span>
+              </span>
+              <span className={'ml-1 text-xs text-zinc-400 transition-transform ' + (workspaceOpen ? 'rotate-180' : '')}>
+                ⌄
+              </span>
+            </button>
+
+            {workspaceOpen ? (
+              <>
+                <button
+                  type="button"
+                  aria-label="Tutup pilihan workspace"
+                  className="fixed inset-0 z-40 h-screen w-screen cursor-default"
+                  onClick={() => setWorkspaceOpen(false)}
+                />
+                <div
+                  className="absolute right-0 z-50 mt-2 w-72 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl"
+                  role="menu"
+                >
+                  <div className="px-3 py-2">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                      Workspace
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      Pilih workspace yang sedang kamu kerjakan.
+                    </p>
+                  </div>
+
+                  <div className="mt-1 max-h-72 overflow-y-auto">
+                    {tenants.map((tenant) => {
+                      const active = tenant.id === activeTenant?.id;
+                      return (
+                        <button
+                          key={tenant.id}
+                          type="button"
+                          onClick={() => {
+                            setWorkspaceOpen(false);
+                            if (!active) {
+                              selectTenant(tenant.id, true);
+                            }
+                          }}
+                          className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-zinc-50"
+                          role="menuitem"
+                        >
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-sm font-bold text-cyan-700">
+                            {tenant.name.charAt(0).toUpperCase()}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-semibold text-zinc-900">
+                              {tenant.name}
+                            </span>
+                            <span className="block text-xs text-zinc-500">
+                              {tenant.role}
+                            </span>
+                          </span>
+                          {active ? (
+                            <span className="text-sm font-bold text-cyan-600">✓</span>
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-1 border-t border-zinc-100 pt-1">
+                    <Link
+                      href="/workspace-settings"
+                      onClick={() => setWorkspaceOpen(false)}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
+                    >
+                      <span>⚙</span>
+                      Kelola Workspace
+                    </Link>
+                  </div>
+                </div>
+              </>
+            ) : null}
+          </div>
+
+          <Link
+            href="/account-settings"
+            className="hidden h-10 items-center rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-600 transition hover:border-zinc-300 hover:bg-zinc-50 sm:inline-flex"
+          >
+            Account
+          </Link>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="inline-flex h-10 items-center rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}

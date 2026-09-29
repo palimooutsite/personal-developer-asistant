@@ -504,24 +504,12 @@ async updateMemberRole(
   targetUserId: string,
   data: UpdateTenantMemberDto,
 ): Promise<TenantMemberListItem> {
-  const currentMembership =
-    await this.getMembership(
-      tenantId,
-      currentUserId,
-    );
+  await this.getMembership(tenantId, currentUserId);
 
   const targetMembership =
     await this.prisma.client.orm.public.TenantMember
-      .where({
-        tenantId,
-        userId: targetUserId,
-      })
-      .select(
-        'id',
-        'tenantId',
-        'userId',
-        'role',
-      )
+      .where({ tenantId, userId: targetUserId })
+      .select('id', 'tenantId', 'userId', 'roleId')
       .first();
 
   if (!targetMembership) {
@@ -530,23 +518,30 @@ async updateMemberRole(
     );
   }
 
-  if (targetMembership.role === 'OWNER') {
+  const targetRole = targetMembership.roleId
+    ? await this.prisma.client.orm.public.TenantCustomRole
+        .where({ id: targetMembership.roleId, tenantId })
+        .select('id', 'name', 'isSystem')
+        .first()
+    : null;
+
+  if (targetRole?.isSystem && targetRole.name === 'Owner') {
     throw new ForbiddenException(
-      'Role OWNER tidak dapat diubah',
+      'Role Owner tidak dapat diubah',
     );
   }
 
   if (
-    currentMembership.role === 'ADMIN' &&
-    targetMembership.role === 'ADMIN'
+    !(await this.hasWorkspacePermission(
+      tenantId,
+      currentUserId,
+      'WORKSPACE_MEMBERS',
+      'UPDATE',
+    ))
   ) {
     throw new ForbiddenException(
-      'ADMIN tidak dapat mengubah role ADMIN lainnya',
+      'Anda tidak memiliki izin untuk mengubah role member',
     );
-  }
-
-  if (!(await this.hasWorkspacePermission(tenantId, currentUserId, 'WORKSPACE_MEMBERS', 'UPDATE'))) {
-    throw new ForbiddenException('Anda tidak memiliki izin untuk mengubah role member');
   }
 
   const customRole =
@@ -555,18 +550,20 @@ async updateMemberRole(
       .first();
 
   if (!customRole) {
-    throw new NotFoundException('Role tidak ditemukan pada workspace ini');
+    throw new NotFoundException(
+      'Role tidak ditemukan pada workspace ini',
+    );
   }
 
   if (customRole.isSystem) {
-    throw new ForbiddenException('System role tidak dapat diberikan kepada member');
+    throw new ForbiddenException(
+      'System role tidak dapat diberikan kepada member',
+    );
   }
 
   const updated =
     await this.prisma.client.orm.public.TenantMember
-      .where({
-        id: targetMembership.id,
-      })
+      .where({ id: targetMembership.id })
       .update({
         role: 'MEMBER',
         roleId: data.roleId,
@@ -580,21 +577,12 @@ async updateMemberRole(
 
   const user =
     await this.prisma.client.orm.public.User
-      .where({
-        id: updated.userId,
-      })
-      .select(
-        'id',
-        'username',
-        'email',
-        'name',
-      )
+      .where({ id: updated.userId })
+      .select('id', 'username', 'email', 'name')
       .first();
 
   if (!user) {
-    throw new NotFoundException(
-      'User tidak ditemukan',
-    );
+    throw new NotFoundException('User tidak ditemukan');
   }
 
   return {
@@ -612,29 +600,18 @@ async updateMemberRole(
     },
   };
 }
+
 async removeMember(
   tenantId: string,
   currentUserId: string,
   targetUserId: string,
 ): Promise<{ message: string }> {
-  const currentMembership =
-    await this.getMembership(
-      tenantId,
-      currentUserId,
-    );
+  await this.getMembership(tenantId, currentUserId);
 
   const targetMembership =
     await this.prisma.client.orm.public.TenantMember
-      .where({
-        tenantId,
-        userId: targetUserId,
-      })
-      .select(
-        'id',
-        'tenantId',
-        'userId',
-        'role',
-      )
+      .where({ tenantId, userId: targetUserId })
+      .select('id', 'tenantId', 'userId', 'roleId')
       .first();
 
   if (!targetMembership) {
@@ -643,30 +620,35 @@ async removeMember(
     );
   }
 
-  if (targetMembership.role === 'OWNER') {
+  const targetRole = targetMembership.roleId
+    ? await this.prisma.client.orm.public.TenantCustomRole
+        .where({ id: targetMembership.roleId, tenantId })
+        .select('id', 'name', 'isSystem')
+        .first()
+    : null;
+
+  if (targetRole?.isSystem && targetRole.name === 'Owner') {
     throw new ForbiddenException(
-      'OWNER tidak dapat dihapus dari workspace',
+      'Owner tidak dapat dihapus dari workspace',
     );
   }
 
-  if (!(await this.hasWorkspacePermission(tenantId, currentUserId, 'WORKSPACE_MEMBERS', 'DELETE'))) {
-    throw new ForbiddenException('Anda tidak memiliki izin untuk menghapus member');
-  }
-
   if (
-    currentMembership.role === 'ADMIN' &&
-    targetMembership.role === 'ADMIN'
+    !(await this.hasWorkspacePermission(
+      tenantId,
+      currentUserId,
+      'WORKSPACE_MEMBERS',
+      'DELETE',
+    ))
   ) {
     throw new ForbiddenException(
-      'ADMIN tidak dapat menghapus ADMIN lainnya',
+      'Anda tidak memiliki izin untuk menghapus member',
     );
   }
 
   const deleted =
     await this.prisma.client.orm.public.TenantMember
-      .where({
-        id: targetMembership.id,
-      })
+      .where({ id: targetMembership.id })
       .delete();
 
   if (!deleted) {

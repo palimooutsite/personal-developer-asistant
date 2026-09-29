@@ -6,6 +6,7 @@ export interface UserResponse {
   username: string;
   email: string;
   name: string | null;
+  avatarUrl: string | null;
 }
 
 export interface UserWithPassword extends UserResponse {
@@ -34,6 +35,7 @@ export class UsersService {
       username: user.username,
       email: user.email,
       name: user.name,
+      avatarUrl: user.avatarUrl,
       passwordHash: user.passwordHash
     };
   }
@@ -44,6 +46,7 @@ export class UsersService {
       'username',
       'email',
       'name',
+      'avatarUrl',
       'createdAt',
       'updatedAt',
     ).all();
@@ -150,6 +153,28 @@ export class UsersService {
     username: user.username,
     email: user.email,
     name: user.name,
+    avatarUrl: user.avatarUrl,
   };
+}
+
+  async findByIdWithPassword(id: string): Promise<UserWithPassword | null> {
+    return this.prisma.client.orm.public.User.where({ id }).select('id', 'username', 'email', 'name', 'avatarUrl', 'passwordHash').first();
+  }
+
+  async updateProfile(id: string, data: { name?: string }): Promise<UserResponse & { avatarUrl: string | null }> {
+    const user = await this.prisma.client.orm.public.User.where({ id }).update({ name: data.name?.trim() || null }).select('id', 'username', 'email', 'name', 'avatarUrl').first();
+    if (!user) throw new Error('User tidak ditemukan');
+    return user;
+  }
+
+  async updatePassword(id: string, passwordHash: string): Promise<void> {
+    await this.prisma.client.orm.public.User.where({ id }).update({ passwordHash });
+  }
+
+  async updateAvatar(id: string, avatarUrl: string): Promise<UserResponse & { avatarUrl: string | null }> {
+    const user = await this.prisma.client.orm.public.User.where({ id }).update({ avatarUrl }).select('id', 'username', 'email', 'name', 'avatarUrl').first();
+    if (!user) throw new Error('User tidak ditemukan');
+    return user;
+  }
 }
 }

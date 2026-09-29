@@ -4,8 +4,8 @@ interface KnowledgeCardProps {
   article: KnowledgeArticle;
   tags: string[];
   onOpen: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 export function KnowledgeCard({ article, tags, onOpen, onEdit, onDelete }: KnowledgeCardProps) {
@@ -23,8 +23,8 @@ export function KnowledgeCard({ article, tags, onOpen, onEdit, onDelete }: Knowl
           </div>
         </div>
         <div className="grid grid-cols-2 gap-1 sm:flex">
-          <button type="button" onClick={onEdit} className="rounded-lg px-2.5 py-2 text-xs font-semibold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-100">Edit</button>
-          <button type="button" onClick={onDelete} className="rounded-lg px-2.5 py-2 text-xs font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-100 focus:outline-none focus:ring-2 focus:ring-red-100">Hapus</button>
+          {onEdit ? <button type="button" onClick={onEdit} className="rounded-lg px-2.5 py-2 text-xs font-semibold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-100">Edit</button>
+          {onDelete ? <button type="button" onClick={onDelete} className="rounded-lg px-2.5 py-2 text-xs font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-100 focus:outline-none focus:ring-2 focus:ring-red-100">Hapus</button> : null}
         </div>
       </div>
       <button type="button" onClick={onOpen} className="mt-4 block w-full text-left"><p className="line-clamp-3 text-sm leading-6 text-zinc-500">{preview}</p><span className="mt-3 inline-flex text-xs font-semibold text-violet-600">Baca selengkapnya →</span></button>

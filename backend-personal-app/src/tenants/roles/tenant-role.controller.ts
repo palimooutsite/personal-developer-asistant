@@ -32,6 +32,16 @@ export class TenantRoleController {
     return this.roleService.create(tenantId, body);
   }
 
+  @Post('migrate-legacy-members')
+  @RequirePermission('WORKSPACE_SETTINGS', 'UPDATE')
+  migrateLegacyMembers(
+    @Param('tenantId') tenantId: string,
+    @Req() req: TenantRequest,
+  ) {
+    this.assertTenant(tenantId, req);
+    return this.roleService.migrateLegacyMembers(tenantId);
+  }
+
   @Get(':roleId')
   @RequirePermission('WORKSPACE_SETTINGS', 'READ')
   findOne(@Param('tenantId') tenantId: string, @Param('roleId') roleId: string, @Req() req: TenantRequest) {

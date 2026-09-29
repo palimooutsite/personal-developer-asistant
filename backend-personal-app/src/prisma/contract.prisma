@@ -14,6 +14,53 @@ enum TenantRole {
   MEMBER
 }
 
+enum PermissionModule {
+  DASHBOARD
+  PROJECTS
+  TASKS
+  KNOWLEDGE
+  CODE_SNIPPETS
+  DOCUMENTS
+  PROJECT_MEMBERS
+  WORKSPACE_MEMBERS
+  WORKSPACE_SETTINGS
+}
+
+model TenantCustomRole {
+  id          String            @id @default(uuid())
+  tenantId    String
+  name        String
+  description String?
+  isSystem    Boolean           @default(false)
+  createdAt   TimestamptzString @default(now())
+  updatedAt   temporal.updatedAtString()
+
+  tenant      Tenant                  @relation(fields: [tenantId], references: [id])
+  members     TenantMember[]
+  invitations TenantInvitation[]
+  permissions TenantRolePermission[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model TenantRolePermission {
+  id         String            @id @default(uuid())
+  roleId     String
+  module     PermissionModule
+  canCreate  Boolean           @default(false)
+  canRead    Boolean           @default(false)
+  canUpdate  Boolean           @default(false)
+  canDelete  Boolean           @default(false)
+  createdAt  TimestamptzString @default(now())
+  updatedAt  temporal.updatedAtString()
+
+  role TenantCustomRole @relation(fields: [roleId], references: [id])
+
+  @@unique([roleId, module])
+  @@index([roleId])
+}
+
 enum ProjectRole {
   OWNER
   ADMIN
@@ -71,6 +118,7 @@ model Tenant {
   )
 
   members TenantMember[]
+  roles TenantCustomRole[]
   invitations TenantInvitation[]
   projects Project[]
   knowledgeArticles KnowledgeArticle[]
@@ -85,6 +133,7 @@ model TenantMember {
   tenantId  String
   userId    String
   role      TenantRole
+  roleId    String?
   createdAt TimestamptzString @default(now())
   updatedAt temporal.updatedAtString()
 
@@ -98,6 +147,8 @@ model TenantMember {
     references: [id]
   )
 
+  customRole TenantCustomRole? @relation(fields: [roleId], references: [id])
+
   @@unique([tenantId, userId])
   @@index([userId])
 }
@@ -108,6 +159,7 @@ model TenantInvitation {
   tenantId    String
   email       String
   role        TenantRole
+  roleId      String?
   token       String            @unique
   invitedBy   String
   expiresAt   TimestamptzString
@@ -124,6 +176,8 @@ model TenantInvitation {
     fields: [invitedBy],
     references: [id]
   )
+
+  customRole TenantCustomRole? @relation(fields: [roleId], references: [id])
 
   @@index([tenantId])
   @@index([email])

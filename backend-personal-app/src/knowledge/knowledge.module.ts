@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { TenantModule } from '../tenants/tenant.module.js';
+import { TenantRoleModule } from '../tenants/roles/tenant-role.module.js';
 import { KnowledgeController } from './knowledge.controller.js';
 import { KnowledgeService } from './knowledge.service.js';
 import { TagsController } from './tags.controller.js';

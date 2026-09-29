@@ -136,6 +136,35 @@ export class TenantService {
     };
   }
 
+
+  private async hasWorkspacePermission(
+    tenantId: string,
+    userId: string,
+    module: 'WORKSPACE_MEMBERS' | 'WORKSPACE_SETTINGS',
+    action: 'CREATE' | 'UPDATE' | 'DELETE',
+  ): Promise<boolean> {
+    const membership = await this.prisma.client.orm.public.TenantMember
+      .where({ tenantId, userId })
+      .select('role', 'roleId')
+      .first();
+
+    if (!membership) return false;
+    if (membership.role === 'OWNER' || membership.role === 'ADMIN') return true;
+    if (!membership.roleId) return false;
+
+    const permission = await this.prisma.client.orm.public.TenantRolePermission
+      .where({ roleId: membership.roleId, module })
+      .first();
+
+    if (!permission) return false;
+
+    return Boolean(
+      action === 'CREATE' ? permission.canCreate :
+      action === 'UPDATE' ? permission.canUpdate :
+      permission.canDelete,
+    );
+  }
+
   async update(
     tenantId: string,
     userId: string,
@@ -146,13 +175,8 @@ export class TenantService {
       userId,
     );
 
-    if (
-      membership.role !== 'OWNER' &&
-      membership.role !== 'ADMIN'
-    ) {
-      throw new ForbiddenException(
-        'Anda tidak memiliki izin untuk mengubah workspace ini',
-      );
+    if (!(await this.hasWorkspacePermission(tenantId, userId, 'WORKSPACE_SETTINGS', 'UPDATE'))) {
+      throw new ForbiddenException('Anda tidak memiliki izin untuk mengubah workspace ini');
     }
 
     const updated =
@@ -422,13 +446,8 @@ async updateMemberRole(
     );
   }
 
-  if (
-    currentMembership.role !== 'OWNER' &&
-    currentMembership.role !== 'ADMIN'
-  ) {
-    throw new ForbiddenException(
-      'Anda tidak memiliki izin untuk mengubah role member',
-    );
+  if (!(await this.hasWorkspacePermission(tenantId, currentUserId, 'WORKSPACE_MEMBERS', 'UPDATE'))) {
+    throw new ForbiddenException('Anda tidak memiliki izin untuk mengubah role member');
   }
 
   const customRole =
@@ -531,13 +550,8 @@ async removeMember(
     );
   }
 
-  if (
-    currentMembership.role !== 'OWNER' &&
-    currentMembership.role !== 'ADMIN'
-  ) {
-    throw new ForbiddenException(
-      'Anda tidak memiliki izin untuk menghapus member',
-    );
+  if (!(await this.hasWorkspacePermission(tenantId, currentUserId, 'WORKSPACE_MEMBERS', 'DELETE'))) {
+    throw new ForbiddenException('Anda tidak memiliki izin untuk menghapus member');
   }
 
   if (
@@ -573,10 +587,8 @@ async removeMember(
   ): Promise<{ message: string; email: string; role: string }> {
     const membership = await this.getMembership(tenantId, currentUserId);
 
-    if (membership.role !== 'OWNER' && membership.role !== 'ADMIN') {
-      throw new ForbiddenException(
-        'Anda tidak memiliki izin untuk mengundang member',
-      );
+    if (!(await this.hasWorkspacePermission(tenantId, currentUserId, 'WORKSPACE_MEMBERS', 'CREATE'))) {
+      throw new ForbiddenException('Anda tidak memiliki izin untuk mengundang member');
     }
 
     if (!data.roleId) {

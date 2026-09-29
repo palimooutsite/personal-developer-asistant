@@ -161,7 +161,7 @@ export default function KnowledgePage() {
           description="Simpan dokumentasi, catatan teknis, solusi, dan referensi development agar mudah ditemukan kembali."
           accent="violet"
           action={
-            <button type="button" onClick={openCreate} className="w-full rounded-xl bg-violet-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-900 sm:w-auto">
+            {can('KNOWLEDGE', 'CREATE') ? <button type="button" onClick={openCreate} className="w-full rounded-xl bg-violet-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-900 sm:w-auto">
               + Knowledge Baru
             </button>
           }
@@ -228,7 +228,7 @@ export default function KnowledgePage() {
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-50 text-xl font-bold text-violet-600">◈</div>
             <h2 className="mt-4 text-lg font-bold">Belum ada knowledge</h2>
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">Buat artikel pertama untuk mulai membangun knowledge base kamu.</p>
-            <button type="button" onClick={openCreate} className="mt-5 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-100">Buat Knowledge</button>
+            {can('KNOWLEDGE', 'CREATE') ? <button type="button" onClick={openCreate} className="mt-5 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-100">Buat Knowledge</button>
           </section>
         ) : (
           <>

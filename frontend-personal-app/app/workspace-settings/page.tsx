@@ -49,7 +49,7 @@ function emptyPermissions(): RolePermissionInput[] {
 
 export default function WorkspaceSettingsPage() {
   const router = useRouter();
-  const { activeTenant, loading: tenantLoading, refreshTenants } = useTenant();
+  const { activeTenant, loading: tenantLoading, refreshTenants, can } = useTenant();
 
   const [tab, setTab] = useState<Tab>('general');
   const [members, setMembers] = useState<TenantMember[]>([]);
@@ -72,10 +72,13 @@ export default function WorkspaceSettingsPage() {
   const [permissions, setPermissions] = useState<RolePermissionInput[]>(emptyPermissions());
 
   const isOwner = activeTenant?.role === 'OWNER' || activeTenant?.role === 'Owner';
-  const canManageMembers =
-    isOwner ||
-    activeTenant?.role === 'ADMIN' ||
-    activeTenant?.role === 'Admin';
+  const canManageMembers = can('WORKSPACE_MEMBERS', 'UPDATE');
+  const canInviteMembers = can('WORKSPACE_MEMBERS', 'CREATE');
+  const canRemoveMembers = can('WORKSPACE_MEMBERS', 'DELETE');
+  const canEditWorkspace = can('WORKSPACE_SETTINGS', 'UPDATE');
+  const canCreateRole = can('WORKSPACE_SETTINGS', 'CREATE');
+  const canEditRole = can('WORKSPACE_SETTINGS', 'UPDATE');
+  const canDeleteRole = can('WORKSPACE_SETTINGS', 'DELETE');
 
   const editableRoles = useMemo(
     () => roles.filter((role) => !role.isSystem),
@@ -336,12 +339,12 @@ export default function WorkspaceSettingsPage() {
                 onChange={(event) => setWorkspaceName(event.target.value)}
                 maxLength={100}
                 required
-                disabled={!canManageMembers || saving}
+                disabled={!canEditWorkspace || saving}
                 className="min-w-0 flex-1 rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none focus:border-zinc-900 disabled:bg-zinc-50"
               />
               <button
                 type="submit"
-                disabled={!canManageMembers || saving || !workspaceName.trim()}
+                disabled={!canEditWorkspace || saving || !workspaceName.trim()}
                 className="rounded-xl bg-zinc-950 px-5 py-3 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
               >
                 Simpan Perubahan
@@ -358,7 +361,7 @@ export default function WorkspaceSettingsPage() {
               <p className="mt-1 text-sm text-zinc-500">Setiap member memiliki satu role workspace.</p>
             </div>
 
-            {canManageMembers ? (
+            {canInviteMembers ? (
               <form onSubmit={inviteMember} className="border-b border-zinc-100 bg-zinc-50 p-5 sm:p-6">
                 <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px_auto]">
                   <input
@@ -425,7 +428,7 @@ export default function WorkspaceSettingsPage() {
                             </select>
                             <button
                               type="button"
-                              disabled={saving}
+                              disabled={saving || !canRemoveMembers}
                               onClick={() => setRemoveTarget(member)}
                               className="rounded-lg border border-red-100 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
                             >
@@ -444,7 +447,7 @@ export default function WorkspaceSettingsPage() {
           </section>
         ) : null}
 
-        {tab === 'roles' && isOwner ? (
+        {tab === 'roles' && can('WORKSPACE_SETTINGS') ? (
           <section className="rounded-2xl border border-zinc-200 bg-white shadow-sm">
             <div className="flex flex-col gap-4 border-b border-zinc-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
               <div>
@@ -452,7 +455,7 @@ export default function WorkspaceSettingsPage() {
                 <h2 className="mt-1 text-xl font-bold">Roles & Permissions</h2>
                 <p className="mt-1 text-sm text-zinc-500">Buat role sekali, lalu gunakan untuk banyak member.</p>
               </div>
-              <button type="button" onClick={openCreateRole} className="rounded-xl bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800">+ Buat Role</button>
+              {canCreateRole ? <button type="button" onClick={openCreateRole} className="rounded-xl bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800">+ Buat Role</button> : null}
             </div>
 
             <div className="space-y-3 p-5 sm:p-6">
@@ -470,8 +473,8 @@ export default function WorkspaceSettingsPage() {
                     </div>
                     {!role.isSystem ? (
                       <div className="flex gap-2">
-                        <button type="button" onClick={() => openEditRole(role)} className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-semibold hover:bg-zinc-50">Edit</button>
-                        <button type="button" onClick={() => setDeleteRoleTarget(role)} className="rounded-lg border border-red-100 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50">Hapus</button>
+                        {canEditRole ? <button type="button" onClick={() => openEditRole(role)} className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-semibold hover:bg-zinc-50">Edit</button> : null}
+                        {canDeleteRole ? <button type="button" onClick={() => setDeleteRoleTarget(role)} className="rounded-lg border border-red-100 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50">Hapus</button> : null}
                       </div>
                     ) : null}
                   </div>

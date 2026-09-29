@@ -19,9 +19,9 @@ const overdue=(v:string|null,s:TaskStatus)=>Boolean(v&&s!=='DONE'&&s!=='CANCELLE
 interface Props{
   tasks:Task[];
   deletingId:string;
-  onAssignees:(task:Task)=>void;
-  onEdit:(task:Task)=>void;
-  onDelete:(task:Task)=>void;
+  onAssignees?:(task:Task)=>void;
+  onEdit?:(task:Task)=>void;
+  onDelete?:(task:Task)=>void;
   onStatusChange:(task:Task,status:TaskStatus)=>Promise<void>;
 }
 
@@ -57,9 +57,9 @@ export function TaskKanbanBoard({tasks,deletingId,onAssignees,onEdit,onDelete,on
                   {(task.assignees?.length??0)>2&&<span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-500">+{task.assignees!.length-2}</span>}
                 </div>
                 <div className="mt-3 grid grid-cols-3 gap-1 border-t border-slate-100 pt-3">
-                  <button type="button" onClick={()=>onAssignees(task)} className="rounded-lg px-2 py-1.5 text-[10px] font-semibold text-blue-700 hover:bg-blue-50">Assign</button>
-                  <button type="button" onClick={()=>onEdit(task)} className="rounded-lg px-2 py-1.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-100">Edit</button>
-                  <button type="button" disabled={deletingId===task.id} onClick={()=>onDelete(task)} className="rounded-lg px-2 py-1.5 text-[10px] font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50">Hapus</button>
+                  {onAssignees ? <button type="button" onClick={()=>onAssignees(task)} className="rounded-lg px-2 py-1.5 text-[10px] font-semibold text-blue-700 hover:bg-blue-50">Assign</button> : null}
+                  {onEdit ? <button type="button" onClick={()=>onEdit(task)} className="rounded-lg px-2 py-1.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-100">Edit</button> : null}
+                  {onDelete ? <button type="button" disabled={deletingId===task.id} onClick={()=>onDelete(task)} className="rounded-lg px-2 py-1.5 text-[10px] font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50">Hapus</button> : null}
                 </div>
               </article>;
             })}

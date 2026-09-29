@@ -139,6 +139,28 @@ export type PermissionModule =
   | 'WORKSPACE_MEMBERS'
   | 'WORKSPACE_SETTINGS';
 
+export interface TenantPermission {
+  module: PermissionModule;
+  canCreate: boolean;
+  canRead: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
+}
+
+export interface TenantPermissionsResponse {
+  tenantId: string;
+  roleName: string;
+  permissions: TenantPermission[];
+}
+
+export async function getTenantPermissions(
+  tenantId: string,
+): Promise<TenantPermissionsResponse> {
+  return apiRequest<TenantPermissionsResponse>(
+    `/tenants/${tenantId}/permissions`,
+  );
+}
+
 export interface TenantRolePermission {
   id: string;
   module: PermissionModule;

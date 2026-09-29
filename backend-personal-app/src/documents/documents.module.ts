@@ -6,6 +6,7 @@ import { DocumentsService } from './documents.service.js';
 
 import { PrismaService } from '../prisma/prisma.service.js';
 import { TenantModule } from '../tenants/tenant.module.js';
+import { TenantRoleModule } from '../tenants/roles/tenant-role.module.js';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { TenantModule } from '../tenants/tenant.module.js';
       defaultStrategy: 'jwt',
     }),
     TenantModule,
+    TenantRoleModule,
   ],
   controllers: [
     DocumentsController,

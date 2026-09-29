@@ -112,7 +112,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="relative self-start sm:self-auto">
+          {/* <div className="relative self-start sm:self-auto">
             <button
               type="button"
               aria-haspopup="menu"
@@ -173,7 +173,7 @@ export default function HomePage() {
                 </span>
               </button>
             </div>
-          </div>
+          </div> */}
         </header>
 
         <section className="mt-7 sm:mt-8">

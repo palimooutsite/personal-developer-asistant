@@ -15,6 +15,9 @@ import {
   clearActiveTenantId,
   getActiveTenantId,
   getTenants,
+  getTenantPermissions,
+  type PermissionModule,
+  type TenantPermission,
   setActiveTenantId,
   type Tenant,
 } from '../../lib/tenant';
@@ -27,6 +30,9 @@ interface TenantContextValue {
   error: string | null;
   refreshTenants: () => Promise<void>;
   selectTenant: (tenantId: string, redirect?: boolean) => void;
+  permissions: TenantPermission[];
+  permissionLoading: boolean;
+  can: (module: PermissionModule, action?: 'CREATE' | 'READ' | 'UPDATE' | 'DELETE') => boolean;
 }
 
 const TenantContext = createContext<TenantContextValue | null>(null);
@@ -40,6 +46,8 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const [activeTenantId, setActiveTenantIdState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [permissions, setPermissions] = useState<TenantPermission[]>([]);
+  const [permissionLoading, setPermissionLoading] = useState(false);
 
   const refreshTenants = useCallback(async () => {
     if (
@@ -73,6 +81,21 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       }
 
       setActiveTenantIdState(nextTenantId);
+
+      if (nextTenantId) {
+        setPermissionLoading(true);
+        try {
+          const permissionResult = await getTenantPermissions(nextTenantId);
+          setPermissions(permissionResult.permissions);
+        } catch {
+          setPermissions([]);
+        } finally {
+          setPermissionLoading(false);
+        }
+      } else {
+        setPermissions([]);
+        setPermissionLoading(false);
+      }
 
       if (
         result.length === 0 &&
@@ -126,6 +149,21 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     [router, tenants],
   );
 
+  const can = useCallback(
+    (
+      module: PermissionModule,
+      action: 'CREATE' | 'READ' | 'UPDATE' | 'DELETE' = 'READ',
+    ) => {
+      const permission = permissions.find((item) => item.module === module);
+      if (!permission) return false;
+      if (action === 'CREATE') return permission.canCreate;
+      if (action === 'UPDATE') return permission.canUpdate;
+      if (action === 'DELETE') return permission.canDelete;
+      return permission.canRead;
+    },
+    [permissions],
+  );
+
   const activeTenant = useMemo(
     () => tenants.find((tenant) => tenant.id === activeTenantId) ?? null,
     [activeTenantId, tenants],
@@ -140,6 +178,9 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       error,
       refreshTenants,
       selectTenant,
+      permissions,
+      permissionLoading,
+      can,
     }),
     [
       tenants,
@@ -149,6 +190,9 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       error,
       refreshTenants,
       selectTenant,
+      permissions,
+      permissionLoading,
+      can,
     ],
   );
 

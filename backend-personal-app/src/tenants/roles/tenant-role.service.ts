@@ -150,7 +150,7 @@ export class TenantRoleService {
       .where({ tenantId, userId }).select('role','roleId').first();
     if (!membership) return false;
     if (membership.role === 'OWNER') return true;
-    if (!membership.roleId) return membership.role === 'ADMIN';
+    if (!membership.roleId) return true;
 
     const permission = await this.prisma.client.orm.public.TenantRolePermission
       .where({ roleId: membership.roleId, module }).first();

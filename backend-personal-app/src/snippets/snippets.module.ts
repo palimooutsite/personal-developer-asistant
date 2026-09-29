@@ -9,7 +9,11 @@ import { TenantModule } from '../tenants/tenant.module.js';
 import { TenantRoleModule } from '../tenants/roles/tenant-role.module.js';
 
 @Module({
-  imports: [PassportModule.register({ defaultStrategy: 'jwt' }), TenantModule],
+  imports: [
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+    TenantModule,
+    TenantRoleModule,
+  ],
   controllers: [SnippetsController, SnippetTagsController],
   providers: [SnippetsService, SnippetTagsService, PrismaService],
 })

@@ -1,6 +1,6 @@
 import {
-  IsEnum,
   IsNotEmpty,
+  IsOptional,
   IsUUID,
 } from 'class-validator';
 
@@ -9,6 +9,7 @@ export class AddTenantMemberDto {
   @IsNotEmpty()
   userId!: string;
 
-  @IsEnum(['ADMIN', 'MEMBER'])
-  role!: 'ADMIN' | 'MEMBER';
+  @IsUUID()
+  @IsOptional()
+  roleId?: string;
 }

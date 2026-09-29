@@ -45,6 +45,7 @@ export default function TasksPage() {
   const [viewMode,setViewMode]=useState<'list'|'kanban'>('list');
   const [deleteTarget,setDeleteTarget]=useState<Task|null>(null);
   const [toast,setToast]=useState('');
+  const [removeAssigneeTarget,setRemoveAssigneeTarget]=useState<string|null>(null);
 
   useEffect(()=>{(async()=>{try{setLoadingProjects(true);const data=await getProjects();setProjects(data);if(data.length&&(!requestedProjectId||!data.some(p=>p.id===requestedProjectId)))setProjectId(data[0].id);}catch(e){setError(e instanceof Error?e.message:'Gagal memuat project');}finally{setLoadingProjects(false);}})();},[requestedProjectId]);
   useEffect(()=>{setPage(1);},[projectId]);
@@ -75,7 +76,8 @@ export default function TasksPage() {
   async function openAssignees(task:Task){setAssigneeTask(task);setAssigneeUserId('');setError('');try{setLoadingMembers(true);setMembers(await getProjectMembers(projectId));}catch(e){setError(e instanceof Error?e.message:'Gagal memuat member project');}finally{setLoadingMembers(false);}}
   function closeAssignees(){setAssigneeTask(null);setAssigneeUserId('');setMembers([]);}
   async function handleAddAssignee(){if(!assigneeTask||!assigneeUserId)return;try{setAssigneeSaving(true);setError('');await addTaskAssignee(projectId,assigneeTask.id,assigneeUserId);const m=members.find(x=>x.userId===assigneeUserId);if(m){const a={taskId:assigneeTask.id,projectId,userId:m.userId,username:m.user.username,email:m.user.email,name:m.user.name};setTasks(c=>c.map(t=>t.id===assigneeTask.id?{...t,assignees:[...(t.assignees??[]),a]}:t));setAssigneeTask(c=>c?{...c,assignees:[...(c.assignees??[]),a]}:c);}setAssigneeUserId('');}catch(e){setError(e instanceof Error?e.message:'Gagal menambahkan assignee');}finally{setAssigneeSaving(false);}}
-  async function handleRemoveAssignee(userId:string){if(!assigneeTask)return;try{setAssigneeSaving(true);setError('');await removeTaskAssignee(projectId,assigneeTask.id,userId);setTasks(c=>c.map(t=>t.id===assigneeTask.id?{...t,assignees:(t.assignees??[]).filter(a=>a.userId!==userId)}:t));setAssigneeTask(c=>c?{...c,assignees:(c.assignees??[]).filter(a=>a.userId!==userId)}:c);}catch(e){setError(e instanceof Error?e.message:'Gagal menghapus assignee');}finally{setAssigneeSaving(false);}}
+  function handleRemoveAssignee(userId:string){if(!assigneeTask||assigneeSaving)return;setRemoveAssigneeTarget(userId);}
+  async function confirmRemoveAssignee(){if(!assigneeTask||!removeAssigneeTarget)return;try{setAssigneeSaving(true);setError('');await removeTaskAssignee(projectId,assigneeTask.id,removeAssigneeTarget);setTasks(c=>c.map(t=>t.id===assigneeTask.id?{...t,assignees:(t.assignees??[]).filter(a=>a.userId!==removeAssigneeTarget)}:t));setAssigneeTask(c=>c?{...c,assignees:(c.assignees??[]).filter(a=>a.userId!==removeAssigneeTarget)}:c);setRemoveAssigneeTarget(null);setToast('Assignee berhasil dihapus dari task.');}catch(e){setError(e instanceof Error?e.message:'Gagal menghapus assignee');}finally{setAssigneeSaving(false);}}
 
   return <main className="min-h-screen bg-[#f6f7fb] px-4 py-5 text-zinc-950 sm:px-6 sm:py-6 lg:px-8 2xl:px-10 lg:py-10"><div className="mx-auto w-full max-w-[1600px]">
     <ModuleHeader
@@ -139,6 +141,7 @@ export default function TasksPage() {
           </div>
         )}
     </>}
+    <ConfirmDialog open={Boolean(removeAssigneeTarget)} title="Hapus assignee?" description="Member ini akan dihapus dari daftar assignee task. Data member tidak akan dihapus." onClose={()=>setRemoveAssigneeTarget(null)} onConfirm={()=>void confirmRemoveAssignee()} loading={assigneeSaving} />
     <ConfirmDialog open={Boolean(deleteTarget)} title="Hapus task?" description={deleteTarget ? 'Task "'+deleteTarget.title+'" akan dihapus dan tidak dapat dikembalikan.' : ''} onClose={()=>setDeleteTarget(null)} onConfirm={()=>void confirmDeleteTask()} loading={Boolean(deletingId)} />
     <Toast message={toast} open={Boolean(toast)} onClose={()=>setToast('')} />
     {assigneeTask&&<TaskAssigneeModal task={assigneeTask} members={members} loadingMembers={loadingMembers} saving={assigneeSaving} selectedUserId={assigneeUserId} onSelectedUserChange={setAssigneeUserId} onAdd={()=>void handleAddAssignee()} onRemove={(id)=>void handleRemoveAssignee(id)} onClose={closeAssignees}/>}

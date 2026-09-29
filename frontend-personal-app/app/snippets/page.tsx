@@ -186,7 +186,12 @@ export default function SnippetsPage() {
           maxWidth="xl"
         >
           <SnippetForm
-            initialValue={editing ?? undefined}
+            initialValue={editing ? {
+            title: editing.title,
+            language: editing.language,
+            code: editing.code,
+            description: editing.description ?? '',
+          } : undefined}
             onSubmit={handleSave}
             onCancel={() => { setShowForm(false); setEditing(null); }}
             submitting={saving}

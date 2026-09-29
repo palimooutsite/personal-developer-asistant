@@ -8,7 +8,7 @@ import { logout } from '../lib/auth';
 
 export function GlobalHeader() {
   const pathname = usePathname();
-  const { tenants, activeTenant, loading, selectTenant } = useTenant();
+  const { tenants, activeTenant, loading, selectTenant, can } = useTenant();
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -122,14 +122,16 @@ export function GlobalHeader() {
                   </div>
 
                   <div className="mt-1 border-t border-zinc-100 pt-1">
-                    <Link
-                      href="/workspace-settings"
-                      onClick={() => setWorkspaceOpen(false)}
-                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
-                    >
-                      <span>⚙</span>
-                      Kelola Workspace
-                    </Link>
+                    {can('WORKSPACE_SETTINGS') ? (
+                      <Link
+                        href="/workspace-settings"
+                        onClick={() => setWorkspaceOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
+                      >
+                        <span>⚙</span>
+                        Kelola Workspace
+                      </Link>
+                    ) : null}
                   </div>
                 </div>
               </>
@@ -158,18 +160,20 @@ export function GlobalHeader() {
                   onClick={() => setSettingsOpen(false)}
                 />
                 <div className="absolute right-0 z-50 mt-2 w-64 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl" role="menu">
-                  <Link
-                    href="/workspace-settings"
-                    onClick={() => setSettingsOpen(false)}
-                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition hover:bg-zinc-50"
-                    role="menuitem"
-                  >
+                  {can('WORKSPACE_SETTINGS') ? (
+                    <Link
+                      href="/workspace-settings"
+                      onClick={() => setSettingsOpen(false)}
+                      className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition hover:bg-zinc-50"
+                      role="menuitem"
+                    >
                     <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600">▣</span>
                     <span>
                       <span className="block font-semibold text-zinc-900">Workspace Settings</span>
                       <span className="block text-xs text-zinc-500">Workspace, anggota & role</span>
                     </span>
-                  </Link>
+                    </Link>
+                  ) : null}
 
                   <Link
                     href="/account-settings"

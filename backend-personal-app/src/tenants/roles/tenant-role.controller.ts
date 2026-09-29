@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, ForbiddenException, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guard/jwt-auth.guard.js';
 import { TenantContextGuard } from '../guard/tenant-context.guard.js';
-import { TenantRoleService, CreateTenantRoleInput } from './tenant-role.service.js';
+import { TenantRoleService } from './tenant-role.service.js';
+import type { CreateTenantRoleInput } from './tenant-role.service.js';
 import { PermissionGuard } from './permission.guard.js';
 import { RequirePermission } from './require-permission.decorator.js';
 import type { TenantRequest } from '../types/tenant-request.js';
@@ -19,7 +20,8 @@ export class TenantRoleController {
 
   @Get()
   @RequirePermission('WORKSPACE_SETTINGS', 'READ')
-  list(@Param('tenantId') tenantId: string) {
+  list(@Param('tenantId') tenantId: string, @Req() req: TenantRequest) {
+    this.assertTenant(tenantId, req);
     return this.roleService.list(tenantId);
   }
 

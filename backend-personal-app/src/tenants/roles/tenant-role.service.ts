@@ -137,11 +137,9 @@ export class TenantRoleService {
   }
 
   async replacePermissions(roleId: string, permissions: RolePermissionInput[]) {
-    await this.prisma.client.orm.public.TenantRolePermission.where({ roleId }).delete();
-
     // A role may only have one permission row per module because of
     // the unique constraint (roleId, module). Normalize the payload first
-    // so duplicate modules from the client cannot cause a 23505 error.
+    // so duplicate modules from the client cannot create duplicate rows.
     const uniquePermissions = new Map<PermissionModule, RolePermissionInput>();
 
     for (const permission of permissions) {
@@ -151,15 +149,51 @@ export class TenantRoleService {
       uniquePermissions.set(permission.module, permission);
     }
 
+    // Do not use delete-all + create-all here. Two concurrent role updates
+    // can otherwise race each other and violate the (roleId, module) unique
+    // constraint. Update existing rows and create missing rows instead.
     for (const permission of uniquePermissions.values()) {
-      await this.prisma.client.orm.public.TenantRolePermission.create({
-        roleId,
-        module: permission.module,
+      const values = {
         canCreate: Boolean(permission.canCreate),
         canRead: Boolean(permission.canRead),
         canUpdate: Boolean(permission.canUpdate),
         canDelete: Boolean(permission.canDelete),
-      });
+      };
+
+      const existing = await this.prisma.client.orm.public.TenantRolePermission
+        .where({ roleId, module: permission.module })
+        .first();
+
+      if (existing) {
+        await this.prisma.client.orm.public.TenantRolePermission
+          .where({ roleId, module: permission.module })
+          .update(values);
+        continue;
+      }
+
+      try {
+        await this.prisma.client.orm.public.TenantRolePermission.create({
+          roleId,
+          module: permission.module,
+          ...values,
+        });
+      } catch (error) {
+        // Another concurrent update may have inserted the same module
+        // between the lookup and create. Re-read and update that row.
+        if (
+          error &&
+          typeof error === 'object' &&
+          'sqlState' in error &&
+          error.sqlState === '23505'
+        ) {
+          await this.prisma.client.orm.public.TenantRolePermission
+            .where({ roleId, module: permission.module })
+            .update(values);
+          continue;
+        }
+
+        throw error;
+      }
     }
   }
 

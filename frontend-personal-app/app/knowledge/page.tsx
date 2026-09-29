@@ -161,9 +161,11 @@ export default function KnowledgePage() {
           description="Simpan dokumentasi, catatan teknis, solusi, dan referensi development agar mudah ditemukan kembali."
           accent="violet"
           action={
-            {can('KNOWLEDGE', 'CREATE') ? <button type="button" onClick={openCreate} className="w-full rounded-xl bg-violet-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-900 sm:w-auto">
-              + Knowledge Baru
-            </button>
+            can('KNOWLEDGE', 'CREATE') ? (
+              <button type="button" onClick={openCreate} className="w-full rounded-xl bg-violet-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-900 sm:w-auto">
+                + Knowledge Baru
+              </button>
+            ) : null
           }
         />
 

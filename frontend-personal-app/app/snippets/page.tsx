@@ -169,7 +169,7 @@ export default function SnippetsPage() {
           description="Simpan, cari, dan kelola potongan kode yang sering digunakan agar workflow development lebih cepat."
           accent="emerald"
           action={
-            <button type="button" onClick={startCreate}
+            {can('CODE_SNIPPETS', 'CREATE') ? <button type="button" onClick={startCreate}
               className="w-full rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 hover:shadow-md sm:w-auto">
               + Snippet Baru
             </button>
@@ -255,10 +255,10 @@ export default function SnippetsPage() {
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">
               Mulai simpan potongan kode yang sering Anda gunakan supaya bisa ditemukan kembali dengan cepat.
             </p>
-            <button type="button" onClick={startCreate}
+            {can('CODE_SNIPPETS', 'CREATE') ? <button type="button" onClick={startCreate}
               className="mt-5 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-100">
               + Buat Snippet Pertama
-            </button>
+            </button> : null}
           </div>
         ) : (
           <>

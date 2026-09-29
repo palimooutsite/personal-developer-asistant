@@ -70,9 +70,9 @@ export function DocumentCard({ document, onEdit, onDelete, onOpen }: DocumentCar
           {copied ? '✓ Nama disalin' : 'Salin nama'}
         </button>
         {onEdit ? <button type="button" onClick={onEdit}
-          className="rounded-lg px-3 py-2 text-xs font-semibold text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-100">Edit</button>
+          className="rounded-lg px-3 py-2 text-xs font-semibold text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-100">Edit</button> : null}
         {onDelete ? <button type="button" onClick={onDelete}
-          className="rounded-lg px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-100">Hapus</button>
+          className="rounded-lg px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-100">Hapus</button> : null}
       </div>
     </article>
   );

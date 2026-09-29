@@ -114,6 +114,77 @@ export class TenantService {
     return results;
   }
 
+  async getPermissions(
+    tenantId: string,
+    userId: string,
+  ) {
+    const membership = await this.prisma.client.orm.public.TenantMember
+      .where({ tenantId, userId })
+      .select('role', 'roleId')
+      .first();
+
+    if (!membership) {
+      throw new ForbiddenException('Anda bukan member workspace ini');
+    }
+
+    const modules = [
+      'DASHBOARD',
+      'PROJECTS',
+      'TASKS',
+      'KNOWLEDGE',
+      'CODE_SNIPPETS',
+      'DOCUMENTS',
+      'PROJECT_MEMBERS',
+      'WORKSPACE_MEMBERS',
+      'WORKSPACE_SETTINGS',
+    ] as const;
+
+    const fullPermission = {
+      canCreate: true,
+      canRead: true,
+      canUpdate: true,
+      canDelete: true,
+    };
+
+    let roleName = membership.role as string;
+    let permissions = modules.map((module) => ({
+      module,
+      ...fullPermission,
+    }));
+
+    if (membership.roleId) {
+      const customRole = await this.prisma.client.orm.public.TenantCustomRole
+        .where({ id: membership.roleId, tenantId })
+        .select('name')
+        .first();
+
+      if (customRole) {
+        roleName = customRole.name;
+        const rows = await this.prisma.client.orm.public.TenantRolePermission
+          .where({ roleId: membership.roleId })
+          .select('module', 'canCreate', 'canRead', 'canUpdate', 'canDelete')
+          .all();
+
+        permissions = modules.map((module) => {
+          const row = rows.find((item) => item.module === module);
+          return {
+            module,
+            canCreate: Boolean(row?.canCreate),
+            canRead: Boolean(row?.canRead),
+            canUpdate: Boolean(row?.canUpdate),
+            canDelete: Boolean(row?.canDelete),
+          };
+        });
+      }
+    }
+
+    return {
+      tenantId,
+      roleName,
+      permissions,
+    };
+  }
+
   async findOne(
     tenantId: string,
     userId: string,

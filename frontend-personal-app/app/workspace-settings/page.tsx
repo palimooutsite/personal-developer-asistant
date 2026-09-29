@@ -6,6 +6,8 @@ import { createTenantInvitation, getTenantMembers, removeTenantMember, TenantMem
 import { useTenant } from '@/components/providers/TenantProvider';
 import { ApiError } from '@/lib/api';
 import { ModuleHeader } from '@/components/layout/ModuleHeader';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Toast } from '@/components/ui/Toast';
 
 
 export default function WorkspaceSettingsPage() {
@@ -18,6 +20,8 @@ export default function WorkspaceSettingsPage() {
   const [workspaceName, setWorkspaceName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [role, setRole] = useState<'ADMIN' | 'MEMBER'>('MEMBER');
+  const [removeTarget, setRemoveTarget] = useState<TenantMember | null>(null);
+  const [toast, setToast] = useState('');
 
   const canManage = activeTenant?.role === 'OWNER' || activeTenant?.role === 'ADMIN';
 
@@ -53,6 +57,7 @@ export default function WorkspaceSettingsPage() {
     try {
       await updateTenant(activeTenant.id, workspaceName.trim());
       await refreshTenants();
+      setToast('Nama workspace berhasil diperbarui.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal memperbarui workspace.');
     } finally {
@@ -68,6 +73,7 @@ export default function WorkspaceSettingsPage() {
     setError('');
     try {
       await createTenantInvitation(activeTenant.id, inviteEmail.trim(), role);
+      setToast('Invitation berhasil dikirim ke ' + inviteEmail.trim() + '.');
       setInviteEmail('');
       setRole('MEMBER');
     } catch (err) {
@@ -91,6 +97,7 @@ export default function WorkspaceSettingsPage() {
       setMembers((current) =>
         current.map((item) => item.userId === updated.userId ? updated : item),
       );
+      setToast('Role member berhasil diperbarui.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal mengubah role.');
     } finally {
@@ -100,16 +107,13 @@ export default function WorkspaceSettingsPage() {
 
   async function removeMember(member: TenantMember) {
     if (!activeTenant || !canManage || member.role === 'OWNER') return;
-
-    if (!window.confirm(`Hapus "${member.user.name || member.user.username}" dari workspace?`)) {
-      return;
-    }
-
-    setSaving(true);
+    setRemoveTarget(member);
     setError('');
     try {
       await removeTenantMember(activeTenant.id, member.userId);
       setMembers((current) => current.filter((item) => item.userId !== member.userId));
+      setRemoveTarget(null);
+      setToast('Member berhasil dihapus dari workspace.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal menghapus member.');
     } finally {
@@ -280,6 +284,16 @@ export default function WorkspaceSettingsPage() {
           </div>
         </section>
       </div>
+
+      <ConfirmDialog
+        open={Boolean(removeTarget)}
+        title="Hapus member dari workspace?"
+        description={removeTarget ? (removeTarget.user.name || removeTarget.user.username) + ' akan kehilangan akses ke workspace ini. Data akun mereka tidak akan dihapus.' : ''}
+        onClose={() => setRemoveTarget(null)}
+        onConfirm={() => void removeMember(removeTarget!)}
+        loading={saving}
+      />
+      <Toast message={toast} open={Boolean(toast)} onClose={() => setToast('')} />
     </main>
   );
 }

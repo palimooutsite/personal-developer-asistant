@@ -99,14 +99,16 @@ export default function TasksPage() {
             ariaLabel="Pilih project"
             options={projects.map(p=>({value:p.id,label:p.name}))}
           />
-          {can('TASKS', 'CREATE') ? <button
-            type="button"
-            onClick={openCreate}
-            disabled={!projectId}
-            className="w-full rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white disabled:opacity-40 sm:w-auto"
-          >
-            + Task Baru
-          </button>
+          {can('TASKS', 'CREATE') ? (
+            <button
+              type="button"
+              onClick={openCreate}
+              disabled={!projectId}
+              className="w-full rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white disabled:opacity-40 sm:w-auto"
+            >
+              + Task Baru
+            </button>
+          ) : null}
         </div>
       }
     />

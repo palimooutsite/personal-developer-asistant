@@ -5,7 +5,7 @@ export class EmailService {
   async sendTenantInvitation(input: {
     to: string;
     tenantName: string;
-    role: 'ADMIN' | 'MEMBER';
+    role: string;
     inviterName: string;
     acceptUrl: string;
   }): Promise<void> {

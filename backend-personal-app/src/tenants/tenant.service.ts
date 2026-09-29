@@ -76,7 +76,7 @@ export class TenantService {
         .where({
           userId,
         })
-        .select('tenantId', 'role')
+        .select('tenantId', 'role', 'roleId')
         .all();
 
     const results: TenantListItem[] = [];
@@ -94,11 +94,20 @@ export class TenantService {
         continue;
       }
 
+      let roleName = membership.role as string;
+      if (membership.roleId) {
+        const customRole = await this.prisma.client.orm.public.TenantCustomRole
+          .where({ id: membership.roleId, tenantId: membership.tenantId })
+          .select('name')
+          .first();
+        if (customRole) roleName = customRole.name;
+      }
+
       results.push({
         id: tenant.id,
         name: tenant.name,
         createdBy: tenant.createdBy,
-        role: membership.role,
+        role: roleName,
       });
     }
 
@@ -289,13 +298,22 @@ export class TenantService {
       continue;
     }
 
+    let roleName = member.role as string;
+    if (member.roleId) {
+      const customRole = await this.prisma.client.orm.public.TenantCustomRole
+        .where({ id: member.roleId, tenantId })
+        .select('name')
+        .first();
+      if (customRole) roleName = customRole.name;
+    }
+
     results.push({
       id: member.id,
       tenantId: member.tenantId,
       userId: member.userId,
       role: member.role,
       roleId: member.roleId ?? null,
-      roleName: member.role,
+      roleName,
       user: {
         id: user.id,
         username: user.username,

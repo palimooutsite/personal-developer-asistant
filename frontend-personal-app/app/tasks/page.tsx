@@ -1,7 +1,7 @@
 'use client';
 import { useTenant } from '../../components/providers/TenantProvider';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getProjectMembers, getProjects, Project, ProjectMember } from '../../lib/projects';
 import { addTaskAssignee, createTask, deleteTask, getAllTasks, getTasks, removeTaskAssignee, Task, TaskPriority, TaskStatus, updateTask } from '../../lib/tasks';
@@ -17,12 +17,11 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Toast } from '../../components/ui/Toast';
 import Link from 'next/link';
 
-export default function TasksPage() {
+function TasksContent({ requestedProjectId }: { requestedProjectId: string | null }) {
   const { can } = useTenant();
-  const searchParams = useSearchParams();
-  const requestedProjectId = searchParams.get('projectId');
   const [projects,setProjects]=useState<Project[]>([]);
   const [projectId,setProjectId]=useState(requestedProjectId??'');
+
   const [tasks,setTasks]=useState<Task[]>([]);
   const [allTasks,setAllTasks]=useState<Task[]>([]);
   const [page,setPage]=useState(1);
@@ -150,4 +149,17 @@ export default function TasksPage() {
     <Toast message={toast} open={Boolean(toast)} onClose={()=>setToast('')} />
     {assigneeTask&&<TaskAssigneeModal task={assigneeTask} members={members} loadingMembers={loadingMembers} saving={assigneeSaving} selectedUserId={assigneeUserId} onSelectedUserChange={setAssigneeUserId} onAdd={()=>void handleAddAssignee()} onRemove={(id)=>void handleRemoveAssignee(id)} onClose={closeAssignees}/>}
   </div></main>;
+}
+
+export default function TasksPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#f6f7fb]" />}>
+      <TasksPageWithSearchParams />
+    </Suspense>
+  );
+}
+
+function TasksPageWithSearchParams() {
+  const searchParams = useSearchParams();
+  return <TasksContent requestedProjectId={searchParams.get('projectId')} />;
 }

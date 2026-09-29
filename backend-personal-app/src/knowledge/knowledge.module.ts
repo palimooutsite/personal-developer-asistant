@@ -15,7 +15,8 @@ import { PrismaService } from '../prisma/prisma.service.js';
     PassportModule.register({
       defaultStrategy: 'jwt',
     }),
-    TenantModule
+    TenantModule,
+    TenantRoleModule,
   ],
   controllers: [
     KnowledgeController,

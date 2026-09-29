@@ -4,7 +4,7 @@ import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ApiError } from '../../lib/api';
 import { getCurrentUser, type CurrentUser } from '../../lib/auth';
-import { changePassword, updateProfile, uploadAvatar } from '../../lib/account';
+import { changePassword, removeAvatar, updateProfile, uploadAvatar } from '../../lib/account';
 
 export default function AccountSettingsPage() {
   const router = useRouter();
@@ -13,6 +13,7 @@ export default function AccountSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [removingAvatar, setRemovingAvatar] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [profileMessage, setProfileMessage] = useState('');
   const [passwordMessage, setPasswordMessage] = useState('');
@@ -81,6 +82,22 @@ export default function AccountSettingsPage() {
     }
   }
 
+
+  async function handleRemoveAvatar() {
+    if (!user?.avatarUrl || removingAvatar) return;
+    if (!window.confirm('Hapus foto profil?')) return;
+    setRemovingAvatar(true);
+    setError('');
+    try {
+      setUser(await removeAvatar());
+      setProfileMessage('Foto profil berhasil dihapus.');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Foto profil gagal dihapus.');
+    } finally {
+      setRemovingAvatar(false);
+    }
+  }
+
   async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPasswordError('');
@@ -144,7 +161,14 @@ export default function AccountSettingsPage() {
               <div>
                 <h2 className="text-xl font-bold">{user?.name || user?.username}</h2>
                 <p className="mt-1 text-sm text-zinc-500">@{user?.username}</p>
-                <p className="mt-2 text-xs text-zinc-400">{uploading ? 'Mengunggah foto...' : 'JPG, PNG, WebP · maksimal 2 MB'}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <p className="text-xs text-zinc-400">{uploading ? 'Mengunggah foto...' : 'JPG, PNG, WebP · maksimal 2 MB'}</p>
+                  {user?.avatarUrl ? (
+                    <button type="button" onClick={handleRemoveAvatar} disabled={removingAvatar || uploading} className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">
+                      {removingAvatar ? 'Menghapus...' : 'Hapus foto'}
+                    </button>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>

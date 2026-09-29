@@ -217,14 +217,16 @@ export default function ProjectsPage() {
           description="Kelola seluruh project development kamu dalam satu tempat. Pilih project untuk mulai mengatur pekerjaan dan progress."
           accent="indigo"
           action={
-            {can('PROJECTS', 'CREATE') || formOpen ? <button
-              type="button"
-              onClick={formOpen ? closeForm : openCreateForm}
-              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-zinc-950 px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-md sm:w-auto"
-            >
-              <span className="text-xl leading-none">+</span>
-              Project Baru
-            </button>
+            can('PROJECTS', 'CREATE') || formOpen ? (
+              <button
+                type="button"
+                onClick={formOpen ? closeForm : openCreateForm}
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-zinc-950 px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-md sm:w-auto"
+              >
+                <span className="text-xl leading-none">+</span>
+                Project Baru
+              </button>
+            ) : null
           }
         />
 

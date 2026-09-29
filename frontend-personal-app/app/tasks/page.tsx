@@ -12,6 +12,8 @@ import { TaskKanbanBoard } from '../../components/tasks/TaskKanbanBoard';
 import { StyledSelect } from '../../components/ui/StyledSelect';
 import { ModuleHeader } from '../../components/layout/ModuleHeader';
 import { Modal } from '../../components/ui/Modal';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { Toast } from '../../components/ui/Toast';
 import Link from 'next/link';
 
 export default function TasksPage() {
@@ -41,6 +43,8 @@ export default function TasksPage() {
   const [assigneeUserId,setAssigneeUserId]=useState('');
   const [assigneeSaving,setAssigneeSaving]=useState(false);
   const [viewMode,setViewMode]=useState<'list'|'kanban'>('list');
+  const [deleteTarget,setDeleteTarget]=useState<Task|null>(null);
+  const [toast,setToast]=useState('');
 
   useEffect(()=>{(async()=>{try{setLoadingProjects(true);const data=await getProjects();setProjects(data);if(data.length&&(!requestedProjectId||!data.some(p=>p.id===requestedProjectId)))setProjectId(data[0].id);}catch(e){setError(e instanceof Error?e.message:'Gagal memuat project');}finally{setLoadingProjects(false);}})();},[requestedProjectId]);
   useEffect(()=>{setPage(1);},[projectId]);
@@ -66,7 +70,8 @@ export default function TasksPage() {
     }
   }
 
-  async function handleDelete(task:Task){if(!window.confirm('Hapus task "'+task.title+'"?'))return;try{setDeletingId(task.id);setError('');await deleteTask(projectId,task.id);setTasks(c=>c.filter(t=>t.id!==task.id));setAllTasks(c=>c.filter(t=>t.id!==task.id));}catch(e){setError(e instanceof Error?e.message:'Gagal menghapus task');}finally{setDeletingId('');}}
+  async function handleDelete(task:Task){setDeleteTarget(task);}
+  async function confirmDeleteTask(){if(!deleteTarget)return;try{setDeletingId(deleteTarget.id);setError('');await deleteTask(projectId,deleteTarget.id);setTasks(c=>c.filter(t=>t.id!==deleteTarget.id));setAllTasks(c=>c.filter(t=>t.id!==deleteTarget.id));setDeleteTarget(null);setToast('Task "'+deleteTarget.title+'" berhasil dihapus.');}catch(e){setError(e instanceof Error?e.message:'Gagal menghapus task');}finally{setDeletingId('');}}
   async function openAssignees(task:Task){setAssigneeTask(task);setAssigneeUserId('');setError('');try{setLoadingMembers(true);setMembers(await getProjectMembers(projectId));}catch(e){setError(e instanceof Error?e.message:'Gagal memuat member project');}finally{setLoadingMembers(false);}}
   function closeAssignees(){setAssigneeTask(null);setAssigneeUserId('');setMembers([]);}
   async function handleAddAssignee(){if(!assigneeTask||!assigneeUserId)return;try{setAssigneeSaving(true);setError('');await addTaskAssignee(projectId,assigneeTask.id,assigneeUserId);const m=members.find(x=>x.userId===assigneeUserId);if(m){const a={taskId:assigneeTask.id,projectId,userId:m.userId,username:m.user.username,email:m.user.email,name:m.user.name};setTasks(c=>c.map(t=>t.id===assigneeTask.id?{...t,assignees:[...(t.assignees??[]),a]}:t));setAssigneeTask(c=>c?{...c,assignees:[...(c.assignees??[]),a]}:c);}setAssigneeUserId('');}catch(e){setError(e instanceof Error?e.message:'Gagal menambahkan assignee');}finally{setAssigneeSaving(false);}}
@@ -134,6 +139,8 @@ export default function TasksPage() {
           </div>
         )}
     </>}
+    <ConfirmDialog open={Boolean(deleteTarget)} title="Hapus task?" description={deleteTarget ? 'Task "'+deleteTarget.title+'" akan dihapus dan tidak dapat dikembalikan.' : ''} onClose={()=>setDeleteTarget(null)} onConfirm={()=>void confirmDeleteTask()} loading={Boolean(deletingId)} />
+    <Toast message={toast} open={Boolean(toast)} onClose={()=>setToast('')} />
     {assigneeTask&&<TaskAssigneeModal task={assigneeTask} members={members} loadingMembers={loadingMembers} saving={assigneeSaving} selectedUserId={assigneeUserId} onSelectedUserChange={setAssigneeUserId} onAdd={()=>void handleAddAssignee()} onRemove={(id)=>void handleRemoveAssignee(id)} onClose={closeAssignees}/>}
   </div></main>;
 }

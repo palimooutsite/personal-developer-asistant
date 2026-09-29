@@ -162,7 +162,10 @@ export class UsersService {
   }
 
   async updateProfile(id: string, data: { name?: string }): Promise<UserResponse & { avatarUrl: string | null }> {
-    const user = await this.prisma.client.orm.public.User.where({ id }).update({ name: data.name?.trim() || null }).select('id', 'username', 'email', 'name', 'avatarUrl').first();
+    await this.prisma.client.orm.public.User.where({ id }).update({
+      name: data.name?.trim() || null,
+    });
+    const user = await this.findById(id);
     if (!user) throw new Error('User tidak ditemukan');
     return user;
   }
@@ -172,7 +175,8 @@ export class UsersService {
   }
 
   async updateAvatar(id: string, avatarUrl: string): Promise<UserResponse & { avatarUrl: string | null }> {
-    const user = await this.prisma.client.orm.public.User.where({ id }).update({ avatarUrl }).select('id', 'username', 'email', 'name', 'avatarUrl').first();
+    await this.prisma.client.orm.public.User.where({ id }).update({ avatarUrl });
+    const user = await this.findById(id);
     if (!user) throw new Error('User tidak ditemukan');
     return user;
   }

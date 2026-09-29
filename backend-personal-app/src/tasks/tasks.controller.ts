@@ -18,13 +18,16 @@ import { AddTaskAssigneeDto } from './dto/add-task-assignee.dto.js';
 import type { TenantRequest } from '../tenants/types/tenant-request.js';
 import { TenantContextGuard } from '../tenants/guard/tenant-context.guard.js';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard.js';
+import { PermissionGuard } from '../tenants/roles/permission.guard.js';
+import { RequirePermission } from '../tenants/roles/require-permission.decorator.js';
 
 @Controller('projects/:projectId/tasks')
-@UseGuards(JwtAuthGuard, TenantContextGuard)
+@UseGuards(JwtAuthGuard, TenantContextGuard, PermissionGuard)
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   @Post()
+  @RequirePermission('TASKS', 'CREATE')
   async create(
     @Param('projectId') projectId: string,
     @Body() body: CreateTaskDto,
@@ -39,6 +42,7 @@ export class TasksController {
   }
 
   @Get()
+  @RequirePermission('TASKS', 'READ')
   async findAll(
     @Param('projectId') projectId: string,
     @Query('page') page = '1',
@@ -59,6 +63,7 @@ export class TasksController {
 
 
   @Post(':taskId/assignees')
+  @RequirePermission('TASKS', 'UPDATE')
   async addAssignee(
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
@@ -75,6 +80,7 @@ export class TasksController {
   }
 
   @Patch(':taskId')
+  @RequirePermission('TASKS', 'UPDATE')
   async update(
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
@@ -92,6 +98,7 @@ export class TasksController {
 
 
   @Get(':taskId/assignees')
+  @RequirePermission('TASKS', 'READ')
   async findAssignees(
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
@@ -107,6 +114,7 @@ export class TasksController {
 
 
   @Delete(':taskId/assignees/:assigneeUserId')
+  @RequirePermission('TASKS', 'UPDATE')
   async removeAssignee(
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
@@ -123,6 +131,7 @@ export class TasksController {
   }
 
   @Delete(':taskId')
+  @RequirePermission('TASKS', 'DELETE')
   async remove(
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
@@ -137,6 +146,7 @@ export class TasksController {
   }
 
   @Get(':taskId')
+  @RequirePermission('TASKS', 'READ')
   async findOne(
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,

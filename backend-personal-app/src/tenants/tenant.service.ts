@@ -459,7 +459,7 @@ async addMember(
     );
   }
 
-  if (data.roleId) {
+  {
     const customRole =
       await this.prisma.client.orm.public.TenantCustomRole
         .where({ id: data.roleId, tenantId })
@@ -480,7 +480,7 @@ async addMember(
         tenantId,
         userId: data.userId,
         role: 'MEMBER',
-        roleId: data.roleId ?? null,
+        roleId: data.roleId,
       });
 
   return {
@@ -672,10 +672,6 @@ async removeMember(
       throw new ForbiddenException('Anda tidak memiliki izin untuk mengundang member');
     }
 
-    if (!data.roleId) {
-      throw new ForbiddenException('Role wajib dipilih');
-    }
-
     const customRole =
       await this.prisma.client.orm.public.TenantCustomRole
         .where({ id: data.roleId, tenantId })
@@ -849,7 +845,7 @@ async removeMember(
       tenantId: invitation.tenantId,
       userId,
       role: 'MEMBER',
-      roleId: invitation.roleId ?? null,
+      roleId: invitation.roleId,
     });
 
     await this.prisma.client.orm.public.TenantInvitation

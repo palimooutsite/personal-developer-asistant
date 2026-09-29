@@ -190,6 +190,10 @@ export class TenantService {
       });
     }
 
+    if (!membership.roleId) {
+      throw new ForbiddenException('Membership belum memiliki custom role');
+    }
+
     return {
       tenantId,
       roleName,
@@ -240,9 +244,7 @@ export class TenantService {
       .select('role', 'roleId')
       .first();
 
-    if (!membership) return false;
-    if (membership.role === 'OWNER' || membership.role === 'ADMIN') return true;
-    if (!membership.roleId) return false;
+    if (!membership?.roleId) return false;
 
     const permission = await this.prisma.client.orm.public.TenantRolePermission
       .where({ roleId: membership.roleId, module })

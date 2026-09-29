@@ -149,10 +149,12 @@ export default function DocumentsPage() {
           description="Simpan dokumentasi, referensi, dan file project penting dalam satu tempat."
           accent="amber"
           action={
-            {can('DOCUMENTS', 'CREATE') ? <button type="button" onClick={startCreate}
-              className="w-full rounded-xl bg-amber-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-amber-700 hover:shadow-md sm:w-auto">
-              + Upload Document
-            </button>
+            can('DOCUMENTS', 'CREATE') ? (
+              <button type="button" onClick={startCreate}
+                className="w-full rounded-xl bg-amber-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-amber-700 hover:shadow-md sm:w-auto">
+                + Upload Document
+              </button>
+            ) : null
           }
         />
 

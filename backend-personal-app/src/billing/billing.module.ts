@@ -28,13 +28,13 @@ import { TenantModule } from '../tenants/tenant.module.js';
     BillingSubscriptionService,
     BillingInvoiceService,
     BillingPaymentService,
-    BillingPaymentService,
   ],
   exports: [
     BillingCatalogService,
     BillingDiscountService,
     BillingSubscriptionService,
     BillingInvoiceService,
+    BillingPaymentService,
   ],
 })
 export class BillingModule {}

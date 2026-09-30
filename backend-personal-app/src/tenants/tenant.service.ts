@@ -77,7 +77,7 @@ export class TenantService {
       await tx.orm.public.TenantMember.create({
         tenantId: tenant.id,
         userId,
-        role: ownerRole.name,
+        role: 'OWNER',
         roleId: ownerRole.id,
       });
 
@@ -228,7 +228,7 @@ export class TenantService {
       id: tenant.id,
       name: tenant.name,
       createdBy: tenant.createdBy,
-      role: roleName,
+      role: membership.role,
     };
   }
 
@@ -465,19 +465,17 @@ async addMember(
     );
   }
 
-  {
-    const customRole =
-      await this.prisma.client.orm.public.TenantCustomRole
-        .where({ id: data.roleId, tenantId })
-        .first();
+  const customRole =
+    await this.prisma.client.orm.public.TenantCustomRole
+      .where({ id: data.roleId, tenantId })
+      .first();
 
-    if (!customRole) {
-      throw new NotFoundException('Role tidak ditemukan pada workspace ini');
-    }
+  if (!customRole) {
+    throw new NotFoundException('Role tidak ditemukan pada workspace ini');
+  }
 
-    if (customRole.isSystem) {
-      throw new ForbiddenException('System role tidak dapat diberikan kepada member biasa');
-    }
+  if (customRole.isSystem) {
+    throw new ForbiddenException('System role tidak dapat diberikan kepada member biasa');
   }
 
   const member =
@@ -859,6 +857,20 @@ async removeMember(
       );
     }
 
+    if (!invitation.roleId) {
+      throw new ForbiddenException('Invitation belum memiliki custom role');
+    }
+
+    const invitationRole =
+      await this.prisma.client.orm.public.TenantCustomRole
+        .where({ id: invitation.roleId, tenantId: invitation.tenantId })
+        .select('name')
+        .first();
+
+    if (!invitationRole) {
+      throw new ForbiddenException('Role invitation tidak ditemukan');
+    }
+
     await this.prisma.client.orm.public.TenantMember.create({
       tenantId: invitation.tenantId,
       userId,
@@ -875,7 +887,7 @@ async removeMember(
     return {
       message: 'Invitation berhasil diterima',
       tenantId: invitation.tenantId,
-      role: invitation.roleId,
+      role: invitationRole.name,
     };
   }
 

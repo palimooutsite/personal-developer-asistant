@@ -103,6 +103,10 @@ model User {
   knowledgeArticles KnowledgeArticle[]
   codeSnippets CodeSnippet[]
   documents Document[]
+  subscriptions TenantSubscription[]
+  invoices SubscriptionInvoice[]
+  discountUsages DiscountUsage[]
+  payments Payment[]
 }
 
 model Tenant {
@@ -412,4 +416,274 @@ model Document {
   )
 
   @@index([tenantId])
+}
+
+
+enum SubscriptionBillingPeriod {
+  MONTHLY
+  YEARLY
+}
+
+enum SubscriptionFeatureValueType {
+  BOOLEAN
+  LIMIT
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+enum DiscountDuration {
+  ONCE
+  RECURRING_CYCLES
+  FOREVER
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentProviderType {
+  SANDBOX
+  MIDTRANS
+  XENDIT
+}
+
+model SubscriptionPackage {
+  id          String            @id @default(uuid())
+  code        String            @unique
+  name        String
+  description String?
+  isActive    Boolean           @default(true)
+  sortOrder   Int               @default(0)
+  createdAt   TimestamptzString @default(now())
+  updatedAt   temporal.updatedAtString()
+
+  prices        SubscriptionPackagePrice[]
+  features      SubscriptionPackageFeature[]
+  discounts     DiscountPackage[]
+  subscriptions TenantSubscription[]
+
+  @@index([isActive, sortOrder])
+}
+
+model SubscriptionFeature {
+  id          String                         @id @default(uuid())
+  code        String                         @unique
+  name        String
+  description String?
+  valueType   SubscriptionFeatureValueType
+  unit        String?
+  isActive    Boolean                        @default(true)
+  createdAt   TimestamptzString              @default(now())
+  updatedAt   temporal.updatedAtString()
+
+  packageFeatures SubscriptionPackageFeature[]
+
+  @@index([isActive])
+}
+
+model SubscriptionPackageFeature {
+  id         String            @id @default(uuid())
+  packageId  String
+  featureId  String
+  enabled    Boolean           @default(false)
+  limitValue Int?
+  createdAt  TimestamptzString @default(now())
+  updatedAt  temporal.updatedAtString()
+
+  package SubscriptionPackage @relation(fields: [packageId], references: [id])
+  feature SubscriptionFeature @relation(fields: [featureId], references: [id])
+
+  @@unique([packageId, featureId])
+  @@index([featureId])
+}
+
+model SubscriptionPackagePrice {
+  id            String                    @id @default(uuid())
+  packageId     String
+  version       Int                       @default(1)
+  billingPeriod SubscriptionBillingPeriod
+  amountMinor   Int
+  currency      String                    @default("IDR")
+  isActive      Boolean                   @default(true)
+  createdAt     TimestamptzString         @default(now())
+  updatedAt     temporal.updatedAtString()
+
+  package       SubscriptionPackage @relation(fields: [packageId], references: [id])
+  subscriptions TenantSubscription[]
+  invoices      SubscriptionInvoice[]
+
+  @@unique([packageId, billingPeriod, version])
+  @@index([packageId, billingPeriod, isActive])
+}
+
+model Discount {
+  id                 String            @id @default(uuid())
+  code               String            @unique
+  name               String
+  description        String?
+  type               DiscountType
+  valueMinor         Int?
+  percentage         Int?
+  maxDiscountMinor   Int?
+  minimumAmountMinor Int?
+  duration           DiscountDuration @default(ONCE)
+  durationCycles     Int?
+  usageLimit         Int?
+  usageCount        Int               @default(0)
+  startsAt           TimestamptzString?
+  expiresAt          TimestamptzString?
+  isActive           Boolean           @default(true)
+  createdAt          TimestamptzString @default(now())
+  updatedAt          temporal.updatedAtString()
+
+  packages         DiscountPackage[]
+  usages           DiscountUsage[]
+  invoiceDiscounts InvoiceDiscount[]
+}
+
+model DiscountPackage {
+  id         String            @id @default(uuid())
+  discountId String
+  packageId  String
+  createdAt  TimestamptzString @default(now())
+
+  discount Discount            @relation(fields: [discountId], references: [id])
+  package  SubscriptionPackage @relation(fields: [packageId], references: [id])
+
+  @@unique([discountId, packageId])
+  @@index([packageId])
+}
+
+model TenantSubscription {
+  id                     String              @id @default(uuid())
+  tenantId               String
+  packageId              String
+  packagePriceId         String
+  status                 SubscriptionStatus
+  provider               PaymentProviderType @default(SANDBOX)
+  providerCustomerId     String?
+  providerSubscriptionId String?
+  startedAt              TimestamptzString
+  currentPeriodStart     TimestamptzString
+  currentPeriodEnd       TimestamptzString
+  cancelledAt            TimestamptzString?
+  createdAt              TimestamptzString @default(now())
+  updatedAt              temporal.updatedAtString()
+
+  tenant          Tenant                   @relation(fields: [tenantId], references: [id])
+  package         SubscriptionPackage      @relation(fields: [packageId], references: [id])
+  packagePrice    SubscriptionPackagePrice @relation(fields: [packagePriceId], references: [id])
+  invoices        SubscriptionInvoice[]
+  payments        Payment[]
+  discountUsages  DiscountUsage[]
+
+  @@index([tenantId, status])
+  @@index([packageId])
+  @@index([providerSubscriptionId])
+}
+
+model SubscriptionInvoice {
+  id                  String                     @id @default(uuid())
+  tenantId            String
+  subscriptionId      String
+  packagePriceId      String
+  packageCode         String
+  packageName         String
+  billingPeriod       SubscriptionBillingPeriod
+  currency            String
+  originalAmountMinor Int
+  discountAmountMinor Int                        @default(0)
+  taxAmountMinor      Int                        @default(0)
+  finalAmountMinor    Int
+  status              PaymentStatus              @default(PENDING)
+  issuedAt            TimestamptzString          @default(now())
+  paidAt              TimestamptString?
+  dueAt               TimestamptString?
+  createdAt           TimestamptString           @default(now())
+  updatedAt           temporal.updatedAtString()
+
+  tenant         Tenant                   @relation(fields: [tenantId], references: [id])
+  subscription   TenantSubscription       @relation(fields: [subscriptionId], references: [id])
+  packagePrice   SubscriptionPackagePrice @relation(fields: [packagePriceId], references: [id])
+  discounts      InvoiceDiscount[]
+  discountUsages DiscountUsage[]
+  payments       Payment[]
+
+  @@index([tenantId, status])
+  @@index([subscriptionId])
+}
+
+model InvoiceDiscount {
+  id                 String            @id @default(uuid())
+  invoiceId          String
+  discountId         String
+  codeSnapshot       String
+  discountType       DiscountType
+  discountValueMinor Int?
+  discountPercentage Int?
+  amountMinor        Int
+  createdAt          TimestamptString @default(now())
+
+  invoice  SubscriptionInvoice @relation(fields: [invoiceId], references: [id])
+  discount Discount            @relation(fields: [discountId], references: [id])
+
+  @@index([discountId])
+  @@unique([invoiceId, discountId])
+}
+
+model DiscountUsage {
+  id             String            @id @default(uuid())
+  discountId     String
+  tenantId       String
+  subscriptionId String?
+  invoiceId      String?
+  usedAt         TimestamptString @default(now())
+
+  discount     Discount             @relation(fields: [discountId], references: [id])
+  tenant       Tenant               @relation(fields: [tenantId], references: [id])
+  subscription TenantSubscription?  @relation(fields: [subscriptionId], references: [id])
+  invoice      SubscriptionInvoice? @relation(fields: [invoiceId], references: [id])
+
+  @@index([discountId, tenantId])
+  @@index([tenantId])
+}
+
+model Payment {
+  id                     String              @id @default(uuid())
+  tenantId               String
+  subscriptionId         String
+  invoiceId              String
+  provider               PaymentProviderType @default(SANDBOX)
+  providerPaymentId      String?
+  status                 PaymentStatus       @default(PENDING)
+  amountMinor            Int
+  currency               String              @default("IDR")
+  checkoutUrl            String?
+  paidAt                 TimestamptString?
+  expiresAt              TimestamptString?
+  createdAt              TimestamptString    @default(now())
+  updatedAt              temporal.updatedAtString()
+
+  tenant       Tenant             @relation(fields: [tenantId], references: [id])
+  subscription TenantSubscription @relation(fields: [subscriptionId], references: [id])
+  invoice      SubscriptionInvoice @relation(fields: [invoiceId], references: [id])
+
+  @@index([tenantId, status])
+  @@index([provider, providerPaymentId])
+  @@index([invoiceId])
 }

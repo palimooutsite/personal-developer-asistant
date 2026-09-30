@@ -122,9 +122,9 @@ export class UsersService {
       },
     };
   }
-  async findByUsername(username: string) {
+  async findByEmail(email: string) {
     return this.prisma.client.orm.public.User.where({
-      username,
+      email: email.trim().toLowerCase(),
     })
       .select('id', 'username', 'email', 'passwordHash', 'name')
       .first();

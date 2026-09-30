@@ -67,12 +67,19 @@ export class BillingSubscriptionService {
   ): Promise<BillingSubscriptionDetailResponse | null> {
     await this.ensureTenantMember(tenantId, userId);
 
-    const subscription = await this.prisma.client.orm.public.TenantSubscription
+    const subscriptions = await this.prisma.client.orm.public.TenantSubscription
       .where({ tenantId })
-      .orderBy('createdAt', 'desc')
-      .first();
+      .select(
+        'id', 'tenantId', 'packageId', 'packagePriceId', 'status', 'provider',
+        'providerCustomerId', 'providerSubscriptionId', 'startedAt',
+        'currentPeriodStart', 'currentPeriodEnd', 'cancelledAt', 'createdAt', 'updatedAt',
+      )
+      .all();
 
-    if (!subscription) return null;
+    if (subscriptions.length === 0) return null;
+
+    const subscription = subscriptions
+      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
 
     return this.buildDetail(subscription);
   }
@@ -84,10 +91,14 @@ export class BillingSubscriptionService {
   ): Promise<BillingSubscriptionDetailResponse> {
     await this.ensureTenantMember(tenantId, userId);
 
-    const activeSubscription = await this.prisma.client.orm.public.TenantSubscription
+    const subscriptions = await this.prisma.client.orm.public.TenantSubscription
       .where({ tenantId })
-      .whereIn('status', ['TRIAL', 'ACTIVE', 'PAST_DUE'])
-      .first();
+      .select('id', 'status')
+      .all();
+
+    const activeSubscription = subscriptions.find((item) =>
+      ['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)),
+    );
 
     if (activeSubscription) {
       throw new ConflictException('Workspace sudah memiliki subscription yang masih aktif');
@@ -114,6 +125,13 @@ export class BillingSubscriptionService {
       throw new ConflictException('Harga package sedang tidak aktif');
     }
 
+    const provider = data.provider ?? BillingSubscriptionProviderDto.SANDBOX;
+    if (provider !== BillingSubscriptionProviderDto.SANDBOX) {
+      throw new ConflictException(
+        'Provider pembayaran selain SANDBOX belum tersedia pada tahap ini',
+      );
+    }
+
     const now = new Date();
     const periodEnd = new Date(now.getTime());
 
@@ -123,13 +141,6 @@ export class BillingSubscriptionService {
       periodEnd.setFullYear(periodEnd.getFullYear() + 1);
     } else {
       throw new ConflictException('Billing period tidak didukung');
-    }
-
-    const provider = data.provider ?? BillingSubscriptionProviderDto.SANDBOX;
-    if (provider !== BillingSubscriptionProviderDto.SANDBOX) {
-      throw new ConflictException(
-        'Provider pembayaran selain SANDBOX belum tersedia pada tahap ini',
-      );
     }
 
     const created = await this.prisma.client.orm.public.TenantSubscription.create({
@@ -152,22 +163,26 @@ export class BillingSubscriptionService {
   ): Promise<BillingSubscriptionMessageResponse> {
     await this.ensureTenantMember(tenantId, userId);
 
-    const subscription = await this.prisma.client.orm.public.TenantSubscription
+    const subscriptions = await this.prisma.client.orm.public.TenantSubscription
       .where({ tenantId })
-      .whereIn('status', ['TRIAL', 'ACTIVE', 'PAST_DUE'])
-      .first();
+      .select(
+        'id', 'status', 'createdAt',
+      )
+      .all();
+
+    const subscription = subscriptions
+      .filter((item) => ['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)))
+      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
 
     if (!subscription) {
       throw new NotFoundException('Tidak ada subscription aktif untuk workspace');
     }
 
-    const cancelledAt = new Date().toISOString();
-
     const updated = await this.prisma.client.orm.public.TenantSubscription
       .where({ id: subscription.id })
       .update({
         status: 'CANCELLED',
-        cancelledAt,
+        cancelledAt: new Date().toISOString(),
       });
 
     if (!updated) {
@@ -177,22 +192,7 @@ export class BillingSubscriptionService {
     return { message: 'Subscription berhasil dibatalkan' };
   }
 
-  private async buildDetail(subscription: {
-    id: string;
-    tenantId: string;
-    packageId: string;
-    packagePriceId: string;
-    status: string;
-    provider: string;
-    providerCustomerId: string | null;
-    providerSubscriptionId: string | null;
-    startedAt: string;
-    currentPeriodStart: string;
-    currentPeriodEnd: string;
-    cancelledAt: string | null;
-    createdAt: string;
-    updatedAt: string;
-  }): Promise<BillingSubscriptionDetailResponse> {
+  private async buildDetail(subscription: BillingSubscriptionResponse) {
     const [pkg, price] = await Promise.all([
       this.prisma.client.orm.public.SubscriptionPackage
         .where({ id: subscription.packageId })

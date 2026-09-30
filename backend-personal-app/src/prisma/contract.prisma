@@ -612,9 +612,9 @@ model SubscriptionInvoice {
   finalAmountMinor    Int
   status              PaymentStatus              @default(PENDING)
   issuedAt            TimestamptzString          @default(now())
-  paidAt              TimestamptString?
-  dueAt               TimestamptString?
-  createdAt           TimestamptString           @default(now())
+  paidAt              TimestamptzString?
+  dueAt               TimestamptzString?
+  createdAt           TimestamptzString           @default(now())
   updatedAt           temporal.updatedAtString()
 
   tenant         Tenant                   @relation(fields: [tenantId], references: [id])
@@ -637,7 +637,7 @@ model InvoiceDiscount {
   discountValueMinor Int?
   discountPercentage Int?
   amountMinor        Int
-  createdAt          TimestamptString @default(now())
+  createdAt          TimestamptzString @default(now())
 
   invoice  SubscriptionInvoice @relation(fields: [invoiceId], references: [id])
   discount Discount            @relation(fields: [discountId], references: [id])
@@ -652,7 +652,7 @@ model DiscountUsage {
   tenantId       String
   subscriptionId String?
   invoiceId      String?
-  usedAt         TimestamptString @default(now())
+  usedAt         TimestamptzString @default(now())
 
   discount     Discount             @relation(fields: [discountId], references: [id])
   tenant       Tenant               @relation(fields: [tenantId], references: [id])
@@ -674,9 +674,9 @@ model Payment {
   amountMinor            Int
   currency               String              @default("IDR")
   checkoutUrl            String?
-  paidAt                 TimestamptString?
-  expiresAt              TimestamptString?
-  createdAt              TimestamptString    @default(now())
+  paidAt                 TimestamptzString?
+  expiresAt              TimestamptzString?
+  createdAt              TimestamptzString    @default(now())
   updatedAt              temporal.updatedAtString()
 
   tenant       Tenant             @relation(fields: [tenantId], references: [id])

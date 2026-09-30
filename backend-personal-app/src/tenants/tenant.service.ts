@@ -77,7 +77,7 @@ export class TenantService {
       await tx.orm.public.TenantMember.create({
         tenantId: tenant.id,
         userId,
-        role: 'OWNER',
+        role: ownerRole.name,
         roleId: ownerRole.id,
       });
 
@@ -156,6 +156,10 @@ export class TenantService {
       canDelete: true,
     };
 
+    if (!membership.roleId) {
+      throw new ForbiddenException('Membership belum memiliki custom role');
+    }
+
     let roleName = membership.role as string;
     let permissions = modules.map((module) => ({
       module,
@@ -188,10 +192,6 @@ export class TenantService {
           canDelete: Boolean(row?.canDelete),
         };
       });
-    }
-
-    if (!membership.roleId) {
-      throw new ForbiddenException('Membership belum memiliki custom role');
     }
 
     return {
@@ -228,7 +228,7 @@ export class TenantService {
       id: tenant.id,
       name: tenant.name,
       createdBy: tenant.createdBy,
-      role: membership.role,
+      role: roleName,
     };
   }
 
@@ -501,7 +501,7 @@ async addMember(
     userId: member.userId,
     role: member.role,
     roleId: member.roleId,
-    roleName: member.role,
+    roleName: customRole.name,
     user: {
       id: user.id,
       username: user.username,
@@ -875,7 +875,7 @@ async removeMember(
     return {
       message: 'Invitation berhasil diterima',
       tenantId: invitation.tenantId,
-      role: invitation.roleId ?? invitation.role,
+      role: invitation.roleId,
     };
   }
 

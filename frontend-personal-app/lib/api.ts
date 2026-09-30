@@ -61,7 +61,9 @@ export async function apiRequest<T>(
     const message =
       data && typeof data.message === 'string'
         ? data.message
-        : 'Terjadi kesalahan pada API';
+        : data && Array.isArray(data.message)
+          ? data.message.filter((item: unknown): item is string => typeof item === 'string').join(', ')
+          : 'Terjadi kesalahan pada API';
 
     if (
       response.status === 401 &&

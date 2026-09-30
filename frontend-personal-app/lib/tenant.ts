@@ -14,7 +14,7 @@ export interface TenantMember {
   tenantId: string;
   userId: string;
   role: string;
-  roleId: string | null;
+  roleId: string;
   roleName: string;
   user: {
     id: string;

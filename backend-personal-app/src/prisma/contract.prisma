@@ -147,7 +147,7 @@ model TenantMember {
     references: [id]
   )
 
-  customRole TenantCustomRole? @relation(fields: [roleId], references: [id])
+  customRole TenantCustomRole @relation(fields: [roleId], references: [id])
 
   @@unique([tenantId, userId])
   @@index([userId])
@@ -159,7 +159,7 @@ model TenantInvitation {
   tenantId    String
   email       String
   role        TenantRole
-  roleId      String?
+  roleId      String
   token       String            @unique
   invitedBy   String
   expiresAt   TimestamptzString
@@ -177,7 +177,7 @@ model TenantInvitation {
     references: [id]
   )
 
-  customRole TenantCustomRole? @relation(fields: [roleId], references: [id])
+  customRole TenantCustomRole @relation(fields: [roleId], references: [id])
 
   @@index([tenantId])
   @@index([email])

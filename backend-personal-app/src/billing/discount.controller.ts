@@ -62,10 +62,12 @@ export class BillingDiscountController {
   }
 
   @Delete(':id/packages/:packageId')
-  removePackage(
+  async removePackage(
     @Param('id') id: string,
     @Param('packageId') packageId: string,
   ): Promise<BillingDiscountMessageResponse> {
-    return this.service.setPackage(id, packageId, { enabled: false });
+    const result = await this.service.setPackage(id, packageId, { enabled: false });
+    if ('message' in result) return result;
+    return { message: 'Discount berhasil dilepas dari package' };
   }
 }

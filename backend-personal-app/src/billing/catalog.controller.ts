@@ -65,7 +65,14 @@ export class BillingCatalogController {
     return this.service.updateFeature(id, body);
   }
 
-  @Get('packages/:packageId/prices')\n  listPrices(@Param('packageId') packageId: string): Promise<BillingPriceResponse[]> {\n    return this.service.listPrices(packageId);\n  }\n\n  @Post('packages/:packageId/prices')
+  @Get('packages/:packageId/prices')
+  listPrices(
+    @Param('packageId') packageId: string,
+  ): Promise<BillingPriceResponse[]> {
+    return this.service.listPrices(packageId);
+  }
+
+  @Post('packages/:packageId/prices')
   addPrice(
     @Param('packageId') packageId: string,
     @Body() body: CreatePriceDto,

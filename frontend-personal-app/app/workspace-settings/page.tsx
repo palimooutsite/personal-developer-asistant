@@ -71,7 +71,7 @@ export default function WorkspaceSettingsPage() {
   const [roleDescription, setRoleDescription] = useState('');
   const [permissions, setPermissions] = useState<RolePermissionInput[]>(emptyPermissions());
 
-  const isOwner = activeTenant?.role === 'OWNER' || activeTenant?.role === 'Owner';
+  const canReadWorkspaceSettings = can('WORKSPACE_SETTINGS', 'READ');
   const canManageMembers = can('WORKSPACE_MEMBERS', 'UPDATE');
   const canInviteMembers = can('WORKSPACE_MEMBERS', 'CREATE');
   const canRemoveMembers = can('WORKSPACE_MEMBERS', 'DELETE');
@@ -159,7 +159,7 @@ export default function WorkspaceSettingsPage() {
   }
 
   async function changeRole(member: TenantMember, roleId: string) {
-    if (!activeTenant || member.role === 'OWNER' || !roleId) return;
+    if (!activeTenant || !member.roleId || !roleId) return;
     setSaving(true);
     setError('');
     try {
@@ -174,7 +174,7 @@ export default function WorkspaceSettingsPage() {
   }
 
   async function confirmRemoveMember() {
-    if (!activeTenant || !removeTarget || removeTarget.role === 'OWNER') return;
+    if (!activeTenant || !removeTarget || !removeTarget.roleId) return;
     setSaving(true);
     setError('');
     try {
@@ -315,7 +315,7 @@ export default function WorkspaceSettingsPage() {
           {([
             ['general', 'General'],
             ['members', 'Members'],
-            ...(isOwner ? [['roles', 'Roles & Permissions']] : []),
+            ...(canReadWorkspaceSettings ? [['roles', 'Roles & Permissions']] : []),
           ] as [Tab, string][]).map(([key, label]) => (
             <button
               key={key}
@@ -413,7 +413,7 @@ export default function WorkspaceSettingsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {member.role === 'OWNER' ? (
+                        {member.roleName === 'Owner' ? (
                           <span className="rounded-lg bg-zinc-900 px-3 py-2 text-xs font-bold text-white">OWNER</span>
                         ) : canManageMembers ? (
                           <>

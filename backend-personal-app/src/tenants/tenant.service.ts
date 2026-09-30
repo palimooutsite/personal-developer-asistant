@@ -26,7 +26,7 @@ export interface TenantMemberListItem {
   tenantId: string;
   userId: string;
   role: string;
-  roleId: string | null;
+  roleId: string;
   roleName: string;
   user: {
     id: string;
@@ -398,7 +398,7 @@ export class TenantService {
       tenantId: member.tenantId,
       userId: member.userId,
       role: member.role,
-      roleId: member.roleId ?? null,
+      roleId: member.roleId,
       roleName,
       user: {
         id: user.id,
@@ -488,7 +488,7 @@ async addMember(
     tenantId: member.tenantId,
     userId: member.userId,
     role: member.role,
-    roleId: member.roleId ?? null,
+    roleId: member.roleId,
     roleName: member.role,
     user: {
       id: user.id,
@@ -590,7 +590,7 @@ async updateMemberRole(
     tenantId: updated.tenantId,
     userId: updated.userId,
     role: updated.role,
-    roleId: updated.roleId ?? null,
+    roleId: updated.roleId,
     roleName: customRole.name,
     user: {
       id: user.id,

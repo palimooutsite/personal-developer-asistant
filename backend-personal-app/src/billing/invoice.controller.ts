@@ -10,6 +10,23 @@ import { CreateInvoiceDto, PreviewInvoiceDto } from './dto/preview-invoice.dto.j
 export class BillingInvoiceController {
   constructor(private readonly invoiceService: BillingInvoiceService) {}
 
+  @Get()
+  list(
+    @Param('tenantId') tenantId: string,
+    @Req() req: AuthRequest,
+  ): Promise<BillingInvoiceResponse[]> {
+    return this.invoiceService.list(tenantId, req.user.userId);
+  }
+
+  @Get(':invoiceId')
+  findOne(
+    @Param('tenantId') tenantId: string,
+    @Param('invoiceId') invoiceId: string,
+    @Req() req: AuthRequest,
+  ): Promise<BillingInvoiceResponse> {
+    return this.invoiceService.findOne(tenantId, req.user.userId, invoiceId);
+  }
+
   @Post('preview')
   preview(
     @Param('tenantId') tenantId: string,

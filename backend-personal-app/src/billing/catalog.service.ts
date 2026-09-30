@@ -204,7 +204,7 @@ export class BillingCatalogService {
     return updated;
   }
 
-  async addPrice(packageId: string, data: CreatePriceDto): Promise<BillingPriceResponse> {
+  async listPrices(packageId: string): Promise<BillingPriceResponse[]> {\n    const pkg = await this.prisma.client.orm.public.SubscriptionPackage\n      .where({ id: packageId })\n      .first();\n\n    if (!pkg) throw new NotFoundException('Package tidak ditemukan');\n\n    return this.prisma.client.orm.public.SubscriptionPackagePrice\n      .where({ packageId })\n      .select(\n        'id',\n        'packageId',\n        'version',\n        'billingPeriod',\n        'amountMinor',\n        'currency',\n        'isActive',\n        'createdAt',\n        'updatedAt',\n      )\n      .all();\n  }\n\n  async addPrice(packageId: string, data: CreatePriceDto): Promise<BillingPriceResponse> {
     const pkg = await this.prisma.client.orm.public.SubscriptionPackage
       .where({ id: packageId })
       .first();

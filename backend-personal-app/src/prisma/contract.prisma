@@ -103,10 +103,6 @@ model User {
   knowledgeArticles KnowledgeArticle[]
   codeSnippets CodeSnippet[]
   documents Document[]
-  subscriptions TenantSubscription[]
-  invoices SubscriptionInvoice[]
-  discountUsages DiscountUsage[]
-  payments Payment[]
 }
 
 model Tenant {
@@ -129,6 +125,10 @@ model Tenant {
   tags Tag[]
   codeSnippets CodeSnippet[]
   documents Document[]
+  subscriptions TenantSubscription[]
+  invoices SubscriptionInvoice[]
+  discountUsages DiscountUsage[]
+  payments Payment[]
   @@index([createdBy])
 }
 

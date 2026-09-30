@@ -10,6 +10,8 @@ import { BillingInvoiceController } from './invoice.controller.js';
 import { BillingInvoiceService } from './invoice.service.js';
 import { BillingPaymentController } from './payment.controller.js';
 import { BillingPaymentService } from './payment.service.js';
+import { BillingFeatureController } from './feature.controller.js';
+import { BillingFeatureService } from './feature.service.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { TenantModule } from '../tenants/tenant.module.js';
 
@@ -21,6 +23,7 @@ import { TenantModule } from '../tenants/tenant.module.js';
     BillingSubscriptionController,
     BillingInvoiceController,
     BillingPaymentController,
+    BillingFeatureController,
   ],
   providers: [
     BillingCatalogService,
@@ -28,6 +31,7 @@ import { TenantModule } from '../tenants/tenant.module.js';
     BillingSubscriptionService,
     BillingInvoiceService,
     BillingPaymentService,
+    BillingFeatureService,
   ],
   exports: [
     BillingCatalogService,
@@ -35,6 +39,7 @@ import { TenantModule } from '../tenants/tenant.module.js';
     BillingSubscriptionService,
     BillingInvoiceService,
     BillingPaymentService,
+    BillingFeatureService,
   ],
 })
 export class BillingModule {}

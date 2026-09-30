@@ -15,7 +15,7 @@ export default function LoginPage() {
     const pendingInvitation = window.sessionStorage.getItem('pda_pending_invitation_token');
     setInvitation(queryInvitation || pendingInvitation);
   }, []);
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,7 +26,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(username, password);
+      await login(email, password);
       const invitation =
         new URLSearchParams(window.location.search).get('invitation') ||
         window.sessionStorage.getItem('pda_pending_invitation_token');
@@ -60,8 +60,8 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="username" className="mb-2 block text-sm font-medium text-zinc-800">Username</label>
-            <input id="username" name="username" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200" placeholder="developer" />
+            <label htmlFor="email" className="mb-2 block text-sm font-medium text-zinc-800">Email</label>
+            <input id="email" name="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-200" placeholder="developer@example.com" />
           </div>
           <div>
             <label htmlFor="password" className="mb-2 block text-sm font-medium text-zinc-800">Password</label>

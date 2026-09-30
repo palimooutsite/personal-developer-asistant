@@ -528,7 +528,7 @@ model SubscriptionPackagePrice {
   invoices      SubscriptionInvoice[]
 
   @@unique([packageId, billingPeriod, version])
-  @@index([packageId, billingPeriod, isActive])
+  @@index([packageId, billingPeriod, isActive], map: "sub_pkg_price_period_active_idx")
 }
 
 model Discount {

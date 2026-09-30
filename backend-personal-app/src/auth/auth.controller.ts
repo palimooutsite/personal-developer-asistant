@@ -46,7 +46,7 @@ export class AuthController {
   @Post('login')
   async login(@Body() body: LoginDto): Promise<LoginUserResponse> {
     return this.authService.login({
-      username: body.username,
+      email: body.email,
       password: body.password,
     });
   }

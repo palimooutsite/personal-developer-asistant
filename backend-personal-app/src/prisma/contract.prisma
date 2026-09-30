@@ -133,7 +133,7 @@ model TenantMember {
   tenantId  String
   userId    String
   role      TenantRole
-  roleId    String?
+  roleId    String
   createdAt TimestamptzString @default(now())
   updatedAt temporal.updatedAtString()
 

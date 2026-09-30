@@ -41,12 +41,12 @@ export async function register(
 }
 
 export async function login(
-  username: string,
+  email: string,
   password: string,
 ): Promise<LoginResponse> {
   const response = await apiRequest<LoginResponse>('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ email, password }),
   });
 
   window.localStorage.setItem(TOKEN_KEY, response.accessToken);

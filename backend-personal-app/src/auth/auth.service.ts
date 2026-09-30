@@ -23,7 +23,7 @@ export interface RegisterUserResponse {
 }
 
 export interface LoginUserInput {
-  username: string;
+  email: string;
   password: string;
 }
 
@@ -52,7 +52,7 @@ export class AuthService {
 
     return {
       id: user.id,
-      username: user.username,
+      email: user.email,
       email: user.email,
       name: user.name,
     };
@@ -83,13 +83,13 @@ export class AuthService {
   async login(
   data: LoginUserInput,
 ): Promise<LoginUserResponse> {
-  const user = await this.usersService.findByUsername(
-    data.username,
+  const user = await this.usersService.findByEmail(
+    data.email,
   );
 
   if (!user) {
     throw new UnauthorizedException(
-      'Username atau password salah',
+      'Email atau password salah',
     );
   }
 

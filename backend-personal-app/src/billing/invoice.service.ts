@@ -176,6 +176,86 @@ export class BillingInvoiceService {
     };
   }
 
+
+  async list(
+    tenantId: string,
+    userId: string,
+  ): Promise<BillingInvoiceResponse[]> {
+    const member = await this.prisma.client.orm.public.TenantMember
+      .where({ tenantId, userId })
+      .first();
+    if (!member) throw new NotFoundException('Workspace member tidak ditemukan');
+
+    const invoices = await this.prisma.client.orm.public.SubscriptionInvoice
+      .where({ tenantId })
+      .all();
+
+    return invoices
+      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+      .map((invoice) => ({
+        id: invoice.id,
+        tenantId: invoice.tenantId,
+        subscriptionId: invoice.subscriptionId,
+        packagePriceId: invoice.packagePriceId,
+        packageCode: invoice.packageCode,
+        packageName: invoice.packageName,
+        billingPeriod: invoice.billingPeriod,
+        currency: invoice.currency,
+        originalAmountMinor: invoice.originalAmountMinor,
+        discountAmountMinor: invoice.discountAmountMinor,
+        taxAmountMinor: invoice.taxAmountMinor,
+        finalAmountMinor: invoice.finalAmountMinor,
+        status: invoice.status,
+        issuedAt: invoice.issuedAt,
+        dueAt: invoice.dueAt,
+        discounts: [],
+      }));
+  }
+
+  async findOne(
+    tenantId: string,
+    userId: string,
+    invoiceId: string,
+  ): Promise<BillingInvoiceResponse> {
+    const member = await this.prisma.client.orm.public.TenantMember
+      .where({ tenantId, userId })
+      .first();
+    if (!member) throw new NotFoundException('Workspace member tidak ditemukan');
+
+    const invoice = await this.prisma.client.orm.public.SubscriptionInvoice
+      .where({ id: invoiceId, tenantId })
+      .first();
+    if (!invoice) throw new NotFoundException('Invoice tidak ditemukan');
+
+    const discounts = await this.prisma.client.orm.public.InvoiceDiscount
+      .where({ invoiceId })
+      .all();
+
+    return {
+      id: invoice.id,
+      tenantId: invoice.tenantId,
+      subscriptionId: invoice.subscriptionId,
+      packagePriceId: invoice.packagePriceId,
+      packageCode: invoice.packageCode,
+      packageName: invoice.packageName,
+      billingPeriod: invoice.billingPeriod,
+      currency: invoice.currency,
+      originalAmountMinor: invoice.originalAmountMinor,
+      discountAmountMinor: invoice.discountAmountMinor,
+      taxAmountMinor: invoice.taxAmountMinor,
+      finalAmountMinor: invoice.finalAmountMinor,
+      status: invoice.status,
+      issuedAt: invoice.issuedAt,
+      dueAt: invoice.dueAt,
+      discounts: discounts.map((discount) => ({
+        discountId: discount.discountId,
+        code: discount.codeSnapshot,
+        type: discount.discountType,
+        amountMinor: discount.amountMinor,
+      })),
+    };
+  }
+
   async preview(
     tenantId: string,
     userId: string,

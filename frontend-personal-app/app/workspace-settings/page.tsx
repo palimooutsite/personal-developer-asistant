@@ -107,9 +107,10 @@ export default function WorkspaceSettingsPage() {
     try {
       const nextRoles = await getTenantRoles(activeTenant.id);
       setRoles(nextRoles);
-      if (!inviteRoleId) {
-        const firstCustom = nextRoles.find((role) => !role.isSystem);
-        if (firstCustom) setInviteRoleId(firstCustom.id);
+      const customRoles = nextRoles.filter((role) => !role.isSystem);
+      const currentRoleIsValid = customRoles.some((role) => role.id === inviteRoleId);
+      if (!currentRoleIsValid) {
+        setInviteRoleId(customRoles[0]?.id ?? '');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal memuat role.');
@@ -120,6 +121,7 @@ export default function WorkspaceSettingsPage() {
 
   useEffect(() => {
     setWorkspaceName(activeTenant?.name ?? '');
+    setInviteRoleId('');
     if (activeTenant) {
       void loadMembers();
       void loadRoles();

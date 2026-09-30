@@ -393,6 +393,12 @@ export class TenantService {
       if (customRole) roleName = customRole.name;
     }
 
+    if (!member.roleId) {
+      throw new ForbiddenException(
+        'Member belum memiliki custom role',
+      );
+    }
+
     results.push({
       id: member.id,
       tenantId: member.tenantId,
@@ -482,6 +488,12 @@ async addMember(
         role: 'MEMBER',
         roleId: data.roleId,
       });
+
+  if (!member.roleId) {
+    throw new ForbiddenException(
+      'Member berhasil dibuat tetapi custom role tidak tersedia',
+    );
+  }
 
   return {
     id: member.id,
@@ -583,6 +595,12 @@ async updateMemberRole(
 
   if (!user) {
     throw new NotFoundException('User tidak ditemukan');
+  }
+
+  if (!updated.roleId) {
+    throw new ForbiddenException(
+      'Member berhasil diperbarui tetapi custom role tidak tersedia',
+    );
   }
 
   return {

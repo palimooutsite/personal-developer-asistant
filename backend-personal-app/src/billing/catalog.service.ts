@@ -273,20 +273,32 @@ export class BillingCatalogService {
       .first();
 
     if (existing) {
-      return this.prisma.client.orm.public.SubscriptionPackageFeature
+      const updated = await this.prisma.client.orm.public.SubscriptionPackageFeature
         .where({ packageId, featureId })
         .update({
           enabled: data.enabled,
           limitValue: data.limitValue ?? null,
         });
+
+      if (!updated) {
+        throw new NotFoundException('Konfigurasi feature package gagal diperbarui');
+      }
+
+      return updated;
     }
 
-    return this.prisma.client.orm.public.SubscriptionPackageFeature.create({
+    const created = await this.prisma.client.orm.public.SubscriptionPackageFeature.create({
       packageId,
       featureId,
       enabled: data.enabled,
       limitValue: data.limitValue ?? null,
     });
+
+    if (!created) {
+      throw new ConflictException('Konfigurasi feature package gagal dibuat');
+    }
+
+    return created;
   }
 
   async removePackageFeature(packageId: string, featureId: string): Promise<BillingMessageResponse> {

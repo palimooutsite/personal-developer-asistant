@@ -8,6 +8,55 @@ import { CreatePriceDto, BillingPeriodDto } from './dto/create-price.dto.js';
 import { UpdatePriceDto } from './dto/update-price.dto.js';
 import { SetPackageFeatureDto } from './dto/set-package-feature.dto.js';
 
+export interface BillingPackageResponse {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: unknown;
+  updatedAt: unknown;
+}
+
+export interface BillingFeatureResponse {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  valueType: string;
+  unit: string | null;
+  isActive: boolean;
+  createdAt: unknown;
+  updatedAt: unknown;
+}
+
+export interface BillingPriceResponse {
+  id: string;
+  packageId: string;
+  version: number;
+  billingPeriod: string;
+  amountMinor: number;
+  currency: string;
+  isActive: boolean;
+  createdAt: unknown;
+  updatedAt: unknown;
+}
+
+export interface BillingPackageFeatureResponse {
+  id: string;
+  packageId: string;
+  featureId: string;
+  enabled: boolean;
+  limitValue: number | null;
+  createdAt: unknown;
+  updatedAt: unknown;
+}
+
+export interface BillingMessageResponse {
+  message: string;
+}
+
 @Injectable()
 export class BillingCatalogService {
   constructor(private readonly prisma: PrismaService) {}
@@ -66,7 +115,7 @@ export class BillingCatalogService {
     return { ...pkg, prices, features };
   }
 
-  async createPackage(data: CreatePackageDto) {
+  async createPackage(data: CreatePackageDto): Promise<BillingPackageResponse> {
     const code = data.code.trim().toUpperCase();
     const existing = await this.prisma.client.orm.public.SubscriptionPackage
       .where({ code })
@@ -82,7 +131,7 @@ export class BillingCatalogService {
     });
   }
 
-  async updatePackage(id: string, data: UpdatePackageDto) {
+  async updatePackage(id: string, data: UpdatePackageDto): Promise<BillingPackageResponse> {
     const existing = await this.prisma.client.orm.public.SubscriptionPackage
       .where({ id })
       .first();
@@ -118,7 +167,7 @@ export class BillingCatalogService {
       .all();
   }
 
-  async createFeature(data: CreateFeatureDto) {
+  async createFeature(data: CreateFeatureDto): Promise<BillingFeatureResponse> {
     const code = data.code.trim().toUpperCase();
     const existing = await this.prisma.client.orm.public.SubscriptionFeature
       .where({ code })
@@ -135,7 +184,7 @@ export class BillingCatalogService {
     });
   }
 
-  async updateFeature(id: string, data: UpdateFeatureDto) {
+  async updateFeature(id: string, data: UpdateFeatureDto): Promise<BillingFeatureResponse> {
     const existing = await this.prisma.client.orm.public.SubscriptionFeature
       .where({ id })
       .first();
@@ -155,7 +204,7 @@ export class BillingCatalogService {
     return updated;
   }
 
-  async addPrice(packageId: string, data: CreatePriceDto) {
+  async addPrice(packageId: string, data: CreatePriceDto): Promise<BillingPriceResponse> {
     const pkg = await this.prisma.client.orm.public.SubscriptionPackage
       .where({ id: packageId })
       .first();
@@ -180,7 +229,7 @@ export class BillingCatalogService {
     });
   }
 
-  async updatePrice(id: string, data: UpdatePriceDto) {
+  async updatePrice(id: string, data: UpdatePriceDto): Promise<BillingPriceResponse> {
     const existing = await this.prisma.client.orm.public.SubscriptionPackagePrice
       .where({ id })
       .first();
@@ -202,7 +251,7 @@ export class BillingCatalogService {
     packageId: string,
     featureId: string,
     data: SetPackageFeatureDto,
-  ) {
+  ): Promise<BillingPackageFeatureResponse> {
     const [pkg, feature] = await Promise.all([
       this.prisma.client.orm.public.SubscriptionPackage.where({ id: packageId }).first(),
       this.prisma.client.orm.public.SubscriptionFeature.where({ id: featureId }).first(),
@@ -240,7 +289,7 @@ export class BillingCatalogService {
     });
   }
 
-  async removePackageFeature(packageId: string, featureId: string) {
+  async removePackageFeature(packageId: string, featureId: string): Promise<BillingMessageResponse> {
     const existing = await this.prisma.client.orm.public.SubscriptionPackageFeature
       .where({ packageId, featureId })
       .first();

@@ -5,6 +5,7 @@ import { SnippetTagsController } from './snippet-tags.controller.js';
 import { SnippetsService } from './snippets.service.js';
 import { SnippetTagsService } from './snippet-tags.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { BillingModule } from '../billing/billing.module.js';
 import { TenantModule } from '../tenants/tenant.module.js';
 import { TenantRoleModule } from '../tenants/roles/tenant-role.module.js';
 
@@ -13,6 +14,7 @@ import { TenantRoleModule } from '../tenants/roles/tenant-role.module.js';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     TenantModule,
     TenantRoleModule,
+    BillingModule,
   ],
   controllers: [SnippetsController, SnippetTagsController],
   providers: [SnippetsService, SnippetTagsService, PrismaService],

@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ApiError } from '../../../lib/api';
 import {
@@ -18,7 +18,7 @@ function money(amountMinor: number, currency: string) {
   }).format(amountMinor / 100);
 }
 
-export default function CheckoutSessionPage() {
+function CheckoutSessionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const packageCode = (searchParams.get('package') ?? 'PRO').toUpperCase();
@@ -156,5 +156,22 @@ export default function CheckoutSessionPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+
+export default function CheckoutSessionPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[#f6f7fb] px-4 py-8 sm:px-6 sm:py-12">
+          <div className="mx-auto max-w-2xl rounded-[2rem] border border-zinc-200 bg-white p-8 shadow-sm">
+            <p className="text-sm text-zinc-500">Memuat checkout...</p>
+          </div>
+        </main>
+      }
+    >
+      <CheckoutSessionContent />
+    </Suspense>
   );
 }

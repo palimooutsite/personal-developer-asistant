@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTenant } from './providers/TenantProvider';
-import { getCurrentUser, logout } from '../lib/auth';
+import { logout } from '../lib/auth';
 
 export function GlobalHeader() {
   const pathname = usePathname();

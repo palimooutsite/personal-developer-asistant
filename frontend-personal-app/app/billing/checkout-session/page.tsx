@@ -6,6 +6,7 @@ import { ApiError } from '../../../lib/api';
 import {
   createBillingCheckoutSession,
   getBillingPackage,
+  getBillingPackages,
   type BillingPackage,
   type BillingPrice,
 } from '../../../lib/billing';
@@ -32,7 +33,12 @@ function CheckoutSessionContent() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void getBillingPackage(packageCode.toUpperCase())
+    void getBillingPackages()
+      .then((items) => {
+        const match = items.find((item) => item.code.toUpperCase() === packageCode);
+        if (!match) throw new Error('Package tidak ditemukan.');
+        return getBillingPackage(match.id);
+      })
       .then((result) => setSelectedPackage(result))
       .catch((err: unknown) => {
         setError(err instanceof ApiError ? err.message : 'Package tidak dapat dimuat.');

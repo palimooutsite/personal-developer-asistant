@@ -1,370 +1,239 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ApiError, apiRequest } from '../lib/api';
-import { CurrentUser, getCurrentUser, logout } from '../lib/auth';
-import { useTenant } from '../components/providers/TenantProvider';
 
-type DashboardSummary = {
-  projects: { total: number; byStatus: Record<string, number> };
-  tasks: {
-    total: number;
-    byStatus: Record<string, number>;
-    byPriority: Record<string, number>;
-  };
-  knowledge: { total: number };
-  snippets: { total: number; byLanguage: Record<string, number> };
-  tags: { total: number };
-};
+const features = [
+  {
+    icon: '▦',
+    title: 'Project terorganisir',
+    description: 'Kelola project development, status, dan anggota tim dalam satu workspace.',
+  },
+  {
+    icon: '✓',
+    title: 'Task tanpa ribet',
+    description: 'Atur prioritas, deadline, assignee, status, dan lihat pekerjaan dalam Kanban.',
+  },
+  {
+    icon: '◈',
+    title: 'Knowledge Base',
+    description: 'Simpan dokumentasi teknis, catatan, dan pengetahuan tim agar mudah ditemukan.',
+  },
+  {
+    icon: '</>',
+    title: 'Code Snippets',
+    description: 'Kumpulkan potongan kode reusable supaya tidak perlu mencari ulang dari awal.',
+  },
+  {
+    icon: '▤',
+    title: 'Documents',
+    description: 'Simpan dan kelola dokumen yang berkaitan dengan pekerjaan development.',
+  },
+  {
+    icon: '◎',
+    title: 'Multi-workspace',
+    description: 'Pisahkan pekerjaan pribadi, freelance, dan tim dengan workspace yang berbeda.',
+  },
+];
 
-const modules = [
-  { title: 'Projects', href: '/projects', description: 'Kelola project development, status, dan anggota tim.', icon: '▦', accent: 'indigo' },
-  { title: 'Tasks', href: '/tasks', description: 'Atur pekerjaan, prioritas, deadline, dan progress.', icon: '✓', accent: 'blue' },
-  { title: 'Knowledge', href: '/knowledge', description: 'Simpan dokumentasi, catatan teknis, dan pengetahuan.', icon: '◈', accent: 'violet' },
-  { title: 'Code Snippets', href: '/snippets', description: 'Simpan potongan kode agar mudah digunakan kembali.', icon: '</>', accent: 'emerald' },
-  { title: 'Documents', href: '/documents', description: 'Kelola dokumen dan file yang berkaitan dengan pekerjaan.', icon: '▤', accent: 'amber' },
-] as const;
+const plans = [
+  {
+    name: 'Free',
+    price: 'Rp0',
+    period: 'selamanya',
+    description: 'Untuk developer yang ingin mulai menata workflow.',
+    features: ['1 workspace', '1 pengguna', '3 project', '100 task', 'Knowledge & Snippets'],
+    cta: 'Mulai Gratis',
+    href: '/register',
+    featured: false,
+  },
+  {
+    name: 'Pro',
+    price: 'Rp49.000',
+    period: '/bulan',
+    description: 'Untuk developer aktif yang butuh ruang kerja lebih lengkap.',
+    features: ['5 workspace', '1 pengguna', 'Project tanpa batas', 'Task tanpa batas', 'Knowledge, Snippets & Documents'],
+    cta: 'Pilih Pro',
+    href: '/register?plan=PRO&billingPeriod=MONTHLY',
+    featured: true,
+  },
+  {
+    name: 'Team',
+    price: 'Rp149.000',
+    period: '/bulan',
+    description: 'Untuk tim kecil yang ingin bekerja lebih terstruktur.',
+    features: ['Workspace tanpa batas', 'Hingga 10 anggota', 'Project & task tanpa batas', 'Role OWNER / ADMIN / MEMBER', 'Invite anggota via email'],
+    cta: 'Mulai Team',
+    href: '/register',
+    featured: false,
+  },
+  {
+    name: 'Business',
+    price: 'Rp399.000',
+    period: '/bulan',
+    description: 'Untuk tim yang membutuhkan kapasitas dan kolaborasi lebih besar.',
+    features: ['Workspace tanpa batas', 'Hingga 50 anggota', 'Semua fitur Team', 'Prioritas support', 'Onboarding tim'],
+    cta: 'Pilih Business',
+    href: '/register?plan=BUSINESS&billingPeriod=MONTHLY',
+    featured: false,
+  },
+];
 
-const statCards = [
-  { key: 'projects', label: 'Projects', href: '/projects', icon: '▦', accent: 'indigo' },
-  { key: 'tasks', label: 'Tasks', href: '/tasks', icon: '✓', accent: 'blue' },
-  { key: 'knowledge', label: 'Knowledge', href: '/knowledge', icon: '◈', accent: 'violet' },
-  { key: 'snippets', label: 'Snippets', href: '/snippets', icon: '</>', accent: 'emerald' },
-] as const;
-
-const accentClasses = {
-  indigo: { icon: 'bg-indigo-50 text-indigo-600', ring: 'hover:border-indigo-200', link: 'text-indigo-600' },
-  blue: { icon: 'bg-blue-50 text-blue-600', ring: 'hover:border-blue-200', link: 'text-blue-600' },
-  violet: { icon: 'bg-violet-50 text-violet-600', ring: 'hover:border-violet-200', link: 'text-violet-600' },
-  emerald: { icon: 'bg-emerald-50 text-emerald-600', ring: 'hover:border-emerald-200', link: 'text-emerald-600' },
-  amber: { icon: 'bg-amber-50 text-amber-600', ring: 'hover:border-amber-200', link: 'text-amber-600' },
-} as const;
-
-export default function HomePage() {
-  const router = useRouter();
-  const { can, permissionLoading } = useTenant();
-  const [user, setUser] = useState<CurrentUser | null>(null);
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [summaryError, setSummaryError] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-
-  const loadDashboard = useCallback(async () => {
-    setLoading(true);
-    setSummaryError(false);
-    try {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-      setSummary(await apiRequest<DashboardSummary>('/dashboard/summary'));
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
-        router.replace('/login');
-        return;
-      }
-      setSummaryError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [router]);
-
-  useEffect(() => {
-    void loadDashboard();
-  }, [loadDashboard]);
-
-  const visibleModules = useMemo(
-    () => modules.filter((module) => {
-      const permissionModule =
-        module.href === '/projects' ? 'PROJECTS' :
-        module.href === '/tasks' ? 'TASKS' :
-        module.href === '/knowledge' ? 'KNOWLEDGE' :
-        module.href === '/snippets' ? 'CODE_SNIPPETS' :
-        'DOCUMENTS';
-      return can(permissionModule);
-    }),
-    [can],
-  );
-
-  const visibleStatCards = useMemo(
-    () => statCards.filter((card) => {
-      const permissionModule =
-        card.key === 'projects' ? 'PROJECTS' :
-        card.key === 'tasks' ? 'TASKS' :
-        card.key === 'knowledge' ? 'KNOWLEDGE' :
-        'CODE_SNIPPETS';
-      return can(permissionModule);
-    }),
-    [can],
-  );
-
-  const totalTaskDone = useMemo(() => summary?.tasks.byStatus?.DONE ?? 0, [summary]);
-
-  function handleLogout() {
-    logout();
-    router.replace('/login');
-  }
-
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-[#f6f7fb] p-6 sm:p-8">
-        <div className="mx-auto w-full max-w-[1600px]">
-          <div className="h-7 w-44 animate-pulse rounded-lg bg-zinc-200/80" />
-          <div className="mt-4 h-12 w-80 max-w-full animate-pulse rounded-xl bg-zinc-200/80" />
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {[1, 2, 3, 4].map((item) => <div key={item} className="h-32 animate-pulse rounded-2xl border border-zinc-200 bg-zinc-100/70" />)}
+export default function LandingPage() {
+  return (
+    <main className="min-h-screen overflow-x-hidden bg-white text-zinc-950">
+      <nav className="border-b border-zinc-100 bg-white/90 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <Link href="/landing" className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-950 text-xs font-bold text-white">PDA</span>
+            <span className="font-bold tracking-tight">Personal Developer Assistant</span>
+          </Link>
+          <div className="hidden items-center gap-7 text-sm font-medium text-zinc-500 sm:flex">
+            <a href="#fitur" className="hover:text-zinc-950">Fitur</a>
+            <a href="#cara-kerja" className="hover:text-zinc-950">Cara Kerja</a>
+            <a href="#harga" className="hover:text-zinc-950">Harga</a>
           </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {[1, 2, 3, 4, 5].map((item) => <div key={item} className="h-48 animate-pulse rounded-2xl border border-zinc-200 bg-zinc-100/70" />)}
+          <div className="flex items-center gap-2">
+            <Link href="/login" className="hidden rounded-xl px-4 py-2 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 sm:inline-flex">Login</Link>
+            <Link href="/register" className="rounded-xl bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800">Mulai Gratis</Link>
           </div>
         </div>
-      </main>
-    );
-  }
+      </nav>
 
-  return (
-    <main className="min-h-screen bg-[#f6f7fb] text-zinc-950">
-      <div className="mx-auto w-full max-w-[1600px] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 2xl:px-10 lg:py-10">
-        <header className="flex flex-col gap-6 border-b border-zinc-200 pb-8 sm:flex-row sm:items-start sm:justify-between">
+      <section className="relative overflow-hidden bg-[#f7f8fc]">
+        <div className="absolute -left-32 top-10 h-72 w-72 rounded-full bg-cyan-200/30 blur-3xl" />
+        <div className="absolute -right-20 top-0 h-96 w-96 rounded-full bg-indigo-200/30 blur-3xl" />
+        <div className="relative mx-auto grid max-w-7xl gap-12 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:px-8">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700">
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-cyan-700 shadow-sm">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              DASHBOARD
+              Developer Workspace
             </div>
-            <h1 className="mt-5 text-2xl font-bold tracking-tight sm:text-4xl">
-              Selamat datang{user?.name ? ', ' + user.name : ''}.
+            <h1 className="mt-6 max-w-3xl text-4xl font-black tracking-tight text-zinc-950 sm:text-6xl sm:leading-[1.05]">
+              Semua pekerjaan development,
+              <span className="block text-cyan-600">satu tempat.</span>
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500 sm:text-base">
-              Semua aktivitas development kamu dalam satu tempat.
+            <p className="mt-6 max-w-2xl text-base leading-7 text-zinc-600 sm:text-lg">
+              Personal Developer Assistant membantu kamu mengatur project, task, knowledge, code snippets, dan documents tanpa harus berpindah-pindah aplikasi.
             </p>
-          </div>
-
-          {/* <div className="relative self-start sm:self-auto">
-            <button
-              type="button"
-              aria-haspopup="menu"
-              aria-expanded={settingsOpen}
-              onClick={() => setSettingsOpen((open) => !open)}
-              className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-200"
-            >
-              <span className="text-base leading-none">⚙</span>
-              <span>Settings</span>
-              <span className={'text-xs transition-transform ' + (settingsOpen ? 'rotate-180' : '')}>⌄</span>
-            </button>
-
-            <div
-              className={
-                'absolute right-0 z-20 mt-2 w-64 origin-top-right rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl transition duration-150 ' +
-                (settingsOpen ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-1 opacity-0')
-              }
-              role="menu"
-            >
-              <Link
-                href="/workspace-settings"
-                onClick={() => setSettingsOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition hover:bg-zinc-50"
-                role="menuitem"
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600">▣</span>
-                <span>
-                  <span className="block font-semibold text-zinc-900">Workspace Settings</span>
-                  <span className="block text-xs text-zinc-500">Workspace, anggota & role</span>
-                </span>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link href="/register" className="inline-flex items-center justify-center rounded-xl bg-zinc-950 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-zinc-950/10 transition hover:-translate-y-0.5 hover:bg-zinc-800">
+                Mulai Gratis →
               </Link>
-
-              <Link
-                href="/account-settings"
-                onClick={() => setSettingsOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition hover:bg-zinc-50"
-                role="menuitem"
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">◉</span>
-                <span>
-                  <span className="block font-semibold text-zinc-900">Account Settings</span>
-                  <span className="block text-xs text-zinc-500">Profil, foto & keamanan</span>
-                </span>
-              </Link>
-
-              <div className="my-1 border-t border-zinc-100" />
-
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition hover:bg-red-50"
-                role="menuitem"
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-600">↪</span>
-                <span>
-                  <span className="block font-semibold text-red-700">Logout</span>
-                  <span className="block text-xs text-zinc-500">Keluar dari akun</span>
-                </span>
-              </button>
+              <a href="#harga" className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 py-3.5 text-sm font-bold text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50">
+                Lihat Harga
+              </a>
             </div>
-          </div> */}
-        </header>
-
-        <section className="mt-7 sm:mt-8">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Overview</p>
-              <h2 className="mt-1 text-xl font-bold">Ringkasan Aktivitas</h2>
+            <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-xs font-medium text-zinc-500">
+              <span>✓ Workspace terpisah</span>
+              <span>✓ Task & Kanban</span>
+              <span>✓ Kolaborasi tim</span>
             </div>
-            {summary && <p className="text-sm text-zinc-400">{totalTaskDone} task selesai</p>}
           </div>
 
-          {summaryError ? (
-            <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800 sm:flex-row sm:items-center sm:justify-between">
-              <span>Ringkasan dashboard belum dapat dimuat. Menu utama tetap bisa digunakan.</span>
-              <button
-                type="button"
-                onClick={() => void loadDashboard()}
-                disabled={loading}
-                className="inline-flex shrink-0 items-center justify-center rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {loading ? 'Memuat...' : 'Coba lagi'}
-              </button>
-            </div>
-          ) : (
-            <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {visibleStatCards.map((card) => {
-                const styles = accentClasses[card.accent];
-                const value =
-                  card.key === 'projects' ? summary?.projects.total ?? 0 :
-                  card.key === 'tasks' ? summary?.tasks.total ?? 0 :
-                  card.key === 'knowledge' ? summary?.knowledge.total ?? 0 :
-                  summary?.snippets.total ?? 0;
-
-                return (
-                  <Link key={card.key} href={card.href} className={'group rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md ' + styles.ring}>
-                    <div className="flex items-center justify-between">
-                      <div className={'flex h-11 w-11 items-center justify-center rounded-xl text-sm font-bold ' + styles.icon}>{card.icon}</div>
-                      <span className={'text-xs font-semibold opacity-0 transition group-hover:opacity-100 ' + styles.link}>Buka →</span>
-                    </div>
-                    <p className="mt-5 text-sm font-medium text-zinc-500">{card.label}</p>
-                    <p className="mt-1 text-3xl font-bold tracking-tight">{value}</p>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        {summary && (
-          <section className="mt-7 grid gap-4 lg:mt-8 lg:grid-cols-3">
-            <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Task Status</p>
-              <div className="mt-5 space-y-4">
-                {Object.entries(summary.tasks.byStatus).map(([status, count]) => {
-                  const styles =
-                    status === 'DONE'
-                      ? { badge: 'bg-emerald-50 text-emerald-700 ring-emerald-200', bar: 'bg-emerald-500' }
-                      : status === 'IN_PROGRESS'
-                        ? { badge: 'bg-blue-50 text-blue-700 ring-blue-200', bar: 'bg-blue-500' }
-                        : status === 'REVIEW'
-                          ? { badge: 'bg-amber-50 text-amber-700 ring-amber-200', bar: 'bg-amber-500' }
-                          : status === 'CANCELLED'
-                            ? { badge: 'bg-red-50 text-red-700 ring-red-200', bar: 'bg-red-500' }
-                            : { badge: 'bg-zinc-50 text-zinc-600 ring-zinc-200', bar: 'bg-zinc-400' };
-                  const percentage = summary.tasks.total > 0
-                    ? Math.round((count / summary.tasks.total) * 100)
-                    : 0;
-
-                  return (
-                    <div key={status}>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-zinc-700">{status.replace('_', ' ')}</span>
-                        <span className={`rounded-lg px-2 py-1 text-xs font-bold ring-1 ${styles.badge}`}>
-                          {count} <span className="font-medium opacity-70">({percentage}%)</span>
-                        </span>
-                      </div>
-                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-100">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 ${styles.bar}`}
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Task Priority</p>
-              <div className="mt-5 space-y-4">
-                {Object.entries(summary.tasks.byPriority).map(([priority, count]) => {
-                  const styles =
-                    priority === 'URGENT'
-                      ? { badge: 'bg-red-50 text-red-700 ring-red-200', bar: 'bg-red-500' }
-                      : priority === 'HIGH'
-                        ? { badge: 'bg-orange-50 text-orange-700 ring-orange-200', bar: 'bg-orange-500' }
-                        : priority === 'MEDIUM'
-                          ? { badge: 'bg-amber-50 text-amber-700 ring-amber-200', bar: 'bg-amber-500' }
-                          : { badge: 'bg-emerald-50 text-emerald-700 ring-emerald-200', bar: 'bg-emerald-500' };
-                  const percentage = summary.tasks.total > 0
-                    ? Math.round((count / summary.tasks.total) * 100)
-                    : 0;
-
-                  return (
-                    <div key={priority}>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-zinc-700">{priority}</span>
-                        <span className={`rounded-lg px-2 py-1 text-xs font-bold ring-1 ${styles.badge}`}>
-                          {count} <span className="font-medium opacity-70">({percentage}%)</span>
-                        </span>
-                      </div>
-                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-100">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 ${styles.bar}`}
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Resources</p>
-              <div className="mt-4 space-y-3 text-sm">
-                <div className="flex items-center justify-between"><span className="text-zinc-600">Tags</span><span className="font-semibold">{summary.tags.total}</span></div>
-                <div className="flex items-center justify-between"><span className="text-zinc-600">Documents</span><span className="text-xs text-zinc-400">Kelola di Documents</span></div>
-                <div className="flex items-center justify-between"><span className="text-zinc-600">Snippets</span><span className="font-semibold">{summary.snippets.total}</span></div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        <section className="mt-8 sm:mt-10">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Main Menu</p>
-            <h2 className="mt-1 text-xl font-bold">Workspace</h2>
-            <p className="mt-1 text-sm text-zinc-500">Pilih modul yang ingin kamu gunakan.</p>
-          </div>
-
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {visibleModules.map((module) => {
-              const styles = accentClasses[module.accent];
-              return (
-                <Link
-                  key={module.href}
-                  href={module.href}
-                  className={'group rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg ' + styles.ring}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className={'flex h-12 w-12 items-center justify-center rounded-xl text-sm font-bold ' + styles.icon}>
-                      {module.icon}
-                    </div>
-                    <span className={'translate-x-0 text-zinc-300 transition group-hover:translate-x-1 ' + styles.link}>→</span>
+          <div className="relative">
+            <div className="rounded-[2rem] border border-zinc-200 bg-white p-4 shadow-2xl shadow-zinc-900/10 sm:p-5">
+              <div className="rounded-2xl bg-zinc-950 p-5 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Workspace</p>
+                    <p className="mt-1 text-lg font-bold">Personal Development</p>
                   </div>
-                  <h3 className="mt-5 text-lg font-bold">{module.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-zinc-500">{module.description}</p>
-                  <div className={'mt-5 text-sm font-semibold ' + styles.link}>Buka {module.title} →</div>
-                </Link>
-              );
-            })}
+                  <span className="rounded-lg bg-cyan-400/10 px-3 py-2 text-xs font-bold text-cyan-300">ACTIVE</span>
+                </div>
+                <div className="mt-6 grid grid-cols-2 gap-3">
+                  <div className="rounded-xl bg-white/10 p-4"><p className="text-xs text-zinc-400">Projects</p><p className="mt-1 text-2xl font-bold">12</p></div>
+                  <div className="rounded-xl bg-white/10 p-4"><p className="text-xs text-zinc-400">Tasks</p><p className="mt-1 text-2xl font-bold">48</p></div>
+                  <div className="rounded-xl bg-white/10 p-4"><p className="text-xs text-zinc-400">Knowledge</p><p className="mt-1 text-2xl font-bold">86</p></div>
+                  <div className="rounded-xl bg-white/10 p-4"><p className="text-xs text-zinc-400">Snippets</p><p className="mt-1 text-2xl font-bold">31</p></div>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-zinc-200 p-4"><p className="text-xs font-semibold text-zinc-400">TODAY</p><p className="mt-2 font-bold">Build Project API</p><div className="mt-3 h-2 rounded-full bg-zinc-100"><div className="h-2 w-3/4 rounded-full bg-cyan-500" /></div></div>
+                <div className="rounded-xl border border-zinc-200 p-4"><p className="text-xs font-semibold text-zinc-400">KNOWLEDGE</p><p className="mt-2 font-bold">NestJS Architecture</p><p className="mt-3 text-xs text-zinc-500">Dokumentasi tim · updated today</p></div>
+              </div>
+            </div>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
+
+      <section id="fitur" className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+        <div className="max-w-2xl">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-600">Everything in one workspace</p>
+          <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Bukan sekadar task manager.</h2>
+          <p className="mt-4 text-zinc-500">PDA dirancang sebagai workspace developer: pekerjaan, konteks, dokumentasi, dan reusable knowledge berada dalam satu alur.</p>
+        </div>
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature) => (
+            <div key={feature.title} className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-50 text-sm font-bold text-cyan-700">{feature.icon}</div>
+              <h3 className="mt-5 text-lg font-bold">{feature.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-zinc-500">{feature.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section id="cara-kerja" className="bg-zinc-950 text-white">
+        <div className="mx-auto grid max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:px-8">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-400">Simple workflow</p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Dari ide sampai selesai, tetap terhubung.</h2>
+            <p className="mt-4 max-w-xl text-sm leading-7 text-zinc-400">Buat workspace, susun project, pecah pekerjaan menjadi task, lalu simpan pengetahuan dan code yang kamu gunakan berulang kali.</p>
+          </div>
+          <div className="grid gap-4">
+            {[
+              ['01', 'Buat Workspace', 'Pisahkan konteks pekerjaan pribadi, freelance, atau tim.'],
+              ['02', 'Susun Project & Task', 'Atur pekerjaan dengan prioritas, deadline, assignee, dan Kanban.'],
+              ['03', 'Simpan Knowledge', 'Dokumentasikan keputusan, catatan teknis, snippet, dan dokumen.'],
+            ].map(([number, title, description]) => (
+              <div key={number} className="flex gap-4 rounded-2xl border border-white/10 bg-white/5 p-5">
+                <span className="text-sm font-black text-cyan-400">{number}</span>
+                <div><h3 className="font-bold">{title}</h3><p className="mt-1 text-sm leading-6 text-zinc-400">{description}</p></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="harga" className="bg-[#f7f8fc]">
+        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-600">Pricing</p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Harga sederhana, mulai dari gratis.</h2>
+            <p className="mt-4 text-sm leading-6 text-zinc-500">Paket berikut adalah rancangan harga awal untuk produk PDA dan dapat disesuaikan sebelum billing resmi diaktifkan.</p>
+          </div>
+          <div className="mt-10 grid gap-5 lg:grid-cols-4">
+            {plans.map((plan) => (
+              <div key={plan.name} className={'relative rounded-3xl border bg-white p-6 shadow-sm ' + (plan.featured ? 'border-cyan-400 ring-2 ring-cyan-100' : 'border-zinc-200')}>
+                {plan.featured ? <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-cyan-600 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white">Paling populer</div> : null}
+                <h3 className="text-lg font-bold">{plan.name}</h3>
+                <p className="mt-2 min-h-12 text-xs leading-5 text-zinc-500">{plan.description}</p>
+                <div className="mt-5"><span className="text-3xl font-black tracking-tight">{plan.price}</span><span className="ml-1 text-xs text-zinc-400">{plan.period}</span></div>
+                <Link href={plan.href} className={'mt-6 flex items-center justify-center rounded-xl px-4 py-3 text-sm font-bold transition ' + (plan.featured ? 'bg-cyan-600 text-white hover:bg-cyan-700' : 'border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50')}>{plan.cta}</Link>
+                <ul className="mt-6 space-y-3 border-t border-zinc-100 pt-6">
+                  {plan.features.map((feature) => <li key={feature} className="flex gap-2 text-sm text-zinc-600"><span className="font-bold text-emerald-500">✓</span>{feature}</li>)}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-4xl px-4 py-20 text-center sm:px-6">
+        <div className="rounded-[2rem] bg-zinc-950 px-6 py-12 text-white sm:px-12">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-400">Ready to build?</p>
+          <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Rapikan workflow development kamu hari ini.</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-zinc-400">Mulai dari workspace kecil. Kembangkan bersama tim saat kebutuhan kamu bertambah.</p>
+          <Link href="/register" className="mt-7 inline-flex rounded-xl bg-white px-6 py-3.5 text-sm font-bold text-zinc-950 transition hover:bg-zinc-100">Buat Akun Gratis →</Link>
+        </div>
+      </section>
+
+      <footer className="border-t border-zinc-200 bg-white">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+          <div className="font-semibold text-zinc-800">Personal Developer Assistant</div>
+          <div>Developer workspace untuk project, task, knowledge, snippets, dan documents.</div>
+        </div>
+      </footer>
     </main>
   );
 }

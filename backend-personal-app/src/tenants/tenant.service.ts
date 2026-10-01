@@ -317,7 +317,7 @@ export class TenantService {
 
   private async assertWorkspaceMemberCapacity(
     tenantId: string,
-    additionalPendingInvitations = 0,
+    excludedInvitationId?: string,
   ): Promise<void> {
     const subscriptions = await this.prisma.client.orm.public.TenantSubscription
       .where({ tenantId })
@@ -358,9 +358,10 @@ export class TenantService {
 
     const now = Date.now();
     const pendingInvitations = pendingInvitationRows.filter((item) =>
+      item.id !== excludedInvitationId &&
       !item.acceptedAt && new Date(item.expiresAt as string | Date).getTime() > now,
     ).length;
-    const reservedMembers = memberRows.length + pendingInvitations + additionalPendingInvitations;
+    const reservedMembers = memberRows.length + pendingInvitations;
 
     if (packageFeature.limitValue !== null && reservedMembers >= packageFeature.limitValue) {
       throw new ConflictException({
@@ -749,8 +750,6 @@ async removeMember(
       throw new ForbiddenException('Anda tidak memiliki izin untuk mengundang member');
     }
 
-    await this.assertWorkspaceMemberCapacity(tenantId);
-
     const customRole =
       await this.prisma.client.orm.public.TenantCustomRole
         .where({ id: data.roleId, tenantId })
@@ -809,6 +808,8 @@ async removeMember(
         .where({ id: oldInvitation.id })
         .delete();
     }
+
+    await this.assertWorkspaceMemberCapacity(tenantId);
 
     const token = randomBytes(32).toString('hex');
     const expiresAt = new Date(
@@ -920,7 +921,7 @@ async removeMember(
       );
     }
 
-    await this.assertWorkspaceMemberCapacity(invitation.tenantId);
+    await this.assertWorkspaceMemberCapacity(invitation.tenantId, invitation.id);
 
     if (!invitation.roleId) {
       throw new ForbiddenException('Invitation belum memiliki custom role');

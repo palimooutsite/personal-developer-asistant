@@ -27,11 +27,12 @@ import { UpdatePriceDto } from './dto/update-price.dto.js';
 import { SetPackageFeatureDto } from './dto/set-package-feature.dto.js';
 
 @Controller('billing/catalog')
-@UseGuards(JwtAuthGuard, PlatformAdminGuard)
+@UseGuards(JwtAuthGuard)
 export class BillingCatalogController {
   constructor(private readonly service: BillingCatalogService) {}
 
   @Post('seed-defaults')
+  @UseGuards(PlatformAdminGuard)
   seedDefaults(): Promise<{ packages: number; features: number; prices: number; packageFeatures: number }> {
     return this.service.seedDefaults();
   }
@@ -52,11 +53,13 @@ export class BillingCatalogController {
   }
 
   @Post('packages')
+  @UseGuards(PlatformAdminGuard)
   createPackage(@Body() body: CreatePackageDto): Promise<BillingPackageResponse> {
     return this.service.createPackage(body);
   }
 
   @Patch('packages/:id')
+  @UseGuards(PlatformAdminGuard)
   updatePackage(@Param('id') id: string, @Body() body: UpdatePackageDto): Promise<BillingPackageResponse> {
     return this.service.updatePackage(id, body);
   }
@@ -67,11 +70,13 @@ export class BillingCatalogController {
   }
 
   @Post('features')
+  @UseGuards(PlatformAdminGuard)
   createFeature(@Body() body: CreateFeatureDto): Promise<BillingFeatureResponse> {
     return this.service.createFeature(body);
   }
 
   @Patch('features/:id')
+  @UseGuards(PlatformAdminGuard)
   updateFeature(@Param('id') id: string, @Body() body: UpdateFeatureDto): Promise<BillingFeatureResponse> {
     return this.service.updateFeature(id, body);
   }
@@ -84,6 +89,7 @@ export class BillingCatalogController {
   }
 
   @Post('packages/:packageId/prices')
+  @UseGuards(PlatformAdminGuard)
   addPrice(
     @Param('packageId') packageId: string,
     @Body() body: CreatePriceDto,
@@ -92,11 +98,13 @@ export class BillingCatalogController {
   }
 
   @Patch('prices/:id')
+  @UseGuards(PlatformAdminGuard)
   updatePrice(@Param('id') id: string, @Body() body: UpdatePriceDto): Promise<BillingPriceResponse> {
     return this.service.updatePrice(id, body);
   }
 
   @Post('packages/:packageId/features/:featureId')
+  @UseGuards(PlatformAdminGuard)
   setPackageFeature(
     @Param('packageId') packageId: string,
     @Param('featureId') featureId: string,
@@ -106,6 +114,7 @@ export class BillingCatalogController {
   }
 
   @Delete('packages/:packageId/features/:featureId')
+  @UseGuards(PlatformAdminGuard)
   removePackageFeature(
     @Param('packageId') packageId: string,
     @Param('featureId') featureId: string,

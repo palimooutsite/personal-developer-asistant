@@ -43,7 +43,7 @@ export default function LoginPage() {
         router.replace(
           invitation
             ? `/invitations/accept?token=${encodeURIComponent(invitation)}`
-            : '/workspace-selection',
+            : '/billing/plans',
         );
       }
       router.refresh();

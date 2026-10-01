@@ -50,7 +50,11 @@ function isPublicPath(pathname: string): boolean {
 }
 
 function isPreTenantPath(pathname: string): boolean {
-  return pathname === '/billing/checkout-session' || pathname.startsWith('/billing/checkout-session/');
+  return (
+    pathname === '/billing/plans' ||
+    pathname === '/billing/checkout-session' ||
+    pathname.startsWith('/billing/checkout-session/')
+  );
 }
 
 function isPlatformPath(pathname: string): boolean {

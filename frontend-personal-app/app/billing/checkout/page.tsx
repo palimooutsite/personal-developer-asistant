@@ -85,16 +85,16 @@ function CheckoutContent() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f6f7fb] p-6 sm:p-10">
+    <main className="min-h-screen bg-zinc-100 p-6 text-zinc-950 sm:p-10">
       <div className="mx-auto max-w-3xl">
         <Link
           href="/billing"
-          className="text-sm font-semibold text-zinc-500 hover:text-zinc-900"
+          className="text-sm font-semibold text-zinc-700 hover:text-zinc-950"
         >
           ← Kembali
         </Link>
 
-        <h1 className="mt-5 text-3xl font-bold">Checkout</h1>
+        <h1 className="mt-5 text-3xl font-black text-zinc-950">Checkout</h1>
 
         {error ? (
           <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -103,19 +103,19 @@ function CheckoutContent() {
         ) : null}
 
         {data ? (
-          <div className="mt-7 rounded-3xl border bg-white p-6 shadow-sm">
+          <div className="mt-7 rounded-3xl border border-zinc-300 bg-white p-6 shadow-md">
             <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
               Package
             </p>
             <h2 className="mt-2 text-2xl font-bold">{data.package.name}</h2>
-            <p className="mt-1 text-sm text-zinc-500">{data.package.description}</p>
+            <p className="mt-1 text-sm font-medium text-zinc-600">{data.package.description}</p>
 
-            <div className="mt-6 rounded-2xl bg-zinc-50 p-5">
-              <p className="text-sm text-zinc-500">Harga</p>
+            <div className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+              <p className="text-sm font-semibold text-zinc-700">Harga</p>
               <p className="mt-1 text-3xl font-bold">
                 {price ? money(price.amountMinor, price.currency) : '—'}
               </p>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs font-medium text-zinc-600">
                 {price?.billingPeriod === 'MONTHLY' ? 'Bulanan' : 'Tahunan'}
               </p>
             </div>
@@ -129,14 +129,14 @@ function CheckoutContent() {
                 value={discount}
                 onChange={(event) => setDiscount(event.target.value)}
                 placeholder="PROMO10"
-                className="mt-2 w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none focus:border-cyan-400"
+                className="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-950 placeholder:text-zinc-500 outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-100"
               />
             </div>
 
             <button
               disabled={busy || !price}
               onClick={() => void submit()}
-              className="mt-6 w-full rounded-xl bg-zinc-950 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
+              className="mt-6 w-full rounded-xl bg-cyan-700 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {busy ? 'Memproses...' : 'Lanjutkan ke Sandbox Payment'}
             </button>

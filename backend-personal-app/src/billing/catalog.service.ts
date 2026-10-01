@@ -191,11 +191,40 @@ export class BillingCatalogService {
 
     if (!existing) throw new NotFoundException('Feature tidak ditemukan');
 
+    if (
+      data.valueType !== undefined &&
+      data.valueType !== existing.valueType
+    ) {
+      const packageFeatures = await this.prisma.client.orm.public.SubscriptionPackageFeature
+        .where({ featureId: id })
+        .all();
+
+      if (
+        data.valueType === BillingFeatureValueTypeDto.BOOLEAN &&
+        packageFeatures.some((item) => item.limitValue !== null)
+      ) {
+        throw new ConflictException(
+          'Feature tidak dapat diubah menjadi BOOLEAN karena masih memiliki limitValue pada package',
+        );
+      }
+
+      if (data.valueType === BillingFeatureValueTypeDto.LIMIT) {
+        for (const packageFeature of packageFeatures) {
+          if (packageFeature.enabled && packageFeature.limitValue === null) {
+            throw new ConflictException(
+              'Feature tidak dapat diubah menjadi LIMIT karena ada package aktif tanpa limitValue',
+            );
+          }
+        }
+      }
+    }
+
     const updated = await this.prisma.client.orm.public.SubscriptionFeature
       .where({ id })
       .update({
         ...(data.name !== undefined ? { name: data.name.trim() } : {}),
         ...(data.description !== undefined ? { description: data.description.trim() || null } : {}),
+        ...(data.valueType !== undefined ? { valueType: data.valueType as BillingFeatureValueTypeDto } : {}),
         ...(data.unit !== undefined ? { unit: data.unit.trim() || null } : {}),
         ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
       });

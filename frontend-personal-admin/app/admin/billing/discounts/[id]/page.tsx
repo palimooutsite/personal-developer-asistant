@@ -6,7 +6,7 @@ export default function DiscountDetailPage({params}:{params:Promise<{id:string}>
  const {id}=use(params); const [item,setItem]=useState<AdminDiscount|null>(null),[packages,setPackages]=useState<AdminPackage[]>([]),[assigned,setAssigned]=useState<AdminDiscountPackage[]>([]),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState(""),[message,setMessage]=useState("");
  async function load(){setLoading(true);try{const [d,p,a]=await Promise.all([getDiscount(id),listPackages(),getDiscountPackages(id)]);setItem(d);setPackages(p);setAssigned(a)}catch(e){setError(e instanceof Error?e.message:"Gagal memuat detail discount")}finally{setLoading(false)}}
  useEffect(()=>{void load()},[id]);
- async function togglePackage(packageId:string,enabled:boolean){setSaving(true);setError("");try{await setPackagePackage(id,packageId,enabled);setMessage("Assignment package diperbarui.");await load()}catch(e){setError(e instanceof Error?e.message:"Gagal mengubah assignment")}finally{setSaving(false)}}
+ async function togglePackage(packageId:string,enabled:boolean){setSaving(true);setError("");try{await setDiscountPackage(id,packageId,enabled);setMessage("Assignment package diperbarui.");await load()}catch(e){setError(e instanceof Error?e.message:"Gagal mengubah assignment")}finally{setSaving(false)}}
  async function toggleActive(){if(!item)return;setSaving(true);setError("");try{await updateDiscount(id,{isActive:!item.isActive});setMessage("Status discount diperbarui.");await load()}catch(e){setError(e instanceof Error?e.message:"Gagal memperbarui discount")}finally{setSaving(false)}}
  if(loading)return <section><p>Memuat...</p></section>;
  if(!item)return <section><p>Discount tidak ditemukan.</p></section>;

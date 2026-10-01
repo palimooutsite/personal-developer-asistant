@@ -112,7 +112,47 @@ export class BillingCatalogService {
       .select('id', 'featureId', 'enabled', 'limitValue', 'createdAt', 'updatedAt')
       .all();
 
-    return { ...pkg, prices, features };
+    const featureRows = await this.prisma.client.orm.public.SubscriptionFeature
+      .where({})
+      .select('id', 'code', 'name', 'description', 'valueType', 'unit', 'isActive')
+      .all();
+
+    return {
+      ...pkg,
+      prices,
+      features: features.map((item) => ({
+        ...item,
+        feature: featureRows.find((feature) => feature.id === item.featureId) ?? null,
+      })),
+    };
+  }
+
+  async getPackageFeatures(id: string) {
+    const pkg = await this.prisma.client.orm.public.SubscriptionPackage
+      .where({ id })
+      .select('id', 'code', 'name', 'description', 'isActive', 'sortOrder')
+      .first();
+
+    if (!pkg) throw new NotFoundException('Package tidak ditemukan');
+
+    const [packageFeatures, featureRows] = await Promise.all([
+      this.prisma.client.orm.public.SubscriptionPackageFeature
+        .where({ packageId: id })
+        .select('id', 'featureId', 'enabled', 'limitValue', 'createdAt', 'updatedAt')
+        .all(),
+      this.prisma.client.orm.public.SubscriptionFeature
+        .where({})
+        .select('id', 'code', 'name', 'description', 'valueType', 'unit', 'isActive')
+        .all(),
+    ]);
+
+    return {
+      package: pkg,
+      features: packageFeatures.map((item) => ({
+        ...item,
+        feature: featureRows.find((feature) => feature.id === item.featureId) ?? null,
+      })),
+    };
   }
 
   async seedDefaults(): Promise<{ packages: number; features: number; prices: number; packageFeatures: number }> {

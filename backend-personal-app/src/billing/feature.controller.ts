@@ -9,6 +9,14 @@ import { BillingFeatureService, BillingFeatureAccess } from './feature.service.j
 export class BillingFeatureController {
   constructor(private readonly featureService: BillingFeatureService) {}
 
+  @Get()
+  listSubscriptionFeatures(
+    @Param('tenantId') tenantId: string,
+    @Req() req: AuthRequest,
+  ) {
+    return this.featureService.listSubscriptionFeatures(tenantId, req.user.userId);
+  }
+
   @Get(':code')
   check(
     @Param('tenantId') tenantId: string,

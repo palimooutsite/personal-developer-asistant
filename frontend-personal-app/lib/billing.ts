@@ -45,6 +45,7 @@ export interface BillingCheckoutResponse {
   };
 }
 export async function getBillingPackages(): Promise<BillingPackage[]> { return apiRequest<BillingPackage[]>('/billing/catalog/packages'); }
+export async function getBillingPackage(packageId: string): Promise<BillingPackage> { return apiRequest<BillingPackage>('/billing/catalog/packages/' + packageId); }
 export async function getBillingPackageFeatures(packageId: string): Promise<BillingPackageFeaturesResponse> { return apiRequest<BillingPackageFeaturesResponse>('/billing/catalog/packages/' + packageId + '/features'); }
 export async function getCurrentSubscription(tenantId: string): Promise<BillingSubscription | null> { return apiRequest<BillingSubscription | null>('/billing/tenants/' + tenantId + '/subscription'); }
 export async function getBillingUsage(tenantId: string): Promise<BillingUsageResponse> { return apiRequest<BillingUsageResponse>('/billing/tenants/' + tenantId + '/features'); }

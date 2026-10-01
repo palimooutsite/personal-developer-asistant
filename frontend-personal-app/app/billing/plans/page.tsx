@@ -43,7 +43,7 @@ export default function BillingPlansPage() {
     router.push(
       '/billing/checkout-session?package=' +
         encodeURIComponent(pkg.code) +
-        '&billingPeriod=' + billingPeriod',
+        '&billingPeriod=' + billingPeriod,
     );
   }
 

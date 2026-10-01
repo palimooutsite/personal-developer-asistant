@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { ApiError } from '../lib/api';
-import { getBillingPackages, type BillingPackage, type BillingPrice } from '../lib/billing';
+import { ApiError } from '../../lib/api';
+import { getBillingPackages, type BillingPackage, type BillingPrice } from '../../lib/billing';
 
 const features = [
   {

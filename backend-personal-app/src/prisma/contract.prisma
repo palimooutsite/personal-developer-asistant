@@ -698,3 +698,38 @@ model Payment {
   @@index([provider, providerPaymentId])
   @@index([invoiceId])
 }
+
+enum BillingCheckoutSessionStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+model BillingCheckoutSession {
+  id                  String                       @id @default(uuid())
+  userId              String
+  packageId           String
+  packagePriceId      String
+  workspaceName       String
+  discountCode        String?
+  originalAmountMinor Int
+  discountAmountMinor Int                          @default(0)
+  taxAmountMinor      Int                          @default(0)
+  finalAmountMinor    Int
+  currency            String                       @default("IDR")
+  provider            PaymentProviderType          @default(SANDBOX)
+  providerSessionId   String?
+  providerPaymentId   String?
+  status              BillingCheckoutSessionStatus @default(PENDING)
+  expiresAt           TimestamptzString
+  completedAt         TimestamptzString?
+  createdAt           TimestamptzString            @default(now())
+  updatedAt           temporal.updatedAtString()
+
+  @@index([userId, status])
+  @@index([provider, providerSessionId])
+  @@index([expiresAt])
+}
+

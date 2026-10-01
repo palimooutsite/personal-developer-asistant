@@ -29,6 +29,7 @@ export function GlobalHeader() {
   }, []);
 
   if (
+    pathname === '/' ||
     pathname === '/login' ||
     pathname === '/register' ||
     pathname === '/workspace-selection' ||

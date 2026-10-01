@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { BillingPeriod } from '../../../lib/billing';
 import { useRouter } from 'next/navigation';
 import { ApiError } from '../../../lib/api';
 import { getBillingPackages, type BillingPackage, type BillingPrice } from '../../../lib/billing';
@@ -14,7 +13,7 @@ function money(amountMinor: number, currency: string) {
   }).format(amountMinor / 100);
 }
 
-function selectedPrice(pkg: BillingPackage, period: BillingPeriod): BillingPrice | null {
+function selectedPrice(pkg: BillingPackage, period: 'MONTHLY' | 'YEARLY'): BillingPrice | null {
   return pkg.prices?.find((price) => price.isActive && price.billingPeriod.toUpperCase() === period) ?? null;
 }
 
@@ -23,7 +22,7 @@ export default function BillingPlansPage() {
   const [packages, setPackages] = useState<BillingPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('MONTHLY');
+  const [billingPeriod, setBillingPeriod] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY');
 
   useEffect(() => {
     void getBillingPackages()

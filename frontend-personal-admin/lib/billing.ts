@@ -7,8 +7,10 @@ export interface AdminFeature { id:string; code:string; name:string; description
 export interface AdminPrice { id:string; packageId:string; version:number; billingPeriod:BillingPeriod|string; amountMinor:number; currency:string; isActive:boolean; }
 export interface AdminPackageFeature { id:string; packageId:string; featureId:string; enabled:boolean; limitValue:number|null; feature:AdminFeature|null; }
 export interface AdminPackage { id:string; code:string; name:string; description:string|null; isActive:boolean; sortOrder:number; prices?:AdminPrice[]; features?:AdminPackageFeature[]; }
+export interface AdminPackageFeaturesResponse { package: AdminPackage; features: AdminPackageFeature[]; }
 
 export async function listPackages(){return apiRequest<AdminPackage[]>("/billing/catalog/packages");}
+export async function getBillingPackageFeatures(packageId:string){return apiRequest<AdminPackageFeaturesResponse>(`/billing/catalog/packages/${packageId}/features`);}
 export async function createPackage(body:{code:string;name:string;description?:string;sortOrder?:number}){return apiRequest<AdminPackage>("/billing/catalog/packages",{method:"POST",body:JSON.stringify(body)});}
 export async function updatePackage(id:string,body:Partial<{name:string;description:string;isActive:boolean;sortOrder:number}>){return apiRequest<AdminPackage>(`/billing/catalog/packages/${id}`,{method:"PATCH",body:JSON.stringify(body)});}
 export async function listFeatures(){return apiRequest<AdminFeature[]>("/billing/catalog/features");}

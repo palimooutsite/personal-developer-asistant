@@ -27,14 +27,25 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
+      const params = new URLSearchParams(window.location.search);
       const invitation =
-        new URLSearchParams(window.location.search).get('invitation') ||
+        params.get('invitation') ||
         window.sessionStorage.getItem('pda_pending_invitation_token');
-      router.replace(
-        invitation
-          ? `/invitations/accept?token=${encodeURIComponent(invitation)}`
-          : '/workspace-selection',
-      );
+      const plan = params.get('plan');
+      const billingPeriod = params.get('billingPeriod');
+      if (plan) {
+        const checkoutParams = new URLSearchParams({
+          package: plan.toUpperCase(),
+          billingPeriod: (billingPeriod ?? 'MONTHLY').toUpperCase(),
+        });
+        router.replace('/billing/checkout-session?' + checkoutParams.toString());
+      } else {
+        router.replace(
+          invitation
+            ? `/invitations/accept?token=${encodeURIComponent(invitation)}`
+            : '/workspace-selection',
+        );
+      }
       router.refresh();
     } catch (err) {
       if (err instanceof ApiError) {

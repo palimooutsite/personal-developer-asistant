@@ -34,7 +34,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'db2306d48c7c2df72eb45660007444206f15ed1d79622e889f27d6e18b3b7faf'>;
+  StorageHashBase<'e62086502bb4c925d39d6af8fbc1cba979b676b04247592eefe2e846e463e481'>;
 export type ExecutionHash =
   ExecutionHashBase<'508770c49c337d059828457f765c84a1198fdb898f3367dd1fc8d7429cfdadf0'>;
 export type ProfileHash =
@@ -519,7 +519,7 @@ export type FieldOutputTypes = {
       readonly tenantId: CodecTypes['pg/text@1']['output'];
       readonly packageId: CodecTypes['pg/text@1']['output'];
       readonly packagePriceId: CodecTypes['pg/text@1']['output'];
-      readonly status: 'PENDING' | 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
+      readonly status: 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
       readonly provider: 'SANDBOX' | 'MIDTRANS' | 'XENDIT';
       readonly providerCustomerId: CodecTypes['pg/text@1']['output'] | null;
       readonly providerSubscriptionId: CodecTypes['pg/text@1']['output'] | null;
@@ -822,7 +822,7 @@ export type FieldInputTypes = {
       readonly tenantId: CodecTypes['pg/text@1']['input'];
       readonly packageId: CodecTypes['pg/text@1']['input'];
       readonly packagePriceId: CodecTypes['pg/text@1']['input'];
-      readonly status: 'PENDING' | 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
+      readonly status: 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
       readonly provider: 'SANDBOX' | 'MIDTRANS' | 'XENDIT';
       readonly providerCustomerId: CodecTypes['pg/text@1']['input'] | null;
       readonly providerSubscriptionId: CodecTypes['pg/text@1']['input'] | null;
@@ -1132,7 +1132,7 @@ export type StorageColumnTypes = {
       readonly providerCustomerId: CodecTypes['pg/text@1']['output'] | null;
       readonly providerSubscriptionId: CodecTypes['pg/text@1']['output'] | null;
       readonly startedAt: CodecTypes['pg/timestamptz-string@1']['output'];
-      readonly status: 'PENDING' | 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
+      readonly status: 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
       readonly tenantId: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
@@ -1435,7 +1435,7 @@ export type StorageColumnInputTypes = {
       readonly providerCustomerId: CodecTypes['pg/text@1']['input'] | null;
       readonly providerSubscriptionId: CodecTypes['pg/text@1']['input'] | null;
       readonly startedAt: CodecTypes['pg/timestamptz-string@1']['input'];
-      readonly status: 'PENDING' | 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
+      readonly status: 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
       readonly tenantId: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
@@ -1809,7 +1809,7 @@ export namespace Models {
     tenantId: CodecTypes['pg/text@1']['output'];
     packageId: CodecTypes['pg/text@1']['output'];
     packagePriceId: CodecTypes['pg/text@1']['output'];
-    status: 'PENDING' | 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
+    status: 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
     provider: 'SANDBOX' | 'MIDTRANS' | 'XENDIT';
     providerCustomerId: CodecTypes['pg/text@1']['output'] | null;
     providerSubscriptionId: CodecTypes['pg/text@1']['output'] | null;
@@ -4539,14 +4539,7 @@ type ContractBase = Omit<
             };
             readonly SubscriptionStatus: {
               readonly kind: 'valueSet';
-              readonly values: readonly [
-                'PENDING',
-                'TRIAL',
-                'ACTIVE',
-                'PAST_DUE',
-                'CANCELLED',
-                'EXPIRED',
-              ];
+              readonly values: readonly ['TRIAL', 'ACTIVE', 'PAST_DUE', 'CANCELLED', 'EXPIRED'];
             };
             readonly TaskPriority: {
               readonly kind: 'valueSet';
@@ -7524,7 +7517,6 @@ type ContractBase = Omit<
           readonly SubscriptionStatus: {
             readonly codecId: 'pg/text@1';
             readonly members: readonly [
-              { readonly name: 'PENDING'; readonly value: 'PENDING' },
               { readonly name: 'TRIAL'; readonly value: 'TRIAL' },
               { readonly name: 'ACTIVE'; readonly value: 'ACTIVE' },
               { readonly name: 'PAST_DUE'; readonly value: 'PAST_DUE' },

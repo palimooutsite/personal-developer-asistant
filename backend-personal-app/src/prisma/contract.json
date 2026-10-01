@@ -310,6 +310,10 @@
             "codecId": "pg/text@1",
             "members": [
               {
+                "name": "PENDING",
+                "value": "PENDING"
+              },
+              {
                 "name": "TRIAL",
                 "value": "TRIAL"
               },
@@ -3142,6 +3146,13 @@
                   "plane": "domain"
                 }
               },
+              "tenantId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "title": {
                 "nullable": false,
                 "type": {
@@ -3206,6 +3217,22 @@
                   "model": "Project",
                   "namespace": "public"
                 }
+              },
+              "tenant": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "tenantId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Tenant",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -3233,6 +3260,9 @@
                 },
                 "status": {
                   "column": "status"
+                },
+                "tenantId": {
+                  "column": "tenantId"
                 },
                 "title": {
                   "column": "title"
@@ -3575,6 +3605,21 @@
                 },
                 "to": {
                   "model": "Tag",
+                  "namespace": "public"
+                }
+              },
+              "tasks": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "tenantId"
+                  ]
+                },
+                "to": {
+                  "model": "Task",
                   "namespace": "public"
                 }
               }
@@ -4467,6 +4512,13 @@
                   "kind": "scalar"
                 }
               },
+              "isPlatformAdmin": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "name": {
                 "nullable": true,
                 "type": {
@@ -4646,6 +4698,9 @@
                 },
                 "id": {
                   "column": "id"
+                },
+                "isPlatformAdmin": {
+                  "column": "isPlatformAdmin"
                 },
                 "name": {
                   "column": "name"
@@ -6982,6 +7037,11 @@
                     "plane": "storage"
                   }
                 },
+                "tenantId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
                 "title": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -7008,6 +7068,22 @@
                     ],
                     "namespaceId": "public",
                     "tableName": "project"
+                  }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "tenantId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "task"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "tenant"
                   }
                 },
                 {
@@ -7042,6 +7118,23 @@
                   ],
                   "name": "task_projectId_idx_a96e4d92",
                   "prefix": "task_projectId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenantId"
+                  ],
+                  "name": "task_tenantId_idx_c93ed4f1",
+                  "prefix": "task_tenantId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenantId",
+                    "projectId"
+                  ],
+                  "name": "task_tenantId_projectId_idx_e88197e4",
+                  "prefix": "task_tenantId_projectId_idx",
                   "unique": false
                 }
               ],
@@ -7774,8 +7867,8 @@
                   "prefix": "tenantSubscription_provider_check"
                 },
                 {
-                  "expression": "\"status\" IN ('TRIAL', 'ACTIVE', 'PAST_DUE', 'CANCELLED', 'EXPIRED')",
-                  "name": "tenantSubscription_status_check_97a70ce3",
+                  "expression": "\"status\" IN ('PENDING', 'TRIAL', 'ACTIVE', 'PAST_DUE', 'CANCELLED', 'EXPIRED')",
+                  "name": "tenantSubscription_status_check_1ea2718e",
                   "prefix": "tenantSubscription_status_check"
                 }
               ],
@@ -7997,6 +8090,15 @@
                   "nativeType": "text",
                   "nullable": false
                 },
+                "isPlatformAdmin": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
                 "name": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -8124,6 +8226,7 @@
             "SubscriptionStatus": {
               "kind": "valueSet",
               "values": [
+                "PENDING",
                 "TRIAL",
                 "ACTIVE",
                 "PAST_DUE",
@@ -8164,7 +8267,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "d8804f6625c4bd8b0a5d62ded146af31f1bc5809d05625056a837bc70e321b96"
+    "storageHash": "db2306d48c7c2df72eb45660007444206f15ed1d79622e889f27d6e18b3b7faf"
   },
   "execution": {
     "executionHash": "508770c49c337d059828457f765c84a1198fdb898f3367dd1fc8d7429cfdadf0",

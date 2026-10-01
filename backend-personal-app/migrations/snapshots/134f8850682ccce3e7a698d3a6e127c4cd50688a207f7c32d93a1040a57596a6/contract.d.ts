@@ -34,7 +34,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'db2306d48c7c2df72eb45660007444206f15ed1d79622e889f27d6e18b3b7faf'>;
+  StorageHashBase<'134f8850682ccce3e7a698d3a6e127c4cd50688a207f7c32d93a1040a57596a6'>;
 export type ExecutionHash =
   ExecutionHashBase<'508770c49c337d059828457f765c84a1198fdb898f3367dd1fc8d7429cfdadf0'>;
 export type ProfileHash =
@@ -519,7 +519,7 @@ export type FieldOutputTypes = {
       readonly tenantId: CodecTypes['pg/text@1']['output'];
       readonly packageId: CodecTypes['pg/text@1']['output'];
       readonly packagePriceId: CodecTypes['pg/text@1']['output'];
-      readonly status: 'PENDING' | 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
+      readonly status: 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
       readonly provider: 'SANDBOX' | 'MIDTRANS' | 'XENDIT';
       readonly providerCustomerId: CodecTypes['pg/text@1']['output'] | null;
       readonly providerSubscriptionId: CodecTypes['pg/text@1']['output'] | null;
@@ -537,7 +537,6 @@ export type FieldOutputTypes = {
       readonly passwordHash: CodecTypes['pg/text@1']['output'];
       readonly name: CodecTypes['pg/text@1']['output'] | null;
       readonly avatarUrl: CodecTypes['pg/text@1']['output'] | null;
-      readonly isPlatformAdmin: CodecTypes['pg/bool@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
@@ -822,7 +821,7 @@ export type FieldInputTypes = {
       readonly tenantId: CodecTypes['pg/text@1']['input'];
       readonly packageId: CodecTypes['pg/text@1']['input'];
       readonly packagePriceId: CodecTypes['pg/text@1']['input'];
-      readonly status: 'PENDING' | 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
+      readonly status: 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
       readonly provider: 'SANDBOX' | 'MIDTRANS' | 'XENDIT';
       readonly providerCustomerId: CodecTypes['pg/text@1']['input'] | null;
       readonly providerSubscriptionId: CodecTypes['pg/text@1']['input'] | null;
@@ -840,7 +839,6 @@ export type FieldInputTypes = {
       readonly passwordHash: CodecTypes['pg/text@1']['input'];
       readonly name: CodecTypes['pg/text@1']['input'] | null;
       readonly avatarUrl: CodecTypes['pg/text@1']['input'] | null;
-      readonly isPlatformAdmin: CodecTypes['pg/bool@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
@@ -1132,7 +1130,7 @@ export type StorageColumnTypes = {
       readonly providerCustomerId: CodecTypes['pg/text@1']['output'] | null;
       readonly providerSubscriptionId: CodecTypes['pg/text@1']['output'] | null;
       readonly startedAt: CodecTypes['pg/timestamptz-string@1']['output'];
-      readonly status: 'PENDING' | 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
+      readonly status: 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
       readonly tenantId: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
@@ -1141,7 +1139,6 @@ export type StorageColumnTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly email: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/text@1']['output'];
-      readonly isPlatformAdmin: CodecTypes['pg/bool@1']['output'];
       readonly name: CodecTypes['pg/text@1']['output'] | null;
       readonly passwordHash: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -1435,7 +1432,7 @@ export type StorageColumnInputTypes = {
       readonly providerCustomerId: CodecTypes['pg/text@1']['input'] | null;
       readonly providerSubscriptionId: CodecTypes['pg/text@1']['input'] | null;
       readonly startedAt: CodecTypes['pg/timestamptz-string@1']['input'];
-      readonly status: 'PENDING' | 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
+      readonly status: 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
       readonly tenantId: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
@@ -1444,7 +1441,6 @@ export type StorageColumnInputTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly email: CodecTypes['pg/text@1']['input'];
       readonly id: CodecTypes['pg/text@1']['input'];
-      readonly isPlatformAdmin: CodecTypes['pg/bool@1']['input'];
       readonly name: CodecTypes['pg/text@1']['input'] | null;
       readonly passwordHash: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -1497,7 +1493,6 @@ export namespace Models {
     passwordHash: CodecTypes['pg/text@1']['output'];
     name: CodecTypes['pg/text@1']['output'] | null;
     avatarUrl: CodecTypes['pg/text@1']['output'] | null;
-    isPlatformAdmin: CodecTypes['pg/bool@1']['output'];
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     codeSnippets: public_CodeSnippet[];
@@ -1809,7 +1804,7 @@ export namespace Models {
     tenantId: CodecTypes['pg/text@1']['output'];
     packageId: CodecTypes['pg/text@1']['output'];
     packagePriceId: CodecTypes['pg/text@1']['output'];
-    status: 'PENDING' | 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
+    status: 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
     provider: 'SANDBOX' | 'MIDTRANS' | 'XENDIT';
     providerCustomerId: CodecTypes['pg/text@1']['output'] | null;
     providerSubscriptionId: CodecTypes['pg/text@1']['output'] | null;
@@ -4460,15 +4455,6 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
                 };
-                readonly isPlatformAdmin: {
-                  readonly nativeType: 'bool';
-                  readonly codecId: 'pg/bool@1';
-                  readonly nullable: false;
-                  readonly default: {
-                    readonly kind: 'literal';
-                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
-                  };
-                };
                 readonly createdAt: {
                   readonly nativeType: 'timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -4539,14 +4525,7 @@ type ContractBase = Omit<
             };
             readonly SubscriptionStatus: {
               readonly kind: 'valueSet';
-              readonly values: readonly [
-                'PENDING',
-                'TRIAL',
-                'ACTIVE',
-                'PAST_DUE',
-                'CANCELLED',
-                'EXPIRED',
-              ];
+              readonly values: readonly ['TRIAL', 'ACTIVE', 'PAST_DUE', 'CANCELLED', 'EXPIRED'];
             };
             readonly TaskPriority: {
               readonly kind: 'valueSet';
@@ -7296,10 +7275,6 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
-              readonly isPlatformAdmin: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
-              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -7423,7 +7398,6 @@ type ContractBase = Omit<
                 readonly passwordHash: { readonly column: 'passwordHash' };
                 readonly name: { readonly column: 'name' };
                 readonly avatarUrl: { readonly column: 'avatarUrl' };
-                readonly isPlatformAdmin: { readonly column: 'isPlatformAdmin' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };
@@ -7524,7 +7498,6 @@ type ContractBase = Omit<
           readonly SubscriptionStatus: {
             readonly codecId: 'pg/text@1';
             readonly members: readonly [
-              { readonly name: 'PENDING'; readonly value: 'PENDING' },
               { readonly name: 'TRIAL'; readonly value: 'TRIAL' },
               { readonly name: 'ACTIVE'; readonly value: 'ACTIVE' },
               { readonly name: 'PAST_DUE'; readonly value: 'PAST_DUE' },

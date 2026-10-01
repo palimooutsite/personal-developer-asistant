@@ -40,6 +40,10 @@ export function GlobalHeader() {
         </Link>
 
         <div className="flex items-center gap-2">
+          <Link href="/billing" className="hidden rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-600 transition hover:border-zinc-300 hover:bg-zinc-50 sm:inline-flex">
+            Billing
+          </Link>
+
           <div className="relative">
             <button
               type="button"

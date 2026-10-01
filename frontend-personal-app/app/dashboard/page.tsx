@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ApiError, apiRequest } from '../lib/api';
-import { CurrentUser, getCurrentUser, logout } from '../lib/auth';
-import { useTenant } from '../components/providers/TenantProvider';
+import { ApiError, apiRequest } from '../../lib/api';
+import { CurrentUser, getCurrentUser, logout } from '../../lib/auth';
+import { useTenant } from '../../components/providers/TenantProvider';
 
 type DashboardSummary = {
   projects: { total: number; byStatus: Record<string, number> };

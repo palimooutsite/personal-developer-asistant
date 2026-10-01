@@ -1,6 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { ApiError } from '../lib/api';
+import { getBillingPackages, type BillingPackage, type BillingPrice } from '../lib/billing';
 
 const features = [
   {
@@ -35,50 +38,32 @@ const features = [
   },
 ];
 
-const plans = [
-  {
-    name: 'Free',
-    price: 'Rp0',
-    period: 'selamanya',
-    description: 'Untuk developer yang ingin mulai menata workflow.',
-    features: ['1 workspace', '1 pengguna', '3 project', '100 task', 'Knowledge & Snippets'],
-    cta: 'Mulai Gratis',
-    href: '/register',
-    featured: false,
-  },
-  {
-    name: 'Pro',
-    price: 'Rp49.000',
-    period: '/bulan',
-    description: 'Untuk developer aktif yang butuh ruang kerja lebih lengkap.',
-    features: ['5 workspace', '1 pengguna', 'Project tanpa batas', 'Task tanpa batas', 'Knowledge, Snippets & Documents'],
-    cta: 'Pilih Pro',
-    href: '/register?plan=PRO&billingPeriod=MONTHLY',
-    featured: true,
-  },
-  {
-    name: 'Team',
-    price: 'Rp149.000',
-    period: '/bulan',
-    description: 'Untuk tim kecil yang ingin bekerja lebih terstruktur.',
-    features: ['Workspace tanpa batas', 'Hingga 10 anggota', 'Project & task tanpa batas', 'Role OWNER / ADMIN / MEMBER', 'Invite anggota via email'],
-    cta: 'Mulai Team',
-    href: '/register',
-    featured: false,
-  },
-  {
-    name: 'Business',
-    price: 'Rp399.000',
-    period: '/bulan',
-    description: 'Untuk tim yang membutuhkan kapasitas dan kolaborasi lebih besar.',
-    features: ['Workspace tanpa batas', 'Hingga 50 anggota', 'Semua fitur Team', 'Prioritas support', 'Onboarding tim'],
-    cta: 'Pilih Business',
-    href: '/register?plan=BUSINESS&billingPeriod=MONTHLY',
-    featured: false,
-  },
+function monthlyPrice(pkg: BillingPackage): BillingPrice | null {
+  return pkg.prices?.find((price) => price.isActive && price.billingPeriod === 'MONTHLY') ?? null;
+}
+
+const fallbackPlans = [
+  { code: 'FREE', cta: 'Mulai Gratis', featured: false },
+  { code: 'PRO', cta: 'Pilih Pro', featured: true },
+  { code: 'BUSINESS', cta: 'Pilih Business', featured: false },
 ];
 
 export default function LandingPage() {
+  const [packages, setPackages] = useState<BillingPackage[]>([]);
+  const [pricingLoading, setPricingLoading] = useState(true);
+  const [pricingError, setPricingError] = useState('');
+
+  useEffect(() => {
+    void getBillingPackages()
+      .then((items) =>
+        setPackages(items.filter((item) => item.isActive).sort((a, b) => a.sortOrder - b.sortOrder)),
+      )
+      .catch((err: unknown) => {
+        setPricingError(err instanceof ApiError ? err.message : 'Harga belum dapat dimuat.');
+      })
+      .finally(() => setPricingLoading(false));
+  }, []);
+
   return (
     <main className="min-h-screen overflow-x-hidden bg-white text-zinc-950">
       <nav className="border-b border-zinc-100 bg-white/90 backdrop-blur">
@@ -202,19 +187,23 @@ export default function LandingPage() {
             <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Harga sederhana, mulai dari gratis.</h2>
             <p className="mt-4 text-sm leading-6 text-zinc-500">Paket berikut adalah rancangan harga awal untuk produk PDA dan dapat disesuaikan sebelum billing resmi diaktifkan.</p>
           </div>
-          <div className="mt-10 grid gap-5 lg:grid-cols-4">
-            {plans.map((plan) => (
-              <div key={plan.name} className={'relative rounded-3xl border bg-white p-6 shadow-sm ' + (plan.featured ? 'border-cyan-400 ring-2 ring-cyan-100' : 'border-zinc-200')}>
-                {plan.featured ? <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-cyan-600 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white">Paling populer</div> : null}
-                <h3 className="text-lg font-bold">{plan.name}</h3>
-                <p className="mt-2 min-h-12 text-xs leading-5 text-zinc-500">{plan.description}</p>
-                <div className="mt-5"><span className="text-3xl font-black tracking-tight">{plan.price}</span><span className="ml-1 text-xs text-zinc-400">{plan.period}</span></div>
-                <Link href={plan.href} className={'mt-6 flex items-center justify-center rounded-xl px-4 py-3 text-sm font-bold transition ' + (plan.featured ? 'bg-cyan-600 text-white hover:bg-cyan-700' : 'border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50')}>{plan.cta}</Link>
-                <ul className="mt-6 space-y-3 border-t border-zinc-100 pt-6">
-                  {plan.features.map((feature) => <li key={feature} className="flex gap-2 text-sm text-zinc-600"><span className="font-bold text-emerald-500">✓</span>{feature}</li>)}
-                </ul>
-              </div>
-            ))}
+          <div className="mt-10 grid gap-5 lg:grid-cols-3">
+            {pricingError ? <div className="lg:col-span-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{pricingError}</div> : null}
+            {packages.map((pkg) => {
+              const price = monthlyPrice(pkg);
+              const fallback = fallbackPlans.find((item) => item.code === pkg.code);
+              const href = '/register?plan=' + encodeURIComponent(pkg.code) + '&billingPeriod=MONTHLY';
+              return (
+                <div key={pkg.id} className={'relative rounded-3xl border bg-white p-6 shadow-sm ' + (fallback?.featured ? 'border-cyan-400 ring-2 ring-cyan-100' : 'border-zinc-200')}>
+                  {fallback?.featured ? <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-cyan-600 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white">Paling populer</div> : null}
+                  <h3 className="text-lg font-bold">{pkg.name}</h3>
+                  <p className="mt-2 min-h-12 text-xs leading-5 text-zinc-500">{pkg.description}</p>
+                  <div className="mt-5"><span className="text-3xl font-black tracking-tight">{pricingLoading ? 'Memuat...' : price ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: price.currency, maximumFractionDigits: 0 }).format(price.amountMinor / 100) : '—'}</span><span className="ml-1 text-xs text-zinc-400">{pkg.code === 'FREE' ? 'selamanya' : '/bulan'}</span></div>
+                  <Link href={href} className={'mt-6 flex items-center justify-center rounded-xl px-4 py-3 text-sm font-bold transition ' + (fallback?.featured ? 'bg-cyan-600 text-white hover:bg-cyan-700' : 'border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50')}>{fallback?.cta ?? ('Pilih ' + pkg.name)}</Link>
+                  <ul className="mt-6 space-y-3 border-t border-zinc-100 pt-6">{pkg.features?.filter((feature) => feature.enabled).slice(0, 6).map((feature) => <li key={feature.id} className="flex gap-2 text-sm text-zinc-600"><span className="font-bold text-emerald-500">✓</span>{feature.feature?.name ?? feature.featureId}{feature.limitValue !== null ? ' · ' + feature.limitValue.toLocaleString('id-ID') : ''}</li>)}</ul>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

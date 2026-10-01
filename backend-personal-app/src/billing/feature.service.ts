@@ -107,6 +107,80 @@ export class BillingFeatureService {
     };
   }
 
+  async listSubscriptionFeatures(tenantId: string, userId: string) {
+    await this.ensureMember(tenantId, userId);
+    const subscription = await this.getActiveSubscription(tenantId);
+
+    const packageRows = await this.prisma.client.orm.public.SubscriptionPackage
+      .where({ id: subscription.packageId })
+      .select('id', 'code', 'name')
+      .first();
+
+    if (!packageRows) throw new NotFoundException('Package subscription tidak ditemukan');
+
+    const [packageFeatures, featureRows] = await Promise.all([
+      this.prisma.client.orm.public.SubscriptionPackageFeature
+        .where({ packageId: subscription.packageId })
+        .select('id', 'featureId', 'enabled', 'limitValue')
+        .all(),
+      this.prisma.client.orm.public.SubscriptionFeature
+        .where({})
+        .select('id', 'code', 'name', 'valueType', 'unit', 'isActive')
+        .all(),
+    ]);
+
+    const usageByFeature: Record<string, number> = {};
+    const usageQueries: Array<Promise<void>> = [];
+
+    for (const feature of featureRows) {
+      if (!feature.isActive || !packageFeatures.some((item) => item.featureId === feature.id)) continue;
+
+      if (feature.code === 'PROJECT') {
+        usageQueries.push(this.prisma.client.orm.public.Project.where({ tenantId }).select('id').all().then((rows) => { usageByFeature[feature.code] = rows.length; }));
+      } else if (feature.code === 'TASK') {
+        usageQueries.push(this.prisma.client.orm.public.Task.where({ tenantId }).select('id').all().then((rows) => { usageByFeature[feature.code] = rows.length; }));
+      } else if (feature.code === 'KNOWLEDGE') {
+        usageQueries.push(this.prisma.client.orm.public.KnowledgeArticle.where({ tenantId }).select('id').all().then((rows) => { usageByFeature[feature.code] = rows.length; }));
+      } else if (feature.code === 'CODE_SNIPPET') {
+        usageQueries.push(this.prisma.client.orm.public.CodeSnippet.where({ tenantId }).select('id').all().then((rows) => { usageByFeature[feature.code] = rows.length; }));
+      } else if (feature.code === 'DOCUMENT') {
+        usageQueries.push(this.prisma.client.orm.public.Document.where({ tenantId }).select('id').all().then((rows) => { usageByFeature[feature.code] = rows.length; }));
+      }
+    }
+
+    await Promise.all(usageQueries);
+
+    return {
+      subscription: {
+        id: subscription.id,
+        status: subscription.status,
+        packageId: subscription.packageId,
+      },
+      package: packageRows,
+      features: packageFeatures.map((packageFeature) => {
+        const feature = featureRows.find((item) => item.id === packageFeature.featureId);
+        const currentUsage = feature ? (usageByFeature[feature.code] ?? 0) : 0;
+        const remaining = packageFeature.limitValue === null
+          ? null
+          : Math.max(0, packageFeature.limitValue - currentUsage);
+
+        return {
+          id: packageFeature.id,
+          featureId: packageFeature.featureId,
+          code: feature?.code ?? null,
+          name: feature?.name ?? null,
+          valueType: feature?.valueType ?? null,
+          unit: feature?.unit ?? null,
+          enabled: packageFeature.enabled,
+          limitValue: packageFeature.limitValue,
+          currentUsage,
+          remaining,
+          allowed: packageFeature.enabled && (packageFeature.limitValue === null || currentUsage < packageFeature.limitValue),
+        };
+      }),
+    };
+  }
+
   async assertEnabled(
     tenantId: string,
     userId: string,

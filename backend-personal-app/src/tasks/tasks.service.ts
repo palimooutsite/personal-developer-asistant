@@ -127,7 +127,7 @@ export class TasksService {
     }
 
     const tasks = await this.prisma.client.orm.public.Task
-      .where({ projectId })
+      .where({ projectId, tenantId })
       .select(
         'id',
         'projectId',
@@ -231,7 +231,7 @@ export class TasksService {
     if (data.dueDate !== undefined) updateData.dueDate = data.dueDate;
 
     const updatedTask = await this.prisma.client.orm.public.Task
-      .where({ id: taskId, projectId })
+      .where({ id: taskId, projectId, tenantId })
       .update(updateData);
 
     if (!updatedTask) {
@@ -371,7 +371,7 @@ export class TasksService {
     await this.findTask(projectId, taskId, tenantId);
 
     await this.prisma.client.orm.public.Task
-      .where({ id: taskId, projectId })
+      .where({ id: taskId, projectId, tenantId })
       .delete();
 
     return { message: 'Task berhasil dihapus' };
@@ -437,6 +437,7 @@ export class TasksService {
       .where({
         id: taskId,
         projectId,
+        tenantId,
       })
       .select(
         'id',

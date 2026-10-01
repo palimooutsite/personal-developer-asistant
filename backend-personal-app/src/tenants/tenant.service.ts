@@ -315,6 +315,65 @@ export class TenantService {
       .first();
   }
 
+  private async assertWorkspaceMemberCapacity(
+    tenantId: string,
+    additionalPendingInvitations = 0,
+  ): Promise<void> {
+    const subscriptions = await this.prisma.client.orm.public.TenantSubscription
+      .where({ tenantId })
+      .all();
+
+    const subscription = subscriptions
+      .filter((item) => ['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)))
+      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
+
+    if (!subscription) {
+      throw new ConflictException('Workspace belum memiliki subscription aktif');
+    }
+
+    const feature = await this.prisma.client.orm.public.SubscriptionFeature
+      .where({ code: 'WORKSPACE_MEMBER' })
+      .first();
+
+    if (!feature || !feature.isActive) {
+      throw new ConflictException('Feature batas member workspace belum dikonfigurasi');
+    }
+
+    const packageFeature = await this.prisma.client.orm.public.SubscriptionPackageFeature
+      .where({ packageId: subscription.packageId, featureId: feature.id })
+      .first();
+
+    if (!packageFeature?.enabled) {
+      throw new ConflictException('Paket workspace tidak mengizinkan penambahan member');
+    }
+
+    const memberRows = await this.prisma.client.orm.public.TenantMember
+      .where({ tenantId })
+      .select('id')
+      .all();
+    const pendingInvitationRows = await this.prisma.client.orm.public.TenantInvitation
+      .where({ tenantId })
+      .select('id', 'acceptedAt', 'expiresAt')
+      .all();
+
+    const now = Date.now();
+    const pendingInvitations = pendingInvitationRows.filter((item) =>
+      !item.acceptedAt && new Date(item.expiresAt as string | Date).getTime() > now,
+    ).length;
+    const reservedMembers = memberRows.length + pendingInvitations + additionalPendingInvitations;
+
+    if (packageFeature.limitValue !== null && reservedMembers >= packageFeature.limitValue) {
+      throw new ConflictException({
+        code: 'WORKSPACE_MEMBER_LIMIT_REACHED',
+        message: 'Limit member workspace pada paket saat ini sudah tercapai',
+        currentMembers: memberRows.length,
+        pendingInvitations,
+        limit: packageFeature.limitValue,
+        remaining: Math.max(0, packageFeature.limitValue - memberRows.length - pendingInvitations),
+      });
+    }
+  }
+
   private async getMembership(
     tenantId: string,
     userId: string,
@@ -464,6 +523,8 @@ async addMember(
       'User sudah menjadi member workspace',
     );
   }
+
+  await this.assertWorkspaceMemberCapacity(tenantId);
 
   const customRole =
     await this.prisma.client.orm.public.TenantCustomRole
@@ -688,6 +749,8 @@ async removeMember(
       throw new ForbiddenException('Anda tidak memiliki izin untuk mengundang member');
     }
 
+    await this.assertWorkspaceMemberCapacity(tenantId);
+
     const customRole =
       await this.prisma.client.orm.public.TenantCustomRole
         .where({ id: data.roleId, tenantId })
@@ -856,6 +919,8 @@ async removeMember(
         'Anda sudah menjadi member workspace ini',
       );
     }
+
+    await this.assertWorkspaceMemberCapacity(invitation.tenantId);
 
     if (!invitation.roleId) {
       throw new ForbiddenException('Invitation belum memiliki custom role');

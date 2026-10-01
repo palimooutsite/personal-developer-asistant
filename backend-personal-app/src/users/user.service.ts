@@ -11,6 +11,7 @@ export interface UserResponse {
 
 export interface UserWithPassword extends UserResponse {
   passwordHash: string;
+  isPlatformAdmin: boolean;
 }
 
 @Injectable()
@@ -36,7 +37,8 @@ export class UsersService {
       email: user.email,
       name: user.name,
       avatarUrl: user.avatarUrl,
-      passwordHash: user.passwordHash
+      passwordHash: user.passwordHash,
+      isPlatformAdmin: user.isPlatformAdmin,
     };
   }
 
@@ -126,7 +128,7 @@ export class UsersService {
     return this.prisma.client.orm.public.User.where({
       email: email.trim().toLowerCase(),
     })
-      .select('id', 'username', 'email', 'passwordHash', 'name')
+      .select('id', 'username', 'email', 'passwordHash', 'name', 'isPlatformAdmin')
       .first();
   }
   async findById(
@@ -159,7 +161,7 @@ export class UsersService {
 }
 
   async findByIdWithPassword(id: string): Promise<UserWithPassword | null> {
-    return this.prisma.client.orm.public.User.where({ id }).select('id', 'username', 'email', 'name', 'avatarUrl', 'passwordHash').first();
+    return this.prisma.client.orm.public.User.where({ id }).select('id', 'username', 'email', 'name', 'avatarUrl', 'passwordHash', 'isPlatformAdmin').first();
   }
 
   async updateProfile(id: string, data: { name?: string }): Promise<UserResponse & { avatarUrl: string | null }> {

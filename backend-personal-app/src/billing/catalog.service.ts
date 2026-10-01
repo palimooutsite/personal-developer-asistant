@@ -232,6 +232,7 @@ export class BillingCatalogService {
       { code: 'KNOWLEDGE', name: 'Knowledge', description: 'Jumlah artikel knowledge yang dapat dibuat workspace', valueType: 'LIMIT' as const, unit: 'articles' },
       { code: 'CODE_SNIPPET', name: 'Code Snippets', description: 'Jumlah code snippet yang dapat dibuat workspace', valueType: 'LIMIT' as const, unit: 'snippets' },
       { code: 'DOCUMENT', name: 'Documents', description: 'Jumlah document yang dapat disimpan workspace', valueType: 'LIMIT' as const, unit: 'documents' },
+      { code: 'WORKSPACE_MEMBER', name: 'Workspace Members', description: 'Jumlah member yang dapat bergabung ke workspace termasuk Owner', valueType: 'LIMIT' as const, unit: 'members' },
     ];
 
     const packages = [
@@ -256,15 +257,15 @@ export class BillingCatalogService {
       }
     }
 
-    const featureCodes = ['PROJECT', 'TASK', 'KNOWLEDGE', 'CODE_SNIPPET', 'DOCUMENT'];
+    const featureCodes = ['PROJECT', 'TASK', 'KNOWLEDGE', 'CODE_SNIPPET', 'DOCUMENT', 'WORKSPACE_MEMBER'];
     const featureRows = await this.prisma.client.orm.public.SubscriptionFeature.where({}).all();
 
     
 
     const limits: Record<string, Record<string, number>> = {
-      FREE: { PROJECT: 3, TASK: 10, KNOWLEDGE: 50, CODE_SNIPPET: 50, DOCUMENT: 20 },
-      PRO: { PROJECT: 20, TASK: 100, KNOWLEDGE: 1000, CODE_SNIPPET: 1000, DOCUMENT: 500 },
-      BUSINESS: { PROJECT: 100, TASK: 500, KNOWLEDGE: 10000, CODE_SNIPPET: 10000, DOCUMENT: 5000 },
+      FREE: { PROJECT: 3, TASK: 10, KNOWLEDGE: 50, CODE_SNIPPET: 50, DOCUMENT: 20, WORKSPACE_MEMBER: 2 },
+      PRO: { PROJECT: 20, TASK: 100, KNOWLEDGE: 1000, CODE_SNIPPET: 1000, DOCUMENT: 500, WORKSPACE_MEMBER: 10 },
+      BUSINESS: { PROJECT: 100, TASK: 500, KNOWLEDGE: 10000, CODE_SNIPPET: 10000, DOCUMENT: 5000, WORKSPACE_MEMBER: 50 },
     };
 
     for (const packageData of packages) {

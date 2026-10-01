@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ApiError } from '../../lib/api';
-import { getBillingPackages, type BillingPackage, type BillingPrice } from '../../lib/billing';
+import { ApiError } from '../../../lib/api';
+import { getBillingPackages, type BillingPackage, type BillingPrice } from '../../../lib/billing';
 
 function money(amountMinor: number, currency: string) {
   return new Intl.NumberFormat('id-ID', {

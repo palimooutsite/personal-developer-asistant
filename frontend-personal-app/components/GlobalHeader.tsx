@@ -75,13 +75,6 @@ export function GlobalHeader() {
         </Link>
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/billing"
-            className="hidden rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-600 transition hover:border-zinc-300 hover:bg-zinc-50 sm:inline-flex"
-          >
-            Billing
-          </Link>
-
           {isPlatformAdmin ? (
             <Link
               href="/admin/billing"
@@ -196,6 +189,20 @@ export function GlobalHeader() {
                   onClick={() => setSettingsOpen(false)}
                 />
                 <div className="absolute right-0 z-50 mt-2 w-64 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl" role="menu">
+                  <Link
+                    href="/billing"
+                    onClick={() => setSettingsOpen(false)}
+                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition hover:bg-zinc-50"
+                    role="menuitem"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">$
+                    </span>
+                    <span>
+                      <span className="block font-semibold text-zinc-900">Billing</span>
+                      <span className="block text-xs text-zinc-500">Subscription, invoice & payment</span>
+                    </span>
+                  </Link>
+
                   {can('WORKSPACE_SETTINGS') ? (
                     <Link
                       href="/workspace-settings"

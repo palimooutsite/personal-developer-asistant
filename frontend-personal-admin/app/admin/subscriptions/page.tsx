@@ -1,0 +1,27 @@
+"use client";
+import Link from "next/link";
+import {useEffect,useMemo,useState} from "react";
+import {listAdminSubscriptions,type AdminSubscription} from "../../../lib/billing";
+
+const statusMeta:Record<string,{label:string;className:string}> = {
+  ACTIVE:{label:"Aktif",className:"bg-emerald-50 text-emerald-700 border-emerald-200"},
+  TRIAL:{label:"Trial",className:"bg-blue-50 text-blue-700 border-blue-200"},
+  PAST_DUE:{label:"Perlu perhatian",className:"bg-amber-50 text-amber-700 border-amber-200"},
+  PENDING:{label:"Menunggu",className:"bg-zinc-100 text-zinc-700 border-zinc-200"},
+  CANCELLED:{label:"Dibatalkan",className:"bg-red-50 text-red-700 border-red-200"},
+  EXPIRED:{label:"Kedaluwarsa",className:"bg-red-50 text-red-700 border-red-200"},
+};
+const money=(n:number,c:string)=>new Intl.NumberFormat("id-ID",{style:"currency",currency:c||"IDR",maximumFractionDigits:0}).format(n/100);
+const date=(v:string)=>new Intl.DateTimeFormat("id-ID",{day:"2-digit",month:"short",year:"numeric"}).format(new Date(v));
+export default function AdminSubscriptionsPage(){
+ const[data,setData]=useState<AdminSubscription[]>([]); const[loading,setLoading]=useState(true); const[query,setQuery]=useState(""); const[status,setStatus]=useState("ALL");
+ useEffect(()=>{void listAdminSubscriptions().then(setData).finally(()=>setLoading(false))},[]);
+ const filtered=useMemo(()=>data.filter(x=>(status==="ALL"||x.status===status)&&(!query.trim()||[x.workspaceName,x.packageName,x.packageCode].join(" ").toLowerCase().includes(query.toLowerCase()))),[data,query,status]);
+ const counts=Object.fromEntries(["ACTIVE","TRIAL","PAST_DUE","PENDING","CANCELLED"].map(s=>[s,data.filter(x=>x.status===s).length]));
+ return <section className="mx-auto max-w-7xl space-y-6">
+  <div><p className="text-xs font-bold uppercase tracking-widest text-amber-600">Billing / Subscriptions</p><h2 className="mt-2 text-3xl font-bold tracking-tight">Subscriptions</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-500">Pantau langganan seluruh workspace dari satu tempat. Halaman ini bersifat read-only agar perubahan subscription pelanggan tetap aman.</p></div>
+  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{[["ACTIVE","Aktif"],["TRIAL","Trial"],["PAST_DUE","Perlu perhatian"],["PENDING","Menunggu"],["CANCELLED","Dibatalkan"]].map(([s,l])=><button key={s} onClick={()=>setStatus(status===s?"ALL":s)} className={`rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:border-amber-300 ${status===s?"ring-2 ring-amber-200":""}`}><p className="text-xs font-semibold text-zinc-400">{l}</p><p className="mt-1 text-2xl font-bold">{loading?"—":counts[s]}</p></button>)}</div>
+  <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"><div className="flex flex-col gap-3 md:flex-row"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Cari workspace atau paket..." className="h-11 flex-1 rounded-xl border border-zinc-200 px-4 text-sm outline-none focus:border-amber-400"/><select value={status} onChange={e=>setStatus(e.target.value)} className="h-11 rounded-xl border border-zinc-200 bg-white px-4 text-sm"><option value="ALL">Semua status</option><option value="ACTIVE">Aktif</option><option value="TRIAL">Trial</option><option value="PAST_DUE">Perlu perhatian</option><option value="PENDING">Menunggu</option><option value="CANCELLED">Dibatalkan</option></select></div></div>
+  <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm"><div className="border-b px-5 py-4"><p className="font-bold">Daftar Subscription</p><p className="text-xs text-zinc-500">{loading?"Memuat data...":`${filtered.length} subscription ditampilkan`}</p></div><div className="overflow-x-auto"><table className="w-full min-w-[900px] text-sm"><thead className="bg-zinc-50 text-left text-xs uppercase tracking-wider text-zinc-400"><tr><th className="px-5 py-3">Workspace</th><th className="px-5 py-3">Paket</th><th className="px-5 py-3">Harga</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Periode</th><th className="px-5 py-3">Provider</th><th className="px-5 py-3"></th></tr></thead><tbody className="divide-y divide-zinc-100">{filtered.map(x=>{const meta=statusMeta[x.status]??{label:x.status,className:"bg-zinc-100 text-zinc-700 border-zinc-200"};return <tr key={x.id} className="hover:bg-zinc-50"><td className="px-5 py-4"><p className="font-semibold">{x.workspaceName}</p><p className="mt-0.5 text-xs text-zinc-400">{x.tenantId.slice(0,8)}...</p></td><td className="px-5 py-4"><p className="font-semibold">{x.packageName}</p><p className="text-xs text-zinc-400">{x.billingPeriod==="YEARLY"?"Tahunan":"Bulanan"}</p></td><td className="px-5 py-4 font-semibold">{money(x.amountMinor,x.currency)}</td><td className="px-5 py-4"><span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${meta.className}`}>{meta.label}</span></td><td className="px-5 py-4 text-xs text-zinc-500">{date(x.currentPeriodStart)} — {date(x.currentPeriodEnd)}</td><td className="px-5 py-4 text-xs font-medium">{x.provider}</td><td className="px-5 py-4 text-right"><Link href={`/admin/subscriptions/${x.id}`} className="font-semibold text-amber-700 hover:text-amber-900">Detail →</Link></td></tr>})}</tbody></table>{!loading&&filtered.length===0&&<div className="p-10 text-center text-sm text-zinc-500">Tidak ada subscription yang sesuai filter.</div>}</div></div>
+ </section>
+}

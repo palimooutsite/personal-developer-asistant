@@ -6,6 +6,7 @@ import {
 import { access, unlink } from 'node:fs/promises';
 
 import { PrismaService } from '../prisma/prisma.service.js';
+import { BillingFeatureService } from '../billing/feature.service.js';
 
 import { CreateDocumentDto } from './dto/create-document.dto.js';
 import { UpdateDocumentDto } from './dto/update-document.dto.js';
@@ -35,6 +36,7 @@ export interface DocumentResponse {
 export class DocumentsService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly billingFeatureService: BillingFeatureService,
   ) {}
 
   async create(
@@ -42,6 +44,10 @@ export class DocumentsService {
     tenantId: string,
     data: CreateDocumentDto,
   ): Promise<DocumentResponse> {
+      const currentUsage = (await this.prisma.client.orm.public.Document.where({ tenantId }).select('id').all()).length;
+      await this.billingFeatureService.assertWithinLimit(tenantId, userId, 'DOCUMENT', currentUsage);
+
+
     return this.prisma.client.orm.public.Document.create({
       title: data.title,
       description: data.description,

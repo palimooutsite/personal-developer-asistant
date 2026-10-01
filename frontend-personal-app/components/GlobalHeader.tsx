@@ -1,16 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTenant } from './providers/TenantProvider';
-import { logout } from '../lib/auth';
+import { getCurrentUser, logout } from '../lib/auth';
 
 export function GlobalHeader() {
   const pathname = usePathname();
   const { tenants, activeTenant, loading, selectTenant, can } = useTenant();
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    void getCurrentUser()
+      .then((user) => {
+        if (mounted) setIsPlatformAdmin(user.isPlatformAdmin);
+      })
+      .catch(() => {
+        if (mounted) setIsPlatformAdmin(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   if (
     pathname === '/login' ||
@@ -40,9 +56,21 @@ export function GlobalHeader() {
         </Link>
 
         <div className="flex items-center gap-2">
-          <Link href="/billing" className="hidden rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-600 transition hover:border-zinc-300 hover:bg-zinc-50 sm:inline-flex">
+          <Link
+            href="/billing"
+            className="hidden rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-600 transition hover:border-zinc-300 hover:bg-zinc-50 sm:inline-flex"
+          >
             Billing
           </Link>
+
+          {isPlatformAdmin ? (
+            <Link
+              href="/admin/billing"
+              className="hidden rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800 transition hover:border-amber-300 hover:bg-amber-100 sm:inline-flex"
+            >
+              Platform Billing
+            </Link>
+          ) : null}
 
           <div className="relative">
             <button
@@ -77,17 +105,10 @@ export function GlobalHeader() {
                   className="fixed inset-0 z-40 h-screen w-screen cursor-default"
                   onClick={() => setWorkspaceOpen(false)}
                 />
-                <div
-                  className="absolute right-0 z-50 mt-2 w-72 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl"
-                  role="menu"
-                >
+                <div className="absolute right-0 z-50 mt-2 w-72 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl" role="menu">
                   <div className="px-3 py-2">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                      Workspace
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-500">
-                      Pilih workspace yang sedang kamu kerjakan.
-                    </p>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Workspace</p>
+                    <p className="mt-1 text-xs text-zinc-500">Pilih workspace yang sedang kamu kerjakan.</p>
                   </div>
 
                   <div className="mt-1 max-h-72 overflow-y-auto">
@@ -99,9 +120,7 @@ export function GlobalHeader() {
                           type="button"
                           onClick={() => {
                             setWorkspaceOpen(false);
-                            if (!active) {
-                              selectTenant(tenant.id, true);
-                            }
+                            if (!active) selectTenant(tenant.id, true);
                           }}
                           className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-zinc-50"
                           role="menuitem"
@@ -110,16 +129,10 @@ export function GlobalHeader() {
                             {tenant.name.charAt(0).toUpperCase()}
                           </span>
                           <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm font-semibold text-zinc-900">
-                              {tenant.name}
-                            </span>
-                            <span className="block text-xs text-zinc-500">
-                              {tenant.role}
-                            </span>
+                            <span className="block truncate text-sm font-semibold text-zinc-900">{tenant.name}</span>
+                            <span className="block text-xs text-zinc-500">{tenant.role}</span>
                           </span>
-                          {active ? (
-                            <span className="text-sm font-bold text-cyan-600">✓</span>
-                          ) : null}
+                          {active ? <span className="text-sm font-bold text-cyan-600">✓</span> : null}
                         </button>
                       );
                     })}
@@ -171,11 +184,11 @@ export function GlobalHeader() {
                       className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition hover:bg-zinc-50"
                       role="menuitem"
                     >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600">▣</span>
-                    <span>
-                      <span className="block font-semibold text-zinc-900">Workspace Settings</span>
-                      <span className="block text-xs text-zinc-500">Workspace, anggota & role</span>
-                    </span>
+                      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600">▣</span>
+                      <span>
+                        <span className="block font-semibold text-zinc-900">Workspace Settings</span>
+                        <span className="block text-xs text-zinc-500">Workspace, anggota & role</span>
+                      </span>
                     </Link>
                   ) : null}
 
@@ -191,6 +204,24 @@ export function GlobalHeader() {
                       <span className="block text-xs text-zinc-500">Profil, foto & keamanan</span>
                     </span>
                   </Link>
+
+                  {isPlatformAdmin ? (
+                    <>
+                      <div className="my-1 border-t border-zinc-100" />
+                      <Link
+                        href="/admin/billing"
+                        onClick={() => setSettingsOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition hover:bg-amber-50"
+                        role="menuitem"
+                      >
+                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-amber-700">▤</span>
+                        <span>
+                          <span className="block font-semibold text-zinc-900">Platform Billing</span>
+                          <span className="block text-xs text-zinc-500">Package, feature, harga & discount</span>
+                        </span>
+                      </Link>
+                    </>
+                  ) : null}
 
                   <div className="my-1 border-t border-zinc-100" />
 

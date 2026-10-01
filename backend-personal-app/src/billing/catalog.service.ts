@@ -115,6 +115,96 @@ export class BillingCatalogService {
     return { ...pkg, prices, features };
   }
 
+  async seedDefaults(): Promise<{ packages: number; features: number; prices: number; packageFeatures: number }> {
+    const features = [
+      { code: 'TASK', name: 'Tasks', description: 'Jumlah task aktif yang dapat dibuat workspace', valueType: 'LIMIT' as const, unit: 'tasks' },
+    ];
+
+    const packages = [
+      { code: 'FREE', name: 'Free', description: 'Paket gratis untuk penggunaan dasar', sortOrder: 10 },
+      { code: 'PRO', name: 'Pro', description: 'Paket untuk developer dan workspace yang berkembang', sortOrder: 20 },
+      { code: 'BUSINESS', name: 'Business', description: 'Paket untuk workspace dengan kebutuhan lebih besar', sortOrder: 30 },
+    ];
+
+    let packageCount = 0;
+    let featureCount = 0;
+    let priceCount = 0;
+    let packageFeatureCount = 0;
+
+    for (const featureData of features) {
+      const existing = await this.prisma.client.orm.public.SubscriptionFeature
+        .where({ code: featureData.code })
+        .first();
+
+      if (!existing) {
+        await this.prisma.client.orm.public.SubscriptionFeature.create(featureData);
+        featureCount++;
+      }
+    }
+
+    const feature = await this.prisma.client.orm.public.SubscriptionFeature
+      .where({ code: 'TASK' })
+      .first();
+
+    if (!feature) throw new ConflictException('Feature TASK gagal dibuat');
+
+    for (const packageData of packages) {
+      let pkg = await this.prisma.client.orm.public.SubscriptionPackage
+        .where({ code: packageData.code })
+        .first();
+
+      if (!pkg) {
+        pkg = await this.prisma.client.orm.public.SubscriptionPackage.create(packageData);
+        packageCount++;
+      }
+
+      const limits: Record<string, number> = {
+        FREE: 10,
+        PRO: 100,
+        BUSINESS: 500,
+      };
+
+      const packageFeature = await this.prisma.client.orm.public.SubscriptionPackageFeature
+        .where({ packageId: pkg.id, featureId: feature.id })
+        .first();
+
+      if (!packageFeature) {
+        await this.prisma.client.orm.public.SubscriptionPackageFeature.create({
+          packageId: pkg.id,
+          featureId: feature.id,
+          enabled: true,
+          limitValue: limits[pkg.code] ?? 0,
+        });
+        packageFeatureCount++;
+      }
+
+      const prices = [
+        { billingPeriod: 'MONTHLY' as const, amountMinor: pkg.code === 'FREE' ? 0 : pkg.code === 'PRO' ? 99000 * 100 : 249000 * 100 },
+        { billingPeriod: 'YEARLY' as const, amountMinor: pkg.code === 'FREE' ? 0 : pkg.code === 'PRO' ? 990000 * 100 : 2490000 * 100 },
+      ];
+
+      for (const priceData of prices) {
+        const existingPrice = await this.prisma.client.orm.public.SubscriptionPackagePrice
+          .where({ packageId: pkg.id, billingPeriod: priceData.billingPeriod, version: 1 })
+          .first();
+
+        if (!existingPrice) {
+          await this.prisma.client.orm.public.SubscriptionPackagePrice.create({
+            packageId: pkg.id,
+            version: 1,
+            billingPeriod: priceData.billingPeriod,
+            amountMinor: priceData.amountMinor,
+            currency: 'IDR',
+            isActive: true,
+          });
+          priceCount++;
+        }
+      }
+    }
+
+    return { packages: packageCount, features: featureCount, prices: priceCount, packageFeatures: packageFeatureCount };
+  }
+
   async createPackage(data: CreatePackageDto): Promise<BillingPackageResponse> {
     const code = data.code.trim().toUpperCase();
     const existing = await this.prisma.client.orm.public.SubscriptionPackage

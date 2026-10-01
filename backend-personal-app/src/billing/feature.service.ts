@@ -68,6 +68,22 @@ export class BillingFeatureService {
     const enabled = packageFeature?.enabled === true;
     const limitValue = packageFeature?.limitValue ?? null;
 
+    if (feature.valueType === 'BOOLEAN' && limitValue !== null) {
+      throw new ConflictException(
+        'Konfigurasi subscription feature tidak konsisten: BOOLEAN tidak boleh memiliki limitValue',
+      );
+    }
+
+    if (
+      feature.valueType === 'LIMIT' &&
+      enabled &&
+      limitValue === null
+    ) {
+      throw new ConflictException(
+        'Konfigurasi subscription feature tidak konsisten: LIMIT aktif wajib memiliki limitValue',
+      );
+    }
+
     let allowed = enabled;
     if (enabled && feature.valueType === 'LIMIT' && limitValue !== null) {
       allowed = currentUsage < limitValue;

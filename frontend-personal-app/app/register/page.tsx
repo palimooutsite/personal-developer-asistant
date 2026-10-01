@@ -11,6 +11,12 @@ export default function RegisterPage() {
     ? new URLSearchParams(window.location.search).get('invitation') ||
       window.sessionStorage.getItem('pda_pending_invitation_token')
     : null;
+  const selectedPlan = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('plan')
+    : null;
+  const selectedBillingPeriod = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('billingPeriod')
+    : null;
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -32,11 +38,11 @@ export default function RegisterPage() {
 
     try {
       await register(username.trim(), email.trim(), password, name);
-      router.replace(
-        invitation
-          ? `/login?registered=1&invitation=${encodeURIComponent(invitation)}`
-          : '/login?registered=1',
-      );
+      const params = new URLSearchParams({ registered: '1' });
+      if (invitation) params.set('invitation', invitation);
+      if (selectedPlan) params.set('plan', selectedPlan.toUpperCase());
+      if (selectedBillingPeriod) params.set('billingPeriod', selectedBillingPeriod.toUpperCase());
+      router.replace('/login?' + params.toString());
     } catch (err) {
       setError(
         err instanceof ApiError

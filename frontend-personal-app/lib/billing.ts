@@ -52,3 +52,63 @@ export async function createBillingCheckout(tenantId: string, packageId: string,
   return apiRequest<BillingCheckoutResponse>('/billing/tenants/' + tenantId + '/checkout', { method: 'POST', body: JSON.stringify({ packageId, packagePriceId, ...(discountCode?.trim() ? { discountCode: discountCode.trim() } : {}), provider: 'SANDBOX' }) });
 }
 export async function sandboxSucceedPayment(tenantId: string, paymentId: string) { return apiRequest('/billing/tenants/' + tenantId + '/payments/' + paymentId + '/sandbox/succeed', { method: 'POST' }); }
+
+export interface BillingCheckoutSessionResponse {
+  id: string;
+  packageId: string;
+  packagePriceId: string;
+  workspaceName: string;
+  discountCode: string | null;
+  originalAmountMinor: number;
+  discountAmountMinor: number;
+  taxAmountMinor: number;
+  finalAmountMinor: number;
+  currency: string;
+  provider: string;
+  status: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface BillingCheckoutSessionSuccessResponse {
+  sessionId: string;
+  tenantId: string;
+  paymentId: string;
+  invoiceId: string;
+  subscriptionId: string;
+  status: 'SUCCEEDED';
+}
+
+export async function createBillingCheckoutSession(
+  packageId: string,
+  packagePriceId: string,
+  workspaceName: string,
+  discountCode?: string,
+): Promise<BillingCheckoutSessionResponse> {
+  return apiRequest<BillingCheckoutSessionResponse>('/billing/checkout-sessions', {
+    method: 'POST',
+    body: JSON.stringify({
+      packageId,
+      packagePriceId,
+      workspaceName,
+      ...(discountCode?.trim() ? { discountCode: discountCode.trim() } : {}),
+      provider: 'SANDBOX',
+    }),
+  });
+}
+
+export async function sandboxSucceedCheckoutSession(
+  sessionId: string,
+): Promise<BillingCheckoutSessionSuccessResponse> {
+  return apiRequest<BillingCheckoutSessionSuccessResponse>(
+    '/billing/checkout-sessions/' + sessionId + '/sandbox/succeed',
+    { method: 'POST' },
+  );
+}
+
+export async function sandboxFailCheckoutSession(sessionId: string) {
+  return apiRequest<{ sessionId: string; status: 'FAILED' }>(
+    '/billing/checkout-sessions/' + sessionId + '/sandbox/fail',
+    { method: 'POST' },
+  );
+}

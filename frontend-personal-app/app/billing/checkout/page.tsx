@@ -1,6 +1,4 @@
-'use client';
-
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ApiError } from '../../../lib/api';
@@ -19,7 +17,7 @@ function money(amountMinor: number, currency: string) {
   }).format(amountMinor / 100);
 }
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { activeTenantId } = useTenant();
@@ -43,8 +41,7 @@ export default function CheckoutPage() {
   }, [packageId]);
 
   const price = useMemo(
-    () =>
-      data?.package.prices?.find((item) => item.id === priceId) ?? null,
+    () => data?.package.prices?.find((item) => item.id === priceId) ?? null,
     [data, priceId],
   );
 
@@ -145,5 +142,21 @@ export default function CheckoutPage() {
         ) : null}
       </div>
     </main>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[#f6f7fb] p-6 sm:p-10">
+          <div className="mx-auto max-w-3xl rounded-3xl border bg-white p-8">
+            <p className="text-sm text-zinc-500">Memuat checkout...</p>
+          </div>
+        </main>
+      }
+    >
+      <CheckoutContent />
+    </Suspense>
   );
 }

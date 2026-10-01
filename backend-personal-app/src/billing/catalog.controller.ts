@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard.js';
+import { PlatformAdminGuard } from '../auth/guard/platform-admin.guard.js';
 import {
   BillingCatalogService,
   type BillingPackageResponse,
@@ -26,7 +27,7 @@ import { UpdatePriceDto } from './dto/update-price.dto.js';
 import { SetPackageFeatureDto } from './dto/set-package-feature.dto.js';
 
 @Controller('billing/catalog')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PlatformAdminGuard)
 export class BillingCatalogController {
   constructor(private readonly service: BillingCatalogService) {}
 

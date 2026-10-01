@@ -34,7 +34,7 @@ export default function WorkspaceSelectionPage() {
 
   function chooseTenant(tenantId: string) {
     setActiveTenantId(tenantId);
-    router.replace('/');
+    router.replace('/dashboard');
   }
 
   return (

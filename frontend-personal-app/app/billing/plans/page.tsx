@@ -87,7 +87,7 @@ export default function BillingPlansPage() {
         ) : (
           <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {packages.map((pkg) => {
-              const price = monthlyPrice(pkg);
+              const price = selectedPrice(pkg, billingPeriod);
               return (
                 <div key={pkg.id} className="flex flex-col rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
                   <h2 className="text-xl font-bold">{pkg.name}</h2>

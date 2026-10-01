@@ -39,6 +39,19 @@ const TenantContext = createContext<TenantContextValue | null>(null);
 
 const SELECTION_PATH = '/workspace-selection';
 
+function isPublicPath(pathname: string): boolean {
+  return (
+    pathname === '/login' ||
+    pathname === '/register' ||
+    pathname === '/invitations/accept' ||
+    pathname === '/landing'
+  );
+}
+
+function isPlatformPath(pathname: string): boolean {
+  return pathname === '/admin' || pathname.startsWith('/admin/');
+}
+
 export function TenantProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -50,12 +63,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const [permissionLoading, setPermissionLoading] = useState(false);
 
   const refreshTenants = useCallback(async () => {
-    if (
-      pathname === '/login' ||
-      pathname === '/register' ||
-      pathname === '/invitations/accept' ||
-      pathname === '/landing'
-    ) {
+    if (isPublicPath(pathname) || isPlatformPath(pathname)) {
       setLoading(false);
       return;
     }
@@ -68,10 +76,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       setTenants(result);
 
       const storedTenantId = getActiveTenantId();
-      const storedTenantExists = result.some(
-        (tenant) => tenant.id === storedTenantId,
-      );
-
+      const storedTenantExists = result.some((tenant) => tenant.id === storedTenantId);
       const nextTenantId = storedTenantExists ? storedTenantId : null;
 
       if (nextTenantId) {
@@ -135,9 +140,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     (tenantId: string, redirect = true) => {
       const tenant = tenants.find((item) => item.id === tenantId);
 
-      if (!tenant) {
-        return;
-      }
+      if (!tenant) return;
 
       setActiveTenantId(tenantId);
       setActiveTenantIdState(tenantId);

@@ -48,6 +48,10 @@ function isPublicPath(pathname: string): boolean {
   );
 }
 
+function isPreTenantPath(pathname: string): boolean {
+  return pathname === '/billing/checkout-session' || pathname.startsWith('/billing/checkout-session/');
+}
+
 function isPlatformPath(pathname: string): boolean {
   return pathname === '/admin' || pathname.startsWith('/admin/');
 }
@@ -63,7 +67,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const [permissionLoading, setPermissionLoading] = useState(false);
 
   const refreshTenants = useCallback(async () => {
-    if (isPublicPath(pathname) || isPlatformPath(pathname)) {
+    if (isPublicPath(pathname) || isPreTenantPath(pathname) || isPlatformPath(pathname)) {
       setLoading(false);
       return;
     }

@@ -97,7 +97,7 @@ export class BillingSubscriptionService {
       .all();
 
     const activeSubscription = subscriptions.find((item) =>
-      ['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)),
+      ['PENDING', 'TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)),
     );
 
     if (activeSubscription) {
@@ -147,7 +147,7 @@ export class BillingSubscriptionService {
       tenantId,
       packageId: pkg.id,
       packagePriceId: price.id,
-      status: 'ACTIVE',
+      status: 'PENDING',
       provider,
       startedAt: now.toISOString(),
       currentPeriodStart: now.toISOString(),

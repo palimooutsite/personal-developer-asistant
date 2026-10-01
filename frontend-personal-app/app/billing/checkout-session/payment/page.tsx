@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ApiError } from '../../../../../lib/api';
 import { sandboxSucceedCheckoutSession } from '../../../../../lib/billing';
 import { setActiveTenantId } from '../../../../../lib/tenant';
 
-export default function CheckoutSessionPaymentPage() {
+function CheckoutSessionPaymentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('sessionId');
@@ -66,5 +66,22 @@ export default function CheckoutSessionPaymentPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+
+export default function CheckoutSessionPaymentPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[#f6f7fb] px-4 py-10 sm:px-6">
+          <div className="mx-auto max-w-xl rounded-[2rem] border border-zinc-200 bg-white p-8 shadow-sm">
+            <p className="text-sm text-zinc-500">Memuat pembayaran...</p>
+          </div>
+        </main>
+      }
+    >
+      <CheckoutSessionPaymentContent />
+    </Suspense>
   );
 }

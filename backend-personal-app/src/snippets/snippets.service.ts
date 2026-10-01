@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service.js';
+import { BillingFeatureService } from '../billing/feature.service.js';
 import { CreateCodeSnippetDto } from './dto/create-code-snippet.dto.js';
 import { UpdateCodeSnippetDto } from './dto/update-code-snippet.dto.js';
 
@@ -22,6 +23,7 @@ export interface CodeSnippetResponse {
 export class SnippetsService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly billingFeatureService: BillingFeatureService,
   ) {}
 
   async create(
@@ -29,6 +31,11 @@ export class SnippetsService {
     tenantId: string,
     data: CreateCodeSnippetDto,
   ): Promise<CodeSnippetResponse> {
+    const currentUsage = (await this.prisma.client.orm.public.CodeSnippet.where({ tenantId }).select('id').all()).length;
+
+    await this.billingFeatureService.assertWithinLimit(tenantId, userId, 'CODE_SNIPPET', currentUsage);
+
+
     return this.prisma.client.orm.public.CodeSnippet.create({
       title: data.title,
       language: data.language,

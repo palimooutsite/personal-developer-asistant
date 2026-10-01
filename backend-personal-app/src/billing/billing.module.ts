@@ -14,6 +14,8 @@ import { BillingFeatureController } from './feature.controller.js';
 import { BillingFeatureService } from './feature.service.js';
 import { BillingCheckoutController } from './checkout.controller.js';
 import { BillingCheckoutService } from './checkout.service.js';
+import { BillingCheckoutSessionController } from './checkout-session.controller.js';
+import { BillingCheckoutSessionService } from './checkout-session.service.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { TenantModule } from '../tenants/tenant.module.js';
 
@@ -27,6 +29,7 @@ import { TenantModule } from '../tenants/tenant.module.js';
     BillingPaymentController,
     BillingFeatureController,
     BillingCheckoutController,
+    BillingCheckoutSessionController,
   ],
   providers: [
     BillingCatalogService,
@@ -36,6 +39,7 @@ import { TenantModule } from '../tenants/tenant.module.js';
     BillingPaymentService,
     BillingFeatureService,
     BillingCheckoutService,
+    BillingCheckoutSessionService,
   ],
   exports: [
     BillingCatalogService,

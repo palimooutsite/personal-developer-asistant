@@ -25,7 +25,7 @@ function CheckoutSessionPaymentContent() {
     try {
       const result = await sandboxSucceedCheckoutSession(sessionId);
       setActiveTenantId(result.tenantId);
-      window.location.href = '/';
+      window.location.href = '/dashboard';
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Pembayaran gagal diproses.');
       setBusy(false);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { BillingPeriod } from '../../../lib/billing';
 import { useRouter } from 'next/navigation';
 import { ApiError } from '../../../lib/api';
 import { getBillingPackages, type BillingPackage, type BillingPrice } from '../../../lib/billing';
@@ -13,8 +14,8 @@ function money(amountMinor: number, currency: string) {
   }).format(amountMinor / 100);
 }
 
-function monthlyPrice(pkg: BillingPackage): BillingPrice | null {
-  return pkg.prices?.find((price) => price.isActive && price.billingPeriod === 'MONTHLY') ?? null;
+function selectedPrice(pkg: BillingPackage, period: BillingPeriod): BillingPrice | null {
+  return pkg.prices?.find((price) => price.isActive && price.billingPeriod.toUpperCase() === period) ?? null;
 }
 
 export default function BillingPlansPage() {
@@ -22,6 +23,7 @@ export default function BillingPlansPage() {
   const [packages, setPackages] = useState<BillingPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('MONTHLY');
 
   useEffect(() => {
     void getBillingPackages()
@@ -33,7 +35,7 @@ export default function BillingPlansPage() {
   }, []);
 
   function choosePackage(pkg: BillingPackage) {
-    const price = monthlyPrice(pkg);
+    const price = selectedPrice(pkg, billingPeriod);
     if (!price) {
       setError('Harga bulanan untuk paket ini belum tersedia.');
       return;
@@ -42,7 +44,7 @@ export default function BillingPlansPage() {
     router.push(
       '/billing/checkout-session?package=' +
         encodeURIComponent(pkg.code) +
-        '&billingPeriod=MONTHLY',
+        '&billingPeriod=' + billingPeriod',
     );
   }
 
@@ -56,6 +58,19 @@ export default function BillingPlansPage() {
             Kamu belum memiliki workspace. Pilih paket terlebih dahulu, lalu workspace akan dibuat
             setelah checkout berhasil.
           </p>
+        </div>
+
+        <div className="mx-auto mt-7 flex w-fit rounded-xl border border-zinc-200 bg-white p-1 shadow-sm">
+          {(['MONTHLY', 'YEARLY'] as const).map((period) => (
+            <button
+              key={period}
+              type="button"
+              onClick={() => setBillingPeriod(period)}
+              className={'rounded-lg px-5 py-2.5 text-sm font-bold transition ' + (billingPeriod === period ? 'bg-zinc-950 text-white' : 'text-zinc-500 hover:text-zinc-950')}
+            >
+              {period === 'MONTHLY' ? 'Bulanan' : 'Tahunan'}
+            </button>
+          ))}
         </div>
 
         {error ? (
@@ -82,7 +97,7 @@ export default function BillingPlansPage() {
                     <span className="text-3xl font-black">
                       {price ? money(price.amountMinor, price.currency) : '—'}
                     </span>
-                    <span className="ml-1 text-sm text-zinc-400">/ bulan</span>
+                    <span className="ml-1 text-sm text-zinc-400">{billingPeriod === 'MONTHLY' ? '/ bulan' : '/ tahun'}</span>
                   </div>
 
                   <ul className="mt-6 flex-1 space-y-3 border-t border-zinc-100 pt-6">

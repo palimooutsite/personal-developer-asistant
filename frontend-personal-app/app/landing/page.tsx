@@ -53,7 +53,7 @@ const plans = [
     description: 'Untuk developer aktif yang butuh ruang kerja lebih lengkap.',
     features: ['5 workspace', '1 pengguna', 'Project tanpa batas', 'Task tanpa batas', 'Knowledge, Snippets & Documents'],
     cta: 'Pilih Pro',
-    href: '/register',
+    href: '/register?plan=PRO&billingPeriod=MONTHLY',
     featured: true,
   },
   {
@@ -72,8 +72,8 @@ const plans = [
     period: '/bulan',
     description: 'Untuk tim yang membutuhkan kapasitas dan kolaborasi lebih besar.',
     features: ['Workspace tanpa batas', 'Hingga 50 anggota', 'Semua fitur Team', 'Prioritas support', 'Onboarding tim'],
-    cta: 'Hubungi Kami',
-    href: '/register',
+    cta: 'Pilih Business',
+    href: '/register?plan=BUSINESS&billingPeriod=MONTHLY',
     featured: false,
   },
 ];

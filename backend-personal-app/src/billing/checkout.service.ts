@@ -1,5 +1,4 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service.js';
 import { BillingPaymentService, BillingPaymentResponse } from './payment.service.js';
 import { BillingInvoiceService, BillingInvoiceResponse } from './invoice.service.js';
 import { BillingSubscriptionService, BillingSubscriptionDetailResponse } from './subscription.service.js';
@@ -14,7 +13,7 @@ export interface BillingCheckoutResponse {
 @Injectable()
 export class BillingCheckoutService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly prisma: import('../prisma/prisma.service.js').PrismaService,
     private readonly subscriptionService: BillingSubscriptionService,
     private readonly invoiceService: BillingInvoiceService,
     private readonly paymentService: BillingPaymentService,
@@ -66,6 +65,9 @@ export class BillingCheckoutService {
         payment,
       };
     } catch (error) {
+      await this.prisma.client.orm.public.TenantSubscription
+        .where({ id: subscription.id, tenantId })
+        .update({ status: 'CANCELLED', cancelledAt: new Date().toISOString() });
       throw error;
     }
   }

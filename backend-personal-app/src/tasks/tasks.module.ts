@@ -6,6 +6,7 @@ import { TasksService } from './tasks.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { TenantModule } from '../tenants/tenant.module.js';
 import { TenantRoleModule } from '../tenants/roles/tenant-role.module.js';
+import { BillingModule } from '../billing/billing.module.js';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { TenantRoleModule } from '../tenants/roles/tenant-role.module.js';
     }),
     TenantModule,
     TenantRoleModule,
+    BillingModule,
   ],
   controllers: [TasksController],
   providers: [TasksService, PrismaService],

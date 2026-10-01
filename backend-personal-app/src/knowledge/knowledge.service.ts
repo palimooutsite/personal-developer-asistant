@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service.js';
+import { BillingFeatureService } from '../billing/feature.service.js';
 import { CreateKnowledgeArticleDto } from './dto/create-knowledge-article.dto.js';
 import { UpdateKnowledgeArticleDto } from './dto/update-knowledge-article.dto.js';
 
@@ -21,13 +22,21 @@ export interface KnowledgeArticleResponse {
 
 @Injectable()
 export class KnowledgeService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly billingFeatureService: BillingFeatureService,
+  ) {}
 
   async create(
     userId: string,
     tenantId: string,
     data: CreateKnowledgeArticleDto,
   ): Promise<KnowledgeArticleResponse> {
+    const currentUsage = (await this.prisma.client.orm.public.KnowledgeArticle.where({ tenantId }).select('id').all()).length;
+
+    await this.billingFeatureService.assertWithinLimit(tenantId, userId, 'KNOWLEDGE', currentUsage);
+
+
     const existing =
       await this.prisma.client.orm.public.KnowledgeArticle
         .where({

@@ -188,10 +188,24 @@ export class BillingCatalogService {
 
     if (!pkg) throw new NotFoundException('Package tidak ditemukan');
 
-    const [packageFeatures, featureRows] = await Promise.all([
+    const [prices, packageFeatures, featureRows] = await Promise.all([
+      this.prisma.client.orm.public.SubscriptionPackagePrice
+        .where({ packageId: id })
+        .select(
+          'id',
+          'packageId',
+          'version',
+          'billingPeriod',
+          'amountMinor',
+          'currency',
+          'isActive',
+          'createdAt',
+          'updatedAt',
+        )
+        .all(),
       this.prisma.client.orm.public.SubscriptionPackageFeature
         .where({ packageId: id })
-        .select('id', 'featureId', 'enabled', 'limitValue', 'createdAt', 'updatedAt')
+        .select('id', 'packageId', 'featureId', 'enabled', 'limitValue', 'createdAt', 'updatedAt')
         .all(),
       this.prisma.client.orm.public.SubscriptionFeature
         .where({})
@@ -200,7 +214,10 @@ export class BillingCatalogService {
     ]);
 
     return {
-      package: pkg,
+      package: {
+        ...pkg,
+        prices,
+      },
       features: packageFeatures.map((item) => ({
         ...item,
         feature: featureRows.find((feature) => feature.id === item.featureId) ?? null,

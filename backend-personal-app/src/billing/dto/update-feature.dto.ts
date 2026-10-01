@@ -1,4 +1,5 @@
-import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import { BillingFeatureValueTypeDto } from './create-feature.dto.js';
 
 export class UpdateFeatureDto {
   @IsOptional()
@@ -10,6 +11,10 @@ export class UpdateFeatureDto {
   @IsString()
   @MaxLength(2000)
   description?: string;
+
+  @IsOptional()
+  @IsEnum(BillingFeatureValueTypeDto)
+  valueType?: BillingFeatureValueTypeDto;
 
   @IsOptional()
   @IsString()

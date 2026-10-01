@@ -10,6 +10,7 @@ import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { AddProjectMemberDto } from './dto/add-project-member.dto.js';
 import { UpdateProjectMemberDto } from './dto/update-project-member.dto.js';
+import { BillingFeatureService } from '../billing/feature.service.js';
 
 export interface ProjectResponse {
   id: string;
@@ -47,13 +48,28 @@ export interface ProjectMemberListItem {
 
 @Injectable()
 export class ProjectsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly billingFeatureService: BillingFeatureService,
+  ) {}
 
   async create(
     data: CreateProjectDto,
     userId: string,
     tenantId: string,
   ): Promise<ProjectResponse> {
+    const existingProjects = await this.prisma.client.orm.public.Project
+      .where({ tenantId })
+      .select('id')
+      .all();
+
+    await this.billingFeatureService.assertWithinLimit(
+      tenantId,
+      userId,
+      'PROJECT',
+      existingProjects.length,
+    );
+
     return this.prisma.client.transaction(async (tx) => {
       const project = await tx.orm.public.Project.create({
         name: data.name,

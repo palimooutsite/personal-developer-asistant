@@ -21,7 +21,9 @@ export function GlobalHeader() {
       pathname === '/register' ||
       pathname === '/workspace-selection' ||
       pathname === '/invitations/accept' ||
-      pathname === '/billing/plans'
+      pathname === '/billing/plans' ||
+      pathname === '/billing/checkout-session' ||
+      pathname.startsWith('/billing/checkout-session/')
     ) {
       setIsPlatformAdmin(false);
       return;
@@ -48,7 +50,9 @@ export function GlobalHeader() {
     pathname === '/workspace-selection' ||
     pathname === '/invitations/accept' ||
     pathname === '/landing' ||
-    pathname === '/billing/plans'
+    pathname === '/billing/plans' ||
+    pathname === '/billing/checkout-session' ||
+    pathname.startsWith('/billing/checkout-session/')
   ) {
     return null;
   }

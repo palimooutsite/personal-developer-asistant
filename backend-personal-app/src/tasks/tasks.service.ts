@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateTaskDto } from './dto/create-task.dto.js';
 import { UpdateTaskDto } from './dto/update-task.dto.js';
 import { AddTaskAssigneeDto } from './dto/add-task-assignee.dto.js';
+import { BillingFeatureService } from '../billing/feature.service.js';
 
 type TaskMutationRole = 'OWNER' | 'ADMIN' | 'DEVELOPER';
 
@@ -57,7 +58,10 @@ export interface TaskAssigneeSummary {
 
 @Injectable()
 export class TasksService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly billingFeatureService: BillingFeatureService,
+  ) {}
 
   async create(
     projectId: string,
@@ -75,6 +79,27 @@ export class TasksService {
     if (!project) {
       throw new NotFoundException('Project tidak ditemukan');
     }
+
+    const workspaceProjects = await this.prisma.client.orm.public.Project
+      .where({ tenantId })
+      .select('id')
+      .all();
+
+    let currentTaskUsage = 0;
+    for (const workspaceProject of workspaceProjects) {
+      const tasks = await this.prisma.client.orm.public.Task
+        .where({ projectId: workspaceProject.id })
+        .select('id')
+        .all();
+      currentTaskUsage += tasks.length;
+    }
+
+    await this.billingFeatureService.assertWithinLimit(
+      tenantId,
+      userId,
+      'TASK',
+      currentTaskUsage,
+    );
 
     const task = await this.prisma.client.orm.public.Task.create({
       projectId,

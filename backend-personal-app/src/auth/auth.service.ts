@@ -53,6 +53,7 @@ export class AuthService {
     return {
       id: user.id,
       username: user.username,
+    isPlatformAdmin: user.isPlatformAdmin,
       email: user.email,
       name: user.name,
     };

@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getBillingPackageFeatures, setPackageFeature, type AdminPackageFeature } from "../../../../../lib/billing";
+import { addPrice, getBillingPackageFeatures, setPackageFeature, updatePrice, type AdminPackageFeature, type AdminPrice } from "../../../../../lib/billing";
 
 export default function PackageDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const [packageId, setPackageId] = useState("");
   const [packageName, setPackageName] = useState("");
   const [items, setItems] = useState<AdminPackageFeature[]>([]);
+  const [prices, setPrices] = useState<AdminPrice[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -19,6 +20,7 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
       const result = await getBillingPackageFeatures(id);
       setPackageName(result.package.name);
       setItems(result.features);
+      setPrices(result.package.prices ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Gagal memuat feature package");
     } finally { setLoading(false); }
@@ -44,12 +46,77 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
     </div>
     {message && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{message}</div>}
     {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+    {!loading && packageId && <PriceSection packageId={packageId} prices={prices} onSaved={() => void load(packageId)} />}
     {loading ? <p>Memuat...</p> : <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
       <div className="grid grid-cols-[1fr_120px_180px_100px] gap-4 border-b bg-zinc-50 px-5 py-3 text-xs font-bold uppercase tracking-wider text-zinc-500"><span>Feature</span><span>Enabled</span><span>Limit</span><span>Action</span></div>
       <div className="divide-y">{items.map(item => <FeatureRow key={item.featureId} item={item} saving={saving === item.featureId} onSave={save} />)}</div>
       {items.length === 0 && <div className="p-8 text-center text-sm text-zinc-500">Belum ada feature pada package ini. Jalankan Seed Defaults atau konfigurasi feature melalui backend.</div>}
     </div>}
   </section>;
+}
+
+
+function PriceSection({ packageId, prices, onSaved }: { packageId: string; prices: AdminPrice[]; onSaved: () => void }) {
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [newPeriod, setNewPeriod] = useState<"MONTHLY" | "YEARLY">("MONTHLY");
+  const [newAmount, setNewAmount] = useState("");
+  const [newCurrency, setNewCurrency] = useState("IDR");
+
+  useEffect(() => {
+    const next: Record<string, string> = {};
+    prices.forEach(p => { next[p.id] = String(p.amountMinor / 100); });
+    setValues(next);
+  }, [prices]);
+
+  async function save(id: string) {
+    setSaving(true); setMessage(""); setError("");
+    try { await updatePrice(id, { amountMinor: Math.round(Number(values[id] || 0) * 100) }); setMessage("Harga berhasil diperbarui."); onSaved(); }
+    catch (e) { setError(e instanceof Error ? e.message : "Gagal memperbarui harga"); }
+    finally { setSaving(false); }
+  }
+
+  async function toggle(price: AdminPrice) {
+    setSaving(true); setMessage(""); setError("");
+    try { await updatePrice(price.id, { isActive: !price.isActive }); setMessage("Status harga diperbarui."); onSaved(); }
+    catch (e) { setError(e instanceof Error ? e.message : "Gagal memperbarui status"); }
+    finally { setSaving(false); }
+  }
+
+  async function create() {
+    const amount = Number(newAmount);
+    if (!Number.isFinite(amount) || amount < 0) { setError("Harga harus berupa angka >= 0."); return; }
+    setSaving(true); setMessage(""); setError("");
+    try { await addPrice(packageId, { billingPeriod: newPeriod, amountMinor: Math.round(amount * 100), currency: newCurrency }); setNewAmount(""); setMessage("Versi harga baru berhasil dibuat."); onSaved(); }
+    catch (e) { setError(e instanceof Error ? e.message : "Gagal membuat harga"); }
+    finally { setSaving(false); }
+  }
+
+  return <div className="space-y-4">
+    <div><p className="text-xs font-bold uppercase tracking-wider text-amber-600">Pricing</p><h3 className="mt-1 text-xl font-bold">Package Prices</h3><p className="mt-1 text-sm text-zinc-500">Nilai di bawah ditampilkan dalam Rupiah; backend tetap menyimpan amountMinor.</p></div>
+    {message && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{message}</div>}
+    {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+    <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+      <div className="grid grid-cols-[1fr_180px_110px_100px] gap-4 border-b bg-zinc-50 px-5 py-3 text-xs font-bold uppercase tracking-wider text-zinc-500"><span>Period / Version</span><span>Harga (IDR)</span><span>Status</span><span>Action</span></div>
+      <div className="divide-y">{prices.map(price => <div key={price.id} className="grid grid-cols-[1fr_180px_110px_100px] items-center gap-4 px-5 py-4">
+        <div><p className="font-semibold">{price.billingPeriod}</p><p className="text-xs text-zinc-400">Version {price.version} · {price.currency}</p></div>
+        <input type="number" min="0" value={values[price.id] ?? ""} onChange={e => setValues(v => ({...v, [price.id]: e.target.value}))} className="rounded-lg border border-zinc-300 px-3 py-2 text-sm" />
+        <button onClick={() => void toggle(price)} disabled={saving} className={`w-fit rounded-full px-2.5 py-1 text-xs font-bold ${price.isActive ? "bg-emerald-50 text-emerald-700" : "bg-zinc-100 text-zinc-500"}`}>{price.isActive ? "ACTIVE" : "INACTIVE"}</button>
+        <button onClick={() => void save(price.id)} disabled={saving} className="rounded-lg bg-zinc-950 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Save</button>
+      </div>)}</div>
+    </div>
+    <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <h4 className="font-bold">Tambah versi harga</h4><p className="mt-1 text-xs text-zinc-500">Backend otomatis menaikkan version berdasarkan billing period.</p>
+      <div className="mt-4 grid gap-3 md:grid-cols-[150px_1fr_120px_auto]">
+        <select value={newPeriod} onChange={e => setNewPeriod(e.target.value as "MONTHLY" | "YEARLY")} className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"><option value="MONTHLY">MONTHLY</option><option value="YEARLY">YEARLY</option></select>
+        <input type="number" min="0" value={newAmount} onChange={e => setNewAmount(e.target.value)} placeholder="Harga dalam Rupiah" className="rounded-lg border border-zinc-300 px-3 py-2 text-sm" />
+        <input value={newCurrency} onChange={e => setNewCurrency(e.target.value.toUpperCase())} maxLength={10} className="rounded-lg border border-zinc-300 px-3 py-2 text-sm" />
+        <button onClick={() => void create()} disabled={saving} className="rounded-lg bg-zinc-950 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Tambah</button>
+      </div>
+    </div>
+  </div>;
 }
 
 function FeatureRow({ item, saving, onSave }: { item: AdminPackageFeature; saving: boolean; onSave: (item: AdminPackageFeature, enabled: boolean, limitValue: number | null) => Promise<void> }) {

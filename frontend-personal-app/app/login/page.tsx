@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ApiError } from '../../lib/api';
 import { login } from '../../lib/auth';
+import { getTenants } from '../../lib/tenant';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,12 +40,13 @@ export default function LoginPage() {
           billingPeriod: (billingPeriod ?? 'MONTHLY').toUpperCase(),
         });
         router.replace('/billing/checkout-session?' + checkoutParams.toString());
-      } else {
+      } else if (invitation) {
         router.replace(
-          invitation
-            ? `/invitations/accept?token=${encodeURIComponent(invitation)}`
-            : '/billing/plans',
+          `/invitations/accept?token=${encodeURIComponent(invitation)}`,
         );
+      } else {
+        const tenants = await getTenants();
+        router.replace(tenants.length > 0 ? '/workspace-selection' : '/billing/plans');
       }
       router.refresh();
     } catch (err) {

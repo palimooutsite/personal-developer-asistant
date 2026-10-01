@@ -121,6 +121,7 @@ model Tenant {
   roles TenantCustomRole[]
   invitations TenantInvitation[]
   projects Project[]
+  tasks Task[]
   knowledgeArticles KnowledgeArticle[]
   tags Tag[]
   codeSnippets CodeSnippet[]
@@ -237,6 +238,7 @@ model ProjectMember {
 model Task {
   id          String            @id @default(uuid())
   projectId   String
+  tenantId    String
   createdBy   String
   title       String
   description String?
@@ -251,6 +253,11 @@ model Task {
     references: [id]
   )
 
+  tenant Tenant @relation(
+    fields: [tenantId],
+    references: [id]
+  )
+
   creator   User @relation(
     fields: [createdBy],
     references: [id]
@@ -258,6 +265,8 @@ model Task {
 
   assignees TaskAssignee[]
 
+  @@index([tenantId])
+  @@index([tenantId, projectId])
   @@unique([id, projectId])
 }
 

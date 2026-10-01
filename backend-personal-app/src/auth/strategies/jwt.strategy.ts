@@ -5,6 +5,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 interface JwtPayload {
   sub: string;
   username: string;
+  isPlatformAdmin?: boolean;
 }
 
 @Injectable()
@@ -21,6 +22,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return {
       userId: payload.sub,
       username: payload.username,
+      isPlatformAdmin: payload.isPlatformAdmin === true,
     };
   }
 }

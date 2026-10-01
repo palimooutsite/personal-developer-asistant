@@ -451,6 +451,7 @@ enum DiscountDuration {
 }
 
 enum SubscriptionStatus {
+  PENDING
   TRIAL
   ACTIVE
   PAST_DUE

@@ -41,6 +41,7 @@ const SELECTION_PATH = '/workspace-selection';
 
 function isPublicPath(pathname: string): boolean {
   return (
+    pathname === '/' ||
     pathname === '/login' ||
     pathname === '/register' ||
     pathname === '/invitations/accept' ||

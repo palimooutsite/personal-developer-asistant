@@ -9,6 +9,7 @@ export interface BillingFeatureAccess {
   limitValue: number | null;
   currentUsage?: number;
   allowed: boolean;
+  remaining?: number | null;
 }
 
 @Injectable()
@@ -89,6 +90,11 @@ export class BillingFeatureService {
       allowed = currentUsage < limitValue;
     }
 
+    const remaining =
+      feature.valueType === 'LIMIT' && limitValue !== null
+        ? Math.max(0, limitValue - currentUsage)
+        : null;
+
     return {
       code: feature.code,
       name: feature.name,
@@ -96,6 +102,7 @@ export class BillingFeatureService {
       enabled,
       limitValue,
       currentUsage,
+      remaining,
       allowed,
     };
   }
@@ -129,9 +136,15 @@ export class BillingFeatureService {
         );
       }
 
-      throw new ConflictException(
-        'Limit feature subscription workspace sudah tercapai',
-      );
+      const error = new ConflictException({
+        code: 'FEATURE_LIMIT_REACHED',
+        message: 'Limit feature subscription workspace sudah tercapai',
+        feature: access.code,
+        currentUsage: access.currentUsage ?? 0,
+        limit: access.limitValue,
+        remaining: access.remaining ?? 0,
+      });
+      throw error;
     }
   }
 }

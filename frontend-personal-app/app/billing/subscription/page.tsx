@@ -47,13 +47,13 @@ export default function SubscriptionPage() {
   }, [activeTenantId]);
 
   return (
-    <main className="min-h-screen bg-[#f6f7fb] p-6 sm:p-10">
+    <main className="min-h-screen bg-zinc-100 p-6 text-zinc-950 sm:p-10">
       <div className="mx-auto max-w-4xl">
-        <Link href="/billing" className="text-sm font-semibold text-zinc-500">
+        <Link href="/billing" className="text-sm font-semibold text-zinc-700 hover:text-zinc-950">
           ← Billing
         </Link>
 
-        <h1 className="mt-5 text-3xl font-bold">Subscription</h1>
+        <h1 className="mt-5 text-3xl font-black text-zinc-950">Subscription</h1>
 
         {error ? (
           <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -62,16 +62,16 @@ export default function SubscriptionPage() {
         ) : null}
 
         {subscription ? (
-          <div className="mt-7 rounded-3xl border bg-white p-7 shadow-sm">
+          <div className="mt-7 rounded-3xl border border-zinc-300 bg-white p-7 shadow-md">
             <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
               <div>
-                <p className="text-xs uppercase tracking-wider text-zinc-400">
+                <p className="text-xs font-bold uppercase tracking-wider text-zinc-600">
                   Current Plan
                 </p>
                 <h2 className="mt-2 text-3xl font-bold">
                   {subscription.package.name}
                 </h2>
-                <p className="mt-2 text-sm text-zinc-500">
+                <p className="mt-2 text-sm font-medium text-zinc-700">
                   {money(
                     subscription.packagePrice.amountMinor,
                     subscription.packagePrice.currency,
@@ -83,14 +83,14 @@ export default function SubscriptionPage() {
                 </p>
               </div>
 
-              <span className="h-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+              <span className="h-fit rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
                 {subscription.status}
               </span>
             </div>
 
             <div className="mt-7 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl bg-zinc-50 p-4">
-                <p className="text-xs text-zinc-400">Period Start</p>
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                <p className="text-xs font-medium text-zinc-600">Period Start</p>
                 <p className="mt-1 text-sm font-semibold">
                   {new Date(subscription.currentPeriodStart).toLocaleString(
                     'id-ID',
@@ -109,7 +109,7 @@ export default function SubscriptionPage() {
             </div>
           </div>
         ) : (
-          <div className="mt-7 rounded-3xl border bg-white p-8 text-center">
+          <div className="mt-7 rounded-3xl border border-zinc-300 bg-white p-8 text-center shadow-sm">
             Belum memiliki subscription aktif.
             <Link
               href="/billing"
@@ -121,9 +121,9 @@ export default function SubscriptionPage() {
         )}
 
         {usage ? (
-          <div className="mt-7 rounded-3xl border bg-white p-7">
+          <div className="mt-7 rounded-3xl border border-zinc-300 bg-white p-7 shadow-md">
             <h2 className="text-xl font-bold">Feature Usage</h2>
-            <div className="mt-5 divide-y">
+            <div className="mt-5 divide-y divide-zinc-200">
               {usage.features.map((feature) => (
                 <div
                   key={feature.id}

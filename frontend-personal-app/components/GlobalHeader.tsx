@@ -11,37 +11,6 @@ export function GlobalHeader() {
   const { tenants, activeTenant, loading, selectTenant, can } = useTenant();
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
-
-  useEffect(() => {
-    if (
-      pathname === '/' ||
-      pathname === '/landing' ||
-      pathname === '/login' ||
-      pathname === '/register' ||
-      pathname === '/workspace-selection' ||
-      pathname === '/invitations/accept' ||
-      pathname === '/billing/plans' ||
-      pathname === '/billing/checkout-session' ||
-      pathname.startsWith('/billing/checkout-session/')
-    ) {
-      setIsPlatformAdmin(false);
-      return;
-    }
-
-    let mounted = true;
-    void getCurrentUser()
-      .then((user) => {
-        if (mounted) setIsPlatformAdmin(user.isPlatformAdmin);
-      })
-      .catch(() => {
-        if (mounted) setIsPlatformAdmin(false);
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   if (
     pathname === '/' ||
@@ -75,15 +44,6 @@ export function GlobalHeader() {
         </Link>
 
         <div className="flex items-center gap-2">
-          {isPlatformAdmin ? (
-            <Link
-              href="/admin/billing"
-              className="hidden rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800 transition hover:border-amber-300 hover:bg-amber-100 sm:inline-flex"
-            >
-              Platform Billing
-            </Link>
-          ) : null}
-
           <div className="relative">
             <button
               type="button"
@@ -230,24 +190,6 @@ export function GlobalHeader() {
                       <span className="block text-xs text-zinc-500">Profil, foto & keamanan</span>
                     </span>
                   </Link>
-
-                  {isPlatformAdmin ? (
-                    <>
-                      <div className="my-1 border-t border-zinc-100" />
-                      <Link
-                        href="/admin/billing"
-                        onClick={() => setSettingsOpen(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition hover:bg-amber-50"
-                        role="menuitem"
-                      >
-                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-amber-700">▤</span>
-                        <span>
-                          <span className="block font-semibold text-zinc-900">Platform Billing</span>
-                          <span className="block text-xs text-zinc-500">Package, feature, harga & discount</span>
-                        </span>
-                      </Link>
-                    </>
-                  ) : null}
 
                   <div className="my-1 border-t border-zinc-100" />
 

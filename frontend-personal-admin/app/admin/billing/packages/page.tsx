@@ -27,9 +27,9 @@ export default function PackagesPage() {
 
   return <section className="mx-auto max-w-7xl space-y-6">
     <div className="flex flex-wrap items-end justify-between gap-4">
-      <div><p className="text-sm font-semibold text-amber-600">Billing / Catalog</p><h2 className="mt-1 text-3xl font-bold">Packages</h2><p className="mt-2 text-sm text-zinc-500">Kelola paket, harga, feature dan limit.</p></div>
+      <div><p className="text-sm font-semibold text-amber-600">Billing / Catalog</p><h2 className="mt-1 text-3xl font-bold">Packages</h2><p className="mt-2 text-sm text-zinc-500">Kelola paket yang dijual, harga subscription, serta feature dan limit masing-masing plan.</p></div>
       <div className="flex gap-2">
-        <button onClick={() => run(() => seedCatalog(), "Default catalog berhasil disinkronkan")} className="rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold hover:bg-zinc-50">Seed Defaults</button>
+        <button onClick={() => run(() => seedCatalog(), "Default catalog berhasil disinkronkan")} className="rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold hover:bg-zinc-50">Sinkronkan Default</button>
       </div>
     </div>
     {message && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{message}</div>}
@@ -51,7 +51,7 @@ export default function PackagesPage() {
           )}</div>
         </div>
         <div className="mt-5 flex gap-2">
-          <Link href={`/admin/billing/packages/${pkg.id}`} className="rounded-lg bg-zinc-950 px-3 py-2 text-xs font-bold text-white">Manage Limits</Link>
+          <Link href={`/admin/billing/packages/${pkg.id}`} className="rounded-lg bg-zinc-950 px-3 py-2 text-xs font-bold text-white">Kelola Plan</Link>
           <button onClick={() => { const name = prompt("Nama package", pkg.name); if (name && name !== pkg.name) void run(() => updatePackage(pkg.id, { name }), "Package diperbarui"); }} className="rounded-lg border px-3 py-2 text-xs font-semibold">Edit</button>
           <button onClick={() => void run(() => updatePackage(pkg.id, { isActive: !pkg.isActive }), "Status package diperbarui")} className="rounded-lg border px-3 py-2 text-xs font-semibold">{pkg.isActive ? "Nonaktifkan" : "Aktifkan"}</button>
         </div>

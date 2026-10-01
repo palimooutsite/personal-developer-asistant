@@ -53,7 +53,6 @@ export class AuthService {
     return {
       id: user.id,
       username: user.username,
-    isPlatformAdmin: user.isPlatformAdmin,
       email: user.email,
       name: user.name,
     };
@@ -108,6 +107,7 @@ export class AuthService {
   const payload = {
     sub: user.id,
     username: user.username,
+    isPlatformAdmin: user.isPlatformAdmin,
   };
 
   const accessToken = await this.jwtService.signAsync(

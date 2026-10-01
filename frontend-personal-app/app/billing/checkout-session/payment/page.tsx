@@ -2,9 +2,9 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ApiError } from '../../../../../lib/api';
-import { sandboxSucceedCheckoutSession } from '../../../../../lib/billing';
-import { setActiveTenantId } from '../../../../../lib/tenant';
+import { ApiError } from '../../../../lib/api';
+import { sandboxSucceedCheckoutSession } from '../../../../lib/billing';
+import { setActiveTenantId } from '../../../../lib/tenant';
 
 function CheckoutSessionPaymentContent() {
   const router = useRouter();

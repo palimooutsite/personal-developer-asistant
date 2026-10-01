@@ -31,3 +31,11 @@ export async function getDiscountPackages(id:string){return apiRequest<AdminDisc
 export async function setDiscountPackage(id:string,packageId:string,enabled:boolean){return apiRequest(`/billing/discounts/${id}/packages/${packageId}`,{method:enabled?"POST":"DELETE",...(enabled?{body:JSON.stringify({enabled:true})}:{})});}
 
 export async function seedCatalog(){return apiRequest("/billing/catalog/seed-defaults",{method:"POST"});}
+
+export interface AdminSubscription {
+  id:string; tenantId:string; workspaceName:string; packageId:string; packageName:string; packageCode:string;
+  billingPeriod:string; amountMinor:number; currency:string; status:string; provider:string;
+  currentPeriodStart:string; currentPeriodEnd:string; startedAt:string; cancelledAt:string|null; createdAt:string;
+}
+export async function listAdminSubscriptions(){return apiRequest<AdminSubscription[]>("/billing/admin/subscriptions");}
+export async function getAdminSubscription(id:string){return apiRequest<AdminSubscription>(`/billing/admin/subscriptions/${id}`);}

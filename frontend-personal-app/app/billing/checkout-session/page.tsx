@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ApiError } from '../../../lib/api';
 import {
   createBillingCheckoutSession,
-  getBillingPackages,
+  getBillingPackage,
   type BillingPackage,
   type BillingPrice,
 } from '../../../lib/billing';
@@ -24,7 +24,7 @@ function CheckoutSessionContent() {
   const packageCode = (searchParams.get('package') ?? 'PRO').toUpperCase();
   const period = (searchParams.get('billingPeriod') ?? 'MONTHLY').toUpperCase();
 
-  const [packages, setPackages] = useState<BillingPackage[]>([]);
+  const [selectedPackage, setSelectedPackage] = useState<BillingPackage | null>(null);
   const [workspaceName, setWorkspaceName] = useState('');
   const [discount, setDiscount] = useState('');
   const [loading, setLoading] = useState(true);
@@ -32,8 +32,8 @@ function CheckoutSessionContent() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void getBillingPackages()
-      .then((result) => setPackages(result.filter((item) => item.isActive)))
+    void getBillingPackage(packageCode.toUpperCase())
+      .then((result) => setSelectedPackage(result))
       .catch((err: unknown) => {
         setError(err instanceof ApiError ? err.message : 'Package tidak dapat dimuat.');
       })
@@ -41,12 +41,11 @@ function CheckoutSessionContent() {
   }, []);
 
   const selected = useMemo(() => {
-    const pkg = packages.find((item) => item.code.toUpperCase() === packageCode);
-    const price = pkg?.prices?.find(
+    const price = selectedPackage?.prices?.find(
       (item) => item.isActive && item.billingPeriod.toUpperCase() === period,
     ) ?? null;
-    return { pkg, price };
-  }, [packages, packageCode, period]);
+    return { pkg: selectedPackage, price };
+  }, [selectedPackage, period]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

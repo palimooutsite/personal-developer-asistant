@@ -91,6 +91,7 @@ model User {
   passwordHash String
   name         String?
   avatarUrl    String?
+  isPlatformAdmin Boolean @default(false)
   createdAt    TimestamptzString @default(now())
   updatedAt    temporal.updatedAtString()
 

@@ -136,15 +136,45 @@ export class BillingFeatureService {
       if (!feature.isActive || !packageFeatures.some((item) => item.featureId === feature.id)) continue;
 
       if (feature.code === 'PROJECT') {
-        usageQueries.push(this.prisma.client.orm.public.Project.where({ tenantId }).select('id').all().then((rows) => { usageByFeature[feature.code] = rows.length; }));
+        usageQueries.push((async () => {
+          const rows = await this.prisma.client.orm.public.Project
+            .where({ tenantId })
+            .select('id')
+            .all();
+          usageByFeature[feature.code] = rows.length;
+        })());
       } else if (feature.code === 'TASK') {
-        usageQueries.push(this.prisma.client.orm.public.Task.where({ tenantId }).select('id').all().then((rows) => { usageByFeature[feature.code] = rows.length; }));
+        usageQueries.push((async () => {
+          const rows = await this.prisma.client.orm.public.Task
+            .where({ tenantId })
+            .select('id')
+            .all();
+          usageByFeature[feature.code] = rows.length;
+        })());
       } else if (feature.code === 'KNOWLEDGE') {
-        usageQueries.push(this.prisma.client.orm.public.KnowledgeArticle.where({ tenantId }).select('id').all().then((rows) => { usageByFeature[feature.code] = rows.length; }));
+        usageQueries.push((async () => {
+          const rows = await this.prisma.client.orm.public.KnowledgeArticle
+            .where({ tenantId })
+            .select('id')
+            .all();
+          usageByFeature[feature.code] = rows.length;
+        })());
       } else if (feature.code === 'CODE_SNIPPET') {
-        usageQueries.push(this.prisma.client.orm.public.CodeSnippet.where({ tenantId }).select('id').all().then((rows) => { usageByFeature[feature.code] = rows.length; }));
+        usageQueries.push((async () => {
+          const rows = await this.prisma.client.orm.public.CodeSnippet
+            .where({ tenantId })
+            .select('id')
+            .all();
+          usageByFeature[feature.code] = rows.length;
+        })());
       } else if (feature.code === 'DOCUMENT') {
-        usageQueries.push(this.prisma.client.orm.public.Document.where({ tenantId }).select('id').all().then((rows) => { usageByFeature[feature.code] = rows.length; }));
+        usageQueries.push((async () => {
+          const rows = await this.prisma.client.orm.public.Document
+            .where({ tenantId })
+            .select('id')
+            .all();
+          usageByFeature[feature.code] = rows.length;
+        })());
       }
     }
 

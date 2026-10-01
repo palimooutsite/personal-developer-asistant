@@ -14,6 +14,19 @@ export function GlobalHeader() {
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
 
   useEffect(() => {
+    if (
+      pathname === '/' ||
+      pathname === '/landing' ||
+      pathname === '/login' ||
+      pathname === '/register' ||
+      pathname === '/workspace-selection' ||
+      pathname === '/invitations/accept' ||
+      pathname === '/billing/plans'
+    ) {
+      setIsPlatformAdmin(false);
+      return;
+    }
+
     let mounted = true;
     void getCurrentUser()
       .then((user) => {

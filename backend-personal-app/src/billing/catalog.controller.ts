@@ -46,6 +46,11 @@ export class BillingCatalogController {
     return this.service.getPackage(id);
   }
 
+  @Get('packages/:id/features')
+  getPackageFeatures(@Param('id') id: string): Promise<Record<string, unknown>> {
+    return this.service.getPackageFeatures(id);
+  }
+
   @Post('packages')
   createPackage(@Body() body: CreatePackageDto): Promise<BillingPackageResponse> {
     return this.service.createPackage(body);

@@ -41,7 +41,7 @@ export class BillingInvoiceService {
       .all();
 
     const active = subscriptions
-      .filter((item) => ['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)))
+      .filter((item) => ['PENDING', 'TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)))
       .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
 
     if (!active) throw new ConflictException('Workspace belum memiliki subscription aktif');

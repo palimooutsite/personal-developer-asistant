@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard.js';
+import { PlatformAdminGuard } from '../auth/guard/platform-admin.guard.js';
 import {
   BillingDiscountMessageResponse,
   BillingDiscountPackageResponse,
@@ -20,7 +21,7 @@ import { SetDiscountPackageDto } from './dto/set-discount-package.dto.js';
 import { UpdateDiscountDto } from './dto/update-discount.dto.js';
 
 @Controller('billing/discounts')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PlatformAdminGuard)
 export class BillingDiscountController {
   constructor(private readonly service: BillingDiscountService) {}
 

@@ -1,0 +1,40 @@
+'use client';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { ApiError } from '../../lib/api';
+import { getBillingPackages, getBillingUsage, getCurrentSubscription, type BillingPackage, type BillingPrice, type BillingSubscription, type BillingUsageResponse } from '../../lib/billing';
+import { useTenant } from '../../components/providers/TenantProvider';
+
+function money(amountMinor: number, currency: string) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amountMinor / 100); }
+function limit(value: number | null, unit: string | null) { return value === null ? 'Unlimited' : new Intl.NumberFormat('id-ID').format(value) + ' ' + (unit ?? ''); }
+function priceFor(pkg: BillingPackage, period: 'MONTHLY' | 'YEARLY'): BillingPrice | null { return pkg.prices?.find(p => p.isActive && p.billingPeriod === period) ?? null; }
+function statusLabel(status: string) { return ({ PENDING: 'Menunggu pembayaran', TRIAL: 'Trial', ACTIVE: 'Aktif', PAST_DUE: 'Jatuh tempo', CANCELLED: 'Dibatalkan', EXPIRED: 'Kadaluarsa' } as Record<string,string>)[status] ?? status; }
+
+export default function BillingPage() {
+ const { activeTenantId, activeTenant, loading: tenantLoading } = useTenant();
+ const [packages, setPackages] = useState<BillingPackage[]>([]);
+ const [subscription, setSubscription] = useState<BillingSubscription | null>(null);
+ const [usage, setUsage] = useState<BillingUsageResponse | null>(null);
+ const [period, setPeriod] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY');
+ const [loading, setLoading] = useState(true);
+ const [error, setError] = useState<string | null>(null);
+ const load = useCallback(async () => {
+   if (!activeTenantId) { setLoading(false); return; }
+   setLoading(true); setError(null);
+   try { const [ps, sub, us] = await Promise.all([getBillingPackages(), getCurrentSubscription(activeTenantId), getBillingUsage(activeTenantId)]); setPackages(ps.filter(p => p.isActive).sort((a,b) => a.sortOrder-b.sortOrder)); setSubscription(sub); setUsage(us); }
+   catch (e) { setError(e instanceof ApiError ? e.message : 'Billing tidak dapat dimuat.'); }
+   finally { setLoading(false); }
+ }, [activeTenantId]);
+ useEffect(() => { void load(); }, [load]);
+ const currentPackageId = subscription?.packageId ?? usage?.subscription.packageId ?? null;
+ const cards = useMemo(() => packages.map(pkg => ({ pkg, price: priceFor(pkg, period), current: pkg.id === currentPackageId })), [packages, period, currentPackageId]);
+ if (tenantLoading || loading) return <main className='min-h-screen bg-[#f6f7fb] p-6 sm:p-8'><div className='mx-auto max-w-[1400px]'><div className='h-8 w-48 animate-pulse rounded-lg bg-zinc-200' /><div className='mt-8 grid gap-5 lg:grid-cols-3'>{[1,2,3].map(i => <div key={i} className='h-[430px] animate-pulse rounded-3xl border border-zinc-200 bg-white' />)}</div></div></main>;
+ if (!activeTenantId) return <main className='min-h-screen bg-[#f6f7fb] p-6'><div className='mx-auto max-w-[800px] rounded-3xl border bg-white p-8 text-center'><h1 className='text-2xl font-bold'>Pilih workspace terlebih dahulu</h1><Link href='/workspace-selection' className='mt-6 inline-flex rounded-xl bg-zinc-950 px-5 py-3 text-sm font-semibold text-white'>Pilih Workspace</Link></div></main>;
+ return <main className='min-h-screen bg-[#f6f7fb] text-zinc-950'><div className='mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 lg:py-10'>
+  <div className='flex flex-col gap-5 border-b border-zinc-200 pb-7 sm:flex-row sm:items-end sm:justify-between'><div><div className='inline-flex rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700'>BILLING</div><h1 className='mt-4 text-3xl font-bold tracking-tight'>Subscription & Billing</h1><p className='mt-2 text-sm text-zinc-500'>Paket dan limit untuk workspace <b>{activeTenant?.name}</b>.</p></div><div className='inline-flex w-fit rounded-xl border bg-white p-1 shadow-sm'>{(['MONTHLY','YEARLY'] as const).map(p => <button key={p} onClick={() => setPeriod(p)} className={'rounded-lg px-4 py-2 text-sm font-semibold ' + (period === p ? 'bg-zinc-950 text-white' : 'text-zinc-500 hover:bg-zinc-50')}>{p === 'MONTHLY' ? 'Bulanan' : 'Tahunan'}</button>)}</div></div>
+  {error && <div className='mt-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700'>{error}</div>}
+  {subscription && <section className='mt-7 rounded-3xl border bg-white p-6 shadow-sm'><div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'><div><p className='text-xs font-semibold uppercase tracking-wider text-zinc-400'>Current Plan</p><div className='mt-2 flex items-center gap-3'><h2 className='text-2xl font-bold'>{subscription.package.name}</h2><span className='rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700'>{statusLabel(subscription.status)}</span></div><p className='mt-2 text-sm text-zinc-500'>{money(subscription.packagePrice.amountMinor, subscription.packagePrice.currency)} / {subscription.packagePrice.billingPeriod === 'MONTHLY' ? 'bulan' : 'tahun'}</p></div><Link href='/billing/subscription' className='rounded-xl border px-4 py-2.5 text-sm font-semibold hover:bg-zinc-50'>Detail Subscription →</Link></div></section>}
+  {usage && <section className='mt-8'><p className='text-xs font-semibold uppercase tracking-wider text-zinc-400'>Usage</p><h2 className='mt-1 text-xl font-bold'>Pemakaian Workspace</h2><div className='mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5'>{usage.features.map(f => { const pct = f.limitValue && f.limitValue > 0 ? Math.min(100, Math.round(f.currentUsage / f.limitValue * 100)) : 0; return <div key={f.id} className='rounded-2xl border bg-white p-5 shadow-sm'><p className='text-sm font-semibold'>{f.name ?? f.code}</p><p className='mt-2 text-2xl font-bold'>{f.currentUsage.toLocaleString('id-ID')}</p><p className='text-xs text-zinc-400'>dari {limit(f.limitValue, f.unit)}</p><div className='mt-4 h-2 overflow-hidden rounded-full bg-zinc-100'><div className={'h-full rounded-full ' + (pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-cyan-500')} style={{width: pct + '%'}} /></div><p className='mt-2 text-xs text-zinc-500'>{f.remaining === null ? 'Tidak terbatas' : f.remaining.toLocaleString('id-ID') + ' tersisa'}</p></div> })}</div></section>}
+  <section className='mt-10'><p className='text-xs font-semibold uppercase tracking-wider text-zinc-400'>Plans</p><h2 className='mt-1 text-xl font-bold'>Pilih paket</h2><div className='mt-5 grid gap-5 lg:grid-cols-3'>{cards.map(({pkg,price,current}) => <div key={pkg.id} className={'relative flex flex-col rounded-3xl border bg-white p-6 shadow-sm ' + (current ? 'border-cyan-300 ring-2 ring-cyan-100' : 'border-zinc-200')}>{current && <span className='absolute right-5 top-5 rounded-full bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700'>Current</span>}<h3 className='text-xl font-bold'>{pkg.name}</h3><p className='mt-2 min-h-10 text-sm text-zinc-500'>{pkg.description}</p><div className='mt-6'><span className='text-3xl font-bold'>{price ? money(price.amountMinor, price.currency) : '—'}</span><span className='ml-1 text-sm text-zinc-400'>/ {period === 'MONTHLY' ? 'bulan' : 'tahun'}</span></div><div className='mt-6 flex-1 border-t pt-5'><ul className='space-y-3'>{pkg.features?.filter(f => f.enabled).map(f => <li key={f.id} className='flex gap-2 text-sm text-zinc-600'><span className='text-emerald-600'>✓</span><span><b>{f.feature?.name ?? f.featureId}</b>{f.limitValue !== null && <span className='text-zinc-400'> · {limit(f.limitValue, f.feature?.unit ?? null)}</span>}</span></li>)}</ul></div><Link href={current || !price ? '/billing/subscription' : '/billing/checkout?packageId=' + pkg.id + '&priceId=' + price.id} className={'mt-6 inline-flex justify-center rounded-xl px-4 py-3 text-sm font-semibold ' + (current ? 'border text-zinc-700 hover:bg-zinc-50' : 'bg-zinc-950 text-white hover:bg-zinc-800')}>{current ? 'Kelola Paket' : 'Pilih Paket'}</Link></div>)}</div></section>
+ </div></main>;
+}

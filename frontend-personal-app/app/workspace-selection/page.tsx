@@ -1,17 +1,15 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ApiError } from '../../lib/api';
-import { createTenant, getTenants, type Tenant } from '../../lib/tenant';
+import { getTenants, type Tenant } from '../../lib/tenant';
 import { setActiveTenantId } from '../../lib/tenant';
 
 export default function WorkspaceSelectionPage() {
   const router = useRouter();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [name, setName] = useState('');
   const [error, setError] = useState('');
 
   async function loadTenants() {
@@ -37,24 +35,6 @@ export default function WorkspaceSelectionPage() {
   function chooseTenant(tenantId: string) {
     setActiveTenantId(tenantId);
     router.replace('/');
-  }
-
-  async function handleCreate(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!name.trim()) return;
-
-    setCreating(true);
-    setError('');
-
-    try {
-      const tenant = await createTenant(name.trim());
-      setActiveTenantId(tenant.id);
-      router.replace('/');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal membuat workspace.');
-    } finally {
-      setCreating(false);
-    }
   }
 
   return (
@@ -133,39 +113,20 @@ export default function WorkspaceSelectionPage() {
               </div>
               <h3 className="mt-4 text-lg font-bold">Belum ada workspace</h3>
               <p className="mt-2 text-sm text-zinc-500">
-                Buat workspace pertama kamu untuk mulai menggunakan aplikasi.
+                Belum ada workspace. Untuk membuat workspace baru, pilih paket pada halaman billing.
               </p>
+              <button
+                type="button"
+                onClick={() => router.replace('/billing/plans')}
+                className="mt-5 rounded-xl bg-zinc-950 px-5 py-3 text-sm font-semibold text-white hover:bg-zinc-800"
+              >
+                Pilih Paket & Buat Workspace
+              </button>
             </div>
           )}
         </section>
 
-        <section className="mx-auto mt-8 max-w-2xl rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-          <p className="text-xs font-semibold uppercase tracking-wider text-cyan-600">
-            Workspace Baru
-          </p>
-          <h2 className="mt-1 text-xl font-bold">Buat workspace</h2>
-          <p className="mt-2 text-sm leading-6 text-zinc-500">
-            Kamu otomatis menjadi OWNER pada workspace yang baru dibuat.
-          </p>
 
-          <form onSubmit={handleCreate} className="mt-5 flex flex-col gap-3 sm:flex-row">
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              maxLength={100}
-              required
-              placeholder="Contoh: Personal Development"
-              className="min-w-0 flex-1 rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none focus:border-zinc-900"
-            />
-            <button
-              type="submit"
-              disabled={creating || !name.trim()}
-              className="rounded-xl bg-zinc-950 px-5 py-3 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
-            >
-              {creating ? 'Membuat...' : 'Buat Workspace'}
-            </button>
-          </form>
-        </section>
 
         <div className="mt-6 text-center">
           <button

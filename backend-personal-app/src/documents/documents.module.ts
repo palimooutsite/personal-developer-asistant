@@ -5,6 +5,7 @@ import { DocumentsController } from './documents.controller.js';
 import { DocumentsService } from './documents.service.js';
 
 import { PrismaService } from '../prisma/prisma.service.js';
+import { BillingModule } from '../billing/billing.module.js';
 import { TenantModule } from '../tenants/tenant.module.js';
 import { TenantRoleModule } from '../tenants/roles/tenant-role.module.js';
 
@@ -15,6 +16,7 @@ import { TenantRoleModule } from '../tenants/roles/tenant-role.module.js';
     }),
     TenantModule,
     TenantRoleModule,
+    BillingModule,
   ],
   controllers: [
     DocumentsController,

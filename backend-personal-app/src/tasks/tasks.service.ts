@@ -80,19 +80,12 @@ export class TasksService {
       throw new NotFoundException('Project tidak ditemukan');
     }
 
-    const workspaceProjects = await this.prisma.client.orm.public.Project
-      .where({ tenantId })
-      .select('id')
-      .all();
-
-    let currentTaskUsage = 0;
-    for (const workspaceProject of workspaceProjects) {
-      const tasks = await this.prisma.client.orm.public.Task
-        .where({ projectId: workspaceProject.id })
+    const currentTaskUsage = (
+      await this.prisma.client.orm.public.Task
+        .where({ tenantId })
         .select('id')
-        .all();
-      currentTaskUsage += tasks.length;
-    }
+        .all()
+    ).length;
 
     await this.billingFeatureService.assertWithinLimit(
       tenantId,
@@ -103,6 +96,7 @@ export class TasksService {
 
     const task = await this.prisma.client.orm.public.Task.create({
       projectId,
+      tenantId,
       createdBy: userId,
       title: data.title,
       description: data.description,

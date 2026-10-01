@@ -31,6 +31,11 @@ import { SetPackageFeatureDto } from './dto/set-package-feature.dto.js';
 export class BillingCatalogController {
   constructor(private readonly service: BillingCatalogService) {}
 
+  @Post('seed-defaults')
+  seedDefaults(): Promise<{ packages: number; features: number; prices: number; packageFeatures: number }> {
+    return this.service.seedDefaults();
+  }
+
   @Get('packages')
   listPackages(): Promise<BillingPackageResponse[]> {
     return this.service.listPackages();

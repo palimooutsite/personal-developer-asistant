@@ -38,8 +38,8 @@ const features = [
   },
 ];
 
-function monthlyPrice(pkg: BillingPackage): BillingPrice | null {
-  return pkg.prices?.find((price) => price.isActive && price.billingPeriod === 'MONTHLY') ?? null;
+function selectedPrice(pkg: BillingPackage, period: 'MONTHLY' | 'YEARLY'): BillingPrice | null {
+  return pkg.prices?.find((price) => price.isActive && price.billingPeriod.toUpperCase() === period) ?? null;
 }
 
 const fallbackPlans = [
@@ -52,6 +52,7 @@ export default function LandingPage() {
   const [packages, setPackages] = useState<BillingPackage[]>([]);
   const [pricingLoading, setPricingLoading] = useState(true);
   const [pricingError, setPricingError] = useState('');
+  const [billingPeriod, setBillingPeriod] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY');
 
   useEffect(() => {
     void getBillingPackages()
@@ -187,18 +188,32 @@ export default function LandingPage() {
             <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Harga sederhana, mulai dari gratis.</h2>
             <p className="mt-4 text-sm leading-6 text-zinc-500">Paket berikut adalah rancangan harga awal untuk produk PDA dan dapat disesuaikan sebelum billing resmi diaktifkan.</p>
           </div>
+          <div className="mt-7 flex justify-center">
+            <div className="flex rounded-xl border border-zinc-200 bg-white p-1 shadow-sm">
+              {(['MONTHLY', 'YEARLY'] as const).map((period) => (
+                <button
+                  key={period}
+                  type="button"
+                  onClick={() => setBillingPeriod(period)}
+                  className={'rounded-lg px-5 py-2.5 text-sm font-bold transition ' + (billingPeriod === period ? 'bg-zinc-950 text-white' : 'text-zinc-500 hover:text-zinc-950')}
+                >
+                  {period === 'MONTHLY' ? 'Bulanan' : 'Tahunan'}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="mt-10 grid gap-5 lg:grid-cols-3">
             {pricingError ? <div className="lg:col-span-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{pricingError}</div> : null}
             {packages.map((pkg) => {
-              const price = monthlyPrice(pkg);
+              const price = selectedPrice(pkg, billingPeriod);
               const fallback = fallbackPlans.find((item) => item.code === pkg.code);
-              const href = '/register?plan=' + encodeURIComponent(pkg.code) + '&billingPeriod=MONTHLY';
+              const href = '/register?plan=' + encodeURIComponent(pkg.code) + '&billingPeriod=' + billingPeriod;
               return (
                 <div key={pkg.id} className={'relative rounded-3xl border bg-white p-6 shadow-sm ' + (fallback?.featured ? 'border-cyan-400 ring-2 ring-cyan-100' : 'border-zinc-200')}>
                   {fallback?.featured ? <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-cyan-600 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white">Paling populer</div> : null}
                   <h3 className="text-lg font-bold">{pkg.name}</h3>
                   <p className="mt-2 min-h-12 text-xs leading-5 text-zinc-500">{pkg.description}</p>
-                  <div className="mt-5"><span className="text-3xl font-black tracking-tight">{pricingLoading ? 'Memuat...' : price ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: price.currency, maximumFractionDigits: 0 }).format(price.amountMinor / 100) : '—'}</span><span className="ml-1 text-xs text-zinc-400">{pkg.code === 'FREE' ? 'selamanya' : '/bulan'}</span></div>
+                  <div className="mt-5"><span className="text-3xl font-black tracking-tight">{pricingLoading ? 'Memuat...' : price ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: price.currency, maximumFractionDigits: 0 }).format(price.amountMinor / 100) : '—'}</span><span className="ml-1 text-xs text-zinc-400">{pkg.code === 'FREE' ? 'selamanya' : billingPeriod === 'MONTHLY' ? '/bulan' : '/tahun'}</span></div>
                   <Link href={href} className={'mt-6 flex items-center justify-center rounded-xl px-4 py-3 text-sm font-bold transition ' + (fallback?.featured ? 'bg-cyan-600 text-white hover:bg-cyan-700' : 'border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50')}>{fallback?.cta ?? ('Pilih ' + pkg.name)}</Link>
                   <ul className="mt-6 space-y-3 border-t border-zinc-100 pt-6">{pkg.features?.filter((feature) => feature.enabled).slice(0, 6).map((feature) => <li key={feature.id} className="flex gap-2 text-sm text-zinc-600"><span className="font-bold text-emerald-500">✓</span>{feature.feature?.name ?? feature.featureId}{feature.limitValue !== null ? ' · ' + feature.limitValue.toLocaleString('id-ID') : ''}</li>)}</ul>
                 </div>

@@ -122,6 +122,14 @@ export class BillingPaymentService {
       .where({ id: payment.invoiceId, tenantId })
       .update({ status: 'SUCCEEDED', paidAt: now });
 
+    await this.prisma.client.orm.public.TenantSubscription
+      .where({ id: payment.subscriptionId, tenantId })
+      .update({
+        status: 'ACTIVE',
+        startedAt: now,
+        currentPeriodStart: now,
+      });
+
     if (!updatedPayment) throw new ConflictException('Payment gagal diperbarui');
     return this.toResponse(updatedPayment);
   }

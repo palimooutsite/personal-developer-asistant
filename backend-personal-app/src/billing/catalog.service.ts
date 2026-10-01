@@ -117,7 +117,11 @@ export class BillingCatalogService {
 
   async seedDefaults(): Promise<{ packages: number; features: number; prices: number; packageFeatures: number }> {
     const features = [
-      { code: 'TASK', name: 'Tasks', description: 'Jumlah task aktif yang dapat dibuat workspace', valueType: 'LIMIT' as const, unit: 'tasks' },
+      { code: 'PROJECT', name: 'Projects', description: 'Jumlah project yang dapat dibuat workspace', valueType: 'LIMIT' as const, unit: 'projects' },
+      { code: 'TASK', name: 'Tasks', description: 'Jumlah task yang dapat dibuat workspace', valueType: 'LIMIT' as const, unit: 'tasks' },
+      { code: 'KNOWLEDGE', name: 'Knowledge', description: 'Jumlah artikel knowledge yang dapat dibuat workspace', valueType: 'LIMIT' as const, unit: 'articles' },
+      { code: 'CODE_SNIPPET', name: 'Code Snippets', description: 'Jumlah code snippet yang dapat dibuat workspace', valueType: 'LIMIT' as const, unit: 'snippets' },
+      { code: 'DOCUMENT', name: 'Documents', description: 'Jumlah document yang dapat disimpan workspace', valueType: 'LIMIT' as const, unit: 'documents' },
     ];
 
     const packages = [
@@ -142,11 +146,16 @@ export class BillingCatalogService {
       }
     }
 
-    const feature = await this.prisma.client.orm.public.SubscriptionFeature
-      .where({ code: 'TASK' })
-      .first();
+    const featureCodes = ['PROJECT', 'TASK', 'KNOWLEDGE', 'CODE_SNIPPET', 'DOCUMENT'];
+    const featureRows = await this.prisma.client.orm.public.SubscriptionFeature.where({}).all();
 
-    if (!feature) throw new ConflictException('Feature TASK gagal dibuat');
+    
+
+    const limits: Record<string, Record<string, number>> = {
+      FREE: { PROJECT: 3, TASK: 10, KNOWLEDGE: 50, CODE_SNIPPET: 50, DOCUMENT: 20 },
+      PRO: { PROJECT: 20, TASK: 100, KNOWLEDGE: 1000, CODE_SNIPPET: 1000, DOCUMENT: 500 },
+      BUSINESS: { PROJECT: 100, TASK: 500, KNOWLEDGE: 10000, CODE_SNIPPET: 10000, DOCUMENT: 5000 },
+    };
 
     for (const packageData of packages) {
       let pkg = await this.prisma.client.orm.public.SubscriptionPackage
@@ -158,24 +167,23 @@ export class BillingCatalogService {
         packageCount++;
       }
 
-      const limits: Record<string, number> = {
-        FREE: 10,
-        PRO: 100,
-        BUSINESS: 500,
-      };
+      for (const featureCode of featureCodes) {
+        const feature = featureRows.find((item) => item.code === featureCode);
+        if (!feature) continue;
 
-      const packageFeature = await this.prisma.client.orm.public.SubscriptionPackageFeature
-        .where({ packageId: pkg.id, featureId: feature.id })
-        .first();
+        const packageFeature = await this.prisma.client.orm.public.SubscriptionPackageFeature
+          .where({ packageId: pkg.id, featureId: feature.id })
+          .first();
 
-      if (!packageFeature) {
-        await this.prisma.client.orm.public.SubscriptionPackageFeature.create({
-          packageId: pkg.id,
-          featureId: feature.id,
-          enabled: true,
-          limitValue: limits[pkg.code] ?? 0,
-        });
-        packageFeatureCount++;
+        if (!packageFeature) {
+          await this.prisma.client.orm.public.SubscriptionPackageFeature.create({
+            packageId: pkg.id,
+            featureId: feature.id,
+            enabled: true,
+            limitValue: limits[pkg.code]?.[featureCode] ?? 0,
+          });
+          packageFeatureCount++;
+        }
       }
 
       const prices = [

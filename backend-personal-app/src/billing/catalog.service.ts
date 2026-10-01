@@ -62,7 +62,7 @@ export class BillingCatalogService {
   constructor(private readonly prisma: PrismaService) {}
 
   async listPackages() {
-    return this.prisma.client.orm.public.SubscriptionPackage
+    const packages = await this.prisma.client.orm.public.SubscriptionPackage
       .select(
         'id',
         'code',
@@ -74,6 +74,59 @@ export class BillingCatalogService {
         'updatedAt',
       )
       .all();
+
+    const [prices, packageFeatures, features] = await Promise.all([
+      this.prisma.client.orm.public.SubscriptionPackagePrice
+        .where({})
+        .select(
+          'id',
+          'packageId',
+          'version',
+          'billingPeriod',
+          'amountMinor',
+          'currency',
+          'isActive',
+          'createdAt',
+          'updatedAt',
+        )
+        .all(),
+      this.prisma.client.orm.public.SubscriptionPackageFeature
+        .where({})
+        .select(
+          'id',
+          'packageId',
+          'featureId',
+          'enabled',
+          'limitValue',
+          'createdAt',
+          'updatedAt',
+        )
+        .all(),
+      this.prisma.client.orm.public.SubscriptionFeature
+        .where({})
+        .select(
+          'id',
+          'code',
+          'name',
+          'description',
+          'valueType',
+          'unit',
+          'isActive',
+        )
+        .all(),
+    ]);
+
+    return packages.map((pkg) => ({
+      ...pkg,
+      prices: prices.filter((price) => price.packageId === pkg.id),
+      features: packageFeatures
+        .filter((item) => item.packageId === pkg.id)
+        .map((item) => ({
+          ...item,
+          feature:
+            features.find((feature) => feature.id === item.featureId) ?? null,
+        })),
+    }));
   }
 
   async getPackage(id: string) {

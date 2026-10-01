@@ -9,6 +9,7 @@ import { TagsService } from './tags.service.js';
 import { ArticleTagsController } from './article-tags.controller.js';
 import { ArticleTagsService } from './article-tags.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { BillingModule } from '../billing/billing.module.js';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
     }),
     TenantModule,
     TenantRoleModule,
+    BillingModule,
   ],
   controllers: [
     KnowledgeController,

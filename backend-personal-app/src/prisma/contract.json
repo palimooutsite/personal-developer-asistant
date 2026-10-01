@@ -4,6 +4,10 @@
   "target": "postgres",
   "profileHash": "3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2",
   "roots": {
+    "billingCheckoutSession": {
+      "model": "BillingCheckoutSession",
+      "namespace": "public"
+    },
     "codeSnippet": {
       "model": "CodeSnippet",
       "namespace": "public"
@@ -117,6 +121,31 @@
     "namespaces": {
       "public": {
         "enum": {
+          "BillingCheckoutSessionStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "PENDING",
+                "value": "PENDING"
+              },
+              {
+                "name": "SUCCEEDED",
+                "value": "SUCCEEDED"
+              },
+              {
+                "name": "FAILED",
+                "value": "FAILED"
+              },
+              {
+                "name": "EXPIRED",
+                "value": "EXPIRED"
+              },
+              {
+                "name": "CANCELLED",
+                "value": "CANCELLED"
+              }
+            ]
+          },
           "DiscountDuration": {
             "codecId": "pg/text@1",
             "members": [
@@ -400,6 +429,219 @@
           }
         },
         "models": {
+          "BillingCheckoutSession": {
+            "fields": {
+              "completedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "currency": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "discountAmountMinor": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "discountCode": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "expiresAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "finalAmountMinor": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "originalAmountMinor": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "packageId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "packagePriceId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "provider": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "PaymentProviderType",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "providerPaymentId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "providerSessionId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "BillingCheckoutSessionStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "taxAmountMinor": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "workspaceName": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "completedAt": {
+                  "column": "completedAt"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "currency": {
+                  "column": "currency"
+                },
+                "discountAmountMinor": {
+                  "column": "discountAmountMinor"
+                },
+                "discountCode": {
+                  "column": "discountCode"
+                },
+                "expiresAt": {
+                  "column": "expiresAt"
+                },
+                "finalAmountMinor": {
+                  "column": "finalAmountMinor"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "originalAmountMinor": {
+                  "column": "originalAmountMinor"
+                },
+                "packageId": {
+                  "column": "packageId"
+                },
+                "packagePriceId": {
+                  "column": "packagePriceId"
+                },
+                "provider": {
+                  "column": "provider"
+                },
+                "providerPaymentId": {
+                  "column": "providerPaymentId"
+                },
+                "providerSessionId": {
+                  "column": "providerSessionId"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "taxAmountMinor": {
+                  "column": "taxAmountMinor"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "userId": {
+                  "column": "userId"
+                },
+                "workspaceName": {
+                  "column": "workspaceName"
+                }
+              },
+              "namespaceId": "public",
+              "table": "billingCheckoutSession"
+            }
+          },
           "CodeSnippet": {
             "fields": {
               "code": {
@@ -4728,6 +4970,188 @@
       "public": {
         "entries": {
           "table": {
+            "billingCheckoutSession": {
+              "checks": [
+                {
+                  "expression": "\"provider\" IN ('SANDBOX', 'MIDTRANS', 'XENDIT')",
+                  "name": "billingCheckoutSession_provider_check_7e820c4b",
+                  "prefix": "billingCheckoutSession_provider_check"
+                },
+                {
+                  "expression": "\"status\" IN ('PENDING', 'SUCCEEDED', 'FAILED', 'EXPIRED', 'CANCELLED')",
+                  "name": "billingCheckoutSession_status_check_cc2106a1",
+                  "prefix": "billingCheckoutSession_status_check"
+                }
+              ],
+              "columns": {
+                "completedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "currency": {
+                  "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "IDR"
+                  },
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "discountAmountMinor": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "discountCode": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "expiresAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "finalAmountMinor": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "originalAmountMinor": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "packageId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "packagePriceId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "provider": {
+                  "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "SANDBOX"
+                  },
+                  "nativeType": "text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "PaymentProviderType",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "providerPaymentId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "providerSessionId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "PENDING"
+                  },
+                  "nativeType": "text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "BillingCheckoutSessionStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "taxAmountMinor": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "userId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "workspaceName": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "expiresAt"
+                  ],
+                  "name": "billingCheckoutSession_expiresAt_idx_6b6b8c10",
+                  "prefix": "billingCheckoutSession_expiresAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "provider",
+                    "providerSessionId"
+                  ],
+                  "name": "billingCheckoutSession_provider_providerSessionId_idx_377d8daa",
+                  "prefix": "billingCheckoutSession_provider_providerSessionId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId",
+                    "status"
+                  ],
+                  "name": "billingCheckoutSession_userId_status_idx_e4a128ba",
+                  "prefix": "billingCheckoutSession_userId_status_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "codeSnippet": {
               "columns": {
                 "code": {
@@ -8142,6 +8566,16 @@
             }
           },
           "valueSet": {
+            "BillingCheckoutSessionStatus": {
+              "kind": "valueSet",
+              "values": [
+                "PENDING",
+                "SUCCEEDED",
+                "FAILED",
+                "EXPIRED",
+                "CANCELLED"
+              ]
+            },
             "DiscountDuration": {
               "kind": "valueSet",
               "values": [
@@ -8267,12 +8701,38 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "db2306d48c7c2df72eb45660007444206f15ed1d79622e889f27d6e18b3b7faf"
+    "storageHash": "c5b8b1c90210c816acd006712c2d8fc56c0f93012ed157775091dc575c6ec97a"
   },
   "execution": {
-    "executionHash": "508770c49c337d059828457f765c84a1198fdb898f3367dd1fc8d7429cfdadf0",
+    "executionHash": "b652badb6b30b9663604c20f87afea08e398c5570016c10051f1b1cf75475e31",
     "mutations": {
       "defaults": [
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "billingCheckoutSession"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "billingCheckoutSession"
+          }
+        },
         {
           "onCreate": {
             "id": "uuidv4",

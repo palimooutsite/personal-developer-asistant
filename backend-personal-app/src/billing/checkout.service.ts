@@ -1,4 +1,5 @@
 import { ConflictException, Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service.js';
 import { BillingPaymentService, BillingPaymentResponse } from './payment.service.js';
 import { BillingInvoiceService, BillingInvoiceResponse } from './invoice.service.js';
 import { BillingSubscriptionService, BillingSubscriptionDetailResponse } from './subscription.service.js';
@@ -13,7 +14,7 @@ export interface BillingCheckoutResponse {
 @Injectable()
 export class BillingCheckoutService {
   constructor(
-    private readonly prisma: import('../prisma/prisma.service.js').PrismaService,
+    private readonly prisma: PrismaService,
     private readonly subscriptionService: BillingSubscriptionService,
     private readonly invoiceService: BillingInvoiceService,
     private readonly paymentService: BillingPaymentService,

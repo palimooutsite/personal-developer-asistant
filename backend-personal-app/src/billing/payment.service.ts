@@ -328,9 +328,9 @@ export class BillingPaymentService {
       userId,
       description: 'Payment berhasil',
       metadata: {
-        invoiceId: currentPayment.invoiceId,
-        subscriptionId: currentPayment.subscriptionId,
-        amountMinor: currentPayment.amountMinor,
+        invoiceId: updatedPayment.invoiceId,
+        subscriptionId: updatedPayment.subscriptionId,
+        amountMinor: updatedPayment.amountMinor,
       },
     });
 
@@ -466,9 +466,9 @@ export class BillingPaymentService {
       userId,
       description: 'Payment gagal',
       metadata: {
-        invoiceId: currentPayment.invoiceId,
-        subscriptionId: currentPayment.subscriptionId,
-        amountMinor: currentPayment.amountMinor,
+        invoiceId: updatedPayment.invoiceId,
+        subscriptionId: updatedPayment.subscriptionId,
+        amountMinor: updatedPayment.amountMinor,
       },
     });
 

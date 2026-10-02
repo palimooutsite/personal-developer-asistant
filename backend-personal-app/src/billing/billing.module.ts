@@ -13,6 +13,8 @@ import { BillingAdminInvoiceService } from './admin-invoice.service.js';
 import { BillingInvoiceController } from './invoice.controller.js';
 import { BillingInvoiceService } from './invoice.service.js';
 import { BillingPaymentController } from './payment.controller.js';
+import { BillingAdminPaymentController } from './admin-payment.controller.js';
+import { BillingAdminPaymentService } from './admin-payment.service.js';
 import { BillingPaymentService } from './payment.service.js';
 import { BillingFeatureController } from './feature.controller.js';
 import { BillingFeatureService } from './feature.service.js';
@@ -33,6 +35,7 @@ import { TenantModule } from '../tenants/tenant.module.js';
     BillingAdminInvoiceController,
     BillingInvoiceController,
     BillingPaymentController,
+    BillingAdminPaymentController,
     BillingFeatureController,
     BillingCheckoutController,
     BillingCheckoutSessionController,
@@ -45,6 +48,7 @@ import { TenantModule } from '../tenants/tenant.module.js';
     BillingAdminInvoiceService,
     BillingInvoiceService,
     BillingPaymentService,
+    BillingAdminPaymentService,
     BillingFeatureService,
     BillingCheckoutService,
     BillingCheckoutSessionService,

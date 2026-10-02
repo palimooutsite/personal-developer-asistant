@@ -14,6 +14,7 @@ import { CreateTenantInvitationDto } from './dto/create-tenant-invitation.dto.js
 import { EmailService } from '../email/email.service.js';
 import { randomBytes } from 'node:crypto';
 import { PERMISSION_MODULES } from './roles/permission.constants.js';
+import { AuditService } from '../audit/audit.service.js';
 
 export interface TenantListItem {
   id: string;
@@ -42,6 +43,7 @@ export class TenantService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
+    private readonly auditService: AuditService,
   ) {}
 
   async create(
@@ -79,6 +81,16 @@ export class TenantService {
         userId,
         role: 'OWNER',
         roleId: ownerRole.id,
+      });
+
+      await this.auditService.create({
+        action: 'WORKSPACE.CREATED',
+        entity: 'Tenant',
+        entityId: tenant.id,
+        tenantId: tenant.id,
+        userId,
+        description: `Workspace ${tenant.name} dibuat`,
+        metadata: { name: tenant.name },
       });
 
       return {
@@ -555,6 +567,16 @@ async addMember(
     );
   }
 
+  await this.auditService.create({
+    action: 'WORKSPACE.MEMBER_ADDED',
+    entity: 'TenantMember',
+    entityId: member.id,
+    tenantId,
+    userId: currentUserId,
+    description: `Member ${user.email} ditambahkan ke workspace`,
+    metadata: { memberUserId: user.id, memberEmail: user.email, roleId: customRole.id, roleName: customRole.name },
+  });
+
   return {
     id: member.id,
     tenantId: member.tenantId,
@@ -734,6 +756,16 @@ async removeMember(
       'Member tidak ditemukan atau gagal dihapus',
     );
   }
+
+  await this.auditService.create({
+    action: 'WORKSPACE.MEMBER_REMOVED',
+    entity: 'TenantMember',
+    entityId: deleted.id,
+    tenantId,
+    userId: currentUserId,
+    description: 'Member dihapus dari workspace',
+    metadata: { memberUserId: targetUserId },
+  });
 
   return {
     message: 'Member berhasil dihapus dari workspace',

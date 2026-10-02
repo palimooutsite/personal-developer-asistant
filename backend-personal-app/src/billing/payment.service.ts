@@ -339,6 +339,51 @@ export class BillingPaymentService {
     }
 
     const updatedPayment = await this.prisma.client.transaction(async (tx) => {
+      // Validate the complete payment relationship before claiming the payment.
+      // If any invariant is invalid, the payment must remain PENDING.
+      const invoice = await tx.orm.public.SubscriptionInvoice
+        .where({ id: payment.invoiceId, tenantId })
+        .first();
+
+      if (!invoice) {
+        throw new ConflictException('Invoice terkait payment tidak ditemukan');
+      }
+
+      const subscription = await tx.orm.public.TenantSubscription
+        .where({ id: payment.subscriptionId, tenantId })
+        .first();
+
+      if (!subscription) {
+        throw new ConflictException('Subscription terkait payment tidak ditemukan');
+      }
+
+      if (invoice.subscriptionId !== subscription.id) {
+        throw new ConflictException(
+          'Invoice dan subscription terkait payment tidak konsisten',
+        );
+      }
+
+      if (
+        invoice.finalAmountMinor !== payment.amountMinor ||
+        invoice.currency !== payment.currency
+      ) {
+        throw new ConflictException(
+          'Nominal atau currency payment tidak sesuai dengan invoice',
+        );
+      }
+
+      if (invoice.status !== 'PENDING') {
+        throw new ConflictException(
+          'Invoice terkait payment sudah berubah status sehingga payment gagal tidak dapat diproses',
+        );
+      }
+
+      if (subscription.status !== 'PENDING') {
+        throw new ConflictException(
+          'Subscription terkait payment sudah berubah status sehingga payment gagal tidak dapat diproses',
+        );
+      }
+
       const claimed = await tx.orm.public.Payment
         .where({ id: paymentId, tenantId, status: 'PENDING' })
         .update({ status: 'FAILED' });
@@ -361,34 +406,6 @@ export class BillingPaymentService {
         }
 
         throw new ConflictException('Payment sedang diproses atau sudah berubah status');
-      }
-
-      const invoice = await tx.orm.public.SubscriptionInvoice
-        .where({ id: payment.invoiceId, tenantId })
-        .first();
-
-      if (!invoice) {
-        throw new ConflictException('Invoice terkait payment tidak ditemukan');
-      }
-
-      if (invoice.status !== 'PENDING') {
-        throw new ConflictException(
-          'Invoice terkait payment sudah berubah status sehingga payment gagal tidak dapat diproses',
-        );
-      }
-
-      const subscription = await tx.orm.public.TenantSubscription
-        .where({ id: payment.subscriptionId, tenantId })
-        .first();
-
-      if (!subscription) {
-        throw new ConflictException('Subscription terkait payment tidak ditemukan');
-      }
-
-      if (subscription.status !== 'PENDING') {
-        throw new ConflictException(
-          'Subscription terkait payment sudah berubah status sehingga payment gagal tidak dapat diproses',
-        );
       }
 
       return tx.orm.public.Payment
@@ -415,5 +432,6 @@ export class BillingPaymentService {
     });
 
     return this.toResponse(updatedPayment);
+  }
   }
 }

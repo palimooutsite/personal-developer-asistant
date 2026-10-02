@@ -734,9 +734,23 @@ describe.sequential('Billing concurrency integration', () => {
     const user = await seedUser();
     const fixture = await seedPendingPayment(user.id);
 
+    const otherPeriodEnd = new Date();
+    otherPeriodEnd.setMonth(otherPeriodEnd.getMonth() + 1);
+
+    const otherSubscription = await prisma.client.orm.public.TenantSubscription.create({
+      tenantId: fixture.tenant.id,
+      packageId: fixture.pkg.id,
+      packagePriceId: fixture.price.id,
+      status: 'PENDING',
+      provider: 'SANDBOX',
+      startedAt: new Date().toISOString(),
+      currentPeriodStart: new Date().toISOString(),
+      currentPeriodEnd: otherPeriodEnd.toISOString(),
+    });
+
     await prisma.client.orm.public.SubscriptionInvoice
       .where({ id: fixture.invoice.id })
-      .update({ subscriptionId: randomUUID() });
+      .update({ subscriptionId: otherSubscription.id });
 
     await expect(
       payments.sandboxFail(fixture.tenant.id, user.id, fixture.payment.id),

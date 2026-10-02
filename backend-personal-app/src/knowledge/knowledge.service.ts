@@ -32,37 +32,33 @@ export class KnowledgeService {
     tenantId: string,
     data: CreateKnowledgeArticleDto,
   ): Promise<KnowledgeArticleResponse> {
-    const currentUsage = (await this.prisma.client.orm.public.KnowledgeArticle.where({ tenantId }).select('id').all()).length;
+    return this.billingFeatureService.withLimitLock(
+      tenantId,
+      userId,
+      'KNOWLEDGE',
+      async (client) =>
+        (await client.orm.public.KnowledgeArticle.where({ tenantId }).select('id').all()).length,
+      async (tx) => {
+        const existing =
+          await tx.orm.public.KnowledgeArticle
+            .where({ tenantId, slug: data.slug })
+            .select('id')
+            .first();
 
-    await this.billingFeatureService.assertWithinLimit(tenantId, userId, 'KNOWLEDGE', currentUsage);
+        if (existing) {
+          throw new ConflictException('Slug artikel sudah digunakan');
+        }
 
-
-    const existing =
-      await this.prisma.client.orm.public.KnowledgeArticle
-        .where({
-          tenantId,
+        return tx.orm.public.KnowledgeArticle.create({
+          title: data.title,
           slug: data.slug,
-        })
-        .select('id')
-        .first();
-
-    if (existing) {
-      throw new ConflictException(
-        'Slug artikel sudah digunakan',
-      );
-    }
-
-    const article =
-      await this.prisma.client.orm.public.KnowledgeArticle.create({
-        title: data.title,
-        slug: data.slug,
-        content: data.content,
-        summary: data.summary,
-        createdBy: userId,
-        tenantId,
-      });
-
-    return article;
+          content: data.content,
+          summary: data.summary,
+          createdBy: userId,
+          tenantId,
+        });
+      },
+    );
   }
 
   async findAll(

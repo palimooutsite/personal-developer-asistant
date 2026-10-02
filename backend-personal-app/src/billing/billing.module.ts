@@ -8,6 +8,8 @@ import { BillingSubscriptionController } from './subscription.controller.js';
 import { BillingSubscriptionService } from './subscription.service.js';
 import { BillingAdminSubscriptionController } from './admin-subscription.controller.js';
 import { BillingAdminSubscriptionService } from './admin-subscription.service.js';
+import { BillingAdminInvoiceController } from './admin-invoice.controller.js';
+import { BillingAdminInvoiceService } from './admin-invoice.service.js';
 import { BillingInvoiceController } from './invoice.controller.js';
 import { BillingInvoiceService } from './invoice.service.js';
 import { BillingPaymentController } from './payment.controller.js';
@@ -28,6 +30,7 @@ import { TenantModule } from '../tenants/tenant.module.js';
     BillingDiscountController,
     BillingSubscriptionController,
     BillingAdminSubscriptionController,
+    BillingAdminInvoiceController,
     BillingInvoiceController,
     BillingPaymentController,
     BillingFeatureController,
@@ -39,6 +42,7 @@ import { TenantModule } from '../tenants/tenant.module.js';
     BillingDiscountService,
     BillingSubscriptionService,
     BillingAdminSubscriptionService,
+    BillingAdminInvoiceService,
     BillingInvoiceService,
     BillingPaymentService,
     BillingFeatureService,

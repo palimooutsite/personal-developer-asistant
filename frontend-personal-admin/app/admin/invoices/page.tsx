@@ -1,0 +1,30 @@
+"use client";
+import Link from "next/link";
+import {useEffect,useMemo,useState} from "react";
+import {listAdminInvoices,type AdminInvoice} from "../../../lib/billing";
+
+const statusMeta:Record<string,{label:string;className:string}> = {
+  SUCCEEDED:{label:"Lunas",className:"bg-emerald-50 text-emerald-700 border-emerald-200"},
+  PENDING:{label:"Menunggu",className:"bg-amber-50 text-amber-700 border-amber-200"},
+  FAILED:{label:"Gagal",className:"bg-red-50 text-red-700 border-red-200"},
+  EXPIRED:{label:"Kedaluwarsa",className:"bg-zinc-100 text-zinc-700 border-zinc-200"},
+  CANCELLED:{label:"Dibatalkan",className:"bg-zinc-100 text-zinc-700 border-zinc-200"},
+};
+const money=(n:number,c:string)=>new Intl.NumberFormat("id-ID",{style:"currency",currency:c||"IDR",maximumFractionDigits:0}).format(n/100);
+const date=(v:string|null)=>v?new Intl.DateTimeFormat("id-ID",{day:"2-digit",month:"short",year:"numeric"}).format(new Date(v)):"—";
+export default function AdminInvoicesPage(){
+ const[data,setData]=useState<AdminInvoice[]>([]);const[loading,setLoading]=useState(true);const[query,setQuery]=useState("");const[status,setStatus]=useState("ALL");
+ useEffect(()=>{void listAdminInvoices().then(setData).finally(()=>setLoading(false))},[]);
+ const filtered=useMemo(()=>data.filter(x=>(status==="ALL"||x.status===status)&&(!query.trim()||[x.workspaceName,x.packageName,x.packageCode,x.id].join(" ").toLowerCase().includes(query.toLowerCase()))),[data,query,status]);
+ const counts=Object.fromEntries(["SUCCEEDED","PENDING","FAILED","EXPIRED","CANCELLED"].map(s=>[s,data.filter(x=>x.status===s).length]));
+ const total=data.reduce((sum,x)=>sum+x.finalAmountMinor,0);
+ return <section className="mx-auto max-w-7xl space-y-6">
+  <div><p className="text-xs font-bold uppercase tracking-widest text-amber-600">Billing / Invoices</p><h2 className="mt-2 text-3xl font-bold tracking-tight">Invoices</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-500">Pantau seluruh tagihan workspace, status pembayaran, diskon, pajak, dan nilai akhir invoice. Halaman ini bersifat read-only.</p></div>
+  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+   <div className="rounded-2xl border bg-zinc-950 p-4 text-white"><p className="text-xs text-zinc-400">Total Invoice</p><p className="mt-1 text-2xl font-bold">{loading?"—":data.length}</p><p className="mt-1 text-[11px] text-zinc-500">{loading?"":money(total,"IDR")+" nilai tercatat"}</p></div>
+   {[["SUCCEEDED","Lunas"],["PENDING","Menunggu"],["FAILED","Gagal"],["EXPIRED","Kedaluwarsa"],["CANCELLED","Dibatalkan"]].map(([s,l])=><button key={s} onClick={()=>setStatus(status===s?"ALL":s)} className={"rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:border-amber-300 "+(status===s?"ring-2 ring-amber-200":"")}><p className="text-xs font-semibold text-zinc-400">{l}</p><p className="mt-1 text-2xl font-bold">{loading?"—":counts[s]}</p></button>)}
+  </div>
+  <div className="rounded-2xl border bg-white p-4 shadow-sm"><div className="flex flex-col gap-3 md:flex-row"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Cari invoice, workspace, atau paket..." className="h-11 flex-1 rounded-xl border border-zinc-200 px-4 text-sm outline-none focus:border-amber-400"/><select value={status} onChange={e=>setStatus(e.target.value)} className="h-11 rounded-xl border border-zinc-200 bg-white px-4 text-sm"><option value="ALL">Semua status</option><option value="SUCCEEDED">Lunas</option><option value="PENDING">Menunggu</option><option value="FAILED">Gagal</option><option value="EXPIRED">Kedaluwarsa</option><option value="CANCELLED">Dibatalkan</option></select></div></div>
+  <div className="overflow-hidden rounded-2xl border bg-white shadow-sm"><div className="border-b px-5 py-4"><p className="font-bold">Daftar Invoice</p><p className="text-xs text-zinc-500">{loading?"Memuat data...":filtered.length+" invoice ditampilkan"}</p></div><div className="overflow-x-auto"><table className="w-full min-w-[1100px] text-sm"><thead className="bg-zinc-50 text-left text-xs uppercase tracking-wider text-zinc-400"><tr><th className="px-5 py-3">Invoice</th><th className="px-5 py-3">Workspace</th><th className="px-5 py-3">Paket</th><th className="px-5 py-3">Subtotal</th><th className="px-5 py-3">Discount</th><th className="px-5 py-3">Total</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Tanggal</th><th className="px-5 py-3"></th></tr></thead><tbody className="divide-y divide-zinc-100">{filtered.map(x=>{const meta=statusMeta[x.status]??{label:x.status,className:"bg-zinc-100 text-zinc-700 border-zinc-200"};return <tr key={x.id} className="hover:bg-zinc-50"><td className="px-5 py-4"><p className="font-mono text-xs font-semibold">{x.id.slice(0,12)}...</p><p className="mt-1 text-[11px] text-zinc-400">{x.paymentStatus?"Payment: "+x.paymentStatus:"Belum ada payment"}</p></td><td className="px-5 py-4 font-semibold">{x.workspaceName}</td><td className="px-5 py-4"><p className="font-semibold">{x.packageName}</p><p className="text-xs text-zinc-400">{x.billingPeriod==="YEARLY"?"Tahunan":"Bulanan"}</p></td><td className="px-5 py-4 text-zinc-600">{money(x.originalAmountMinor,x.currency)}</td><td className="px-5 py-4 text-red-600">{x.discountAmountMinor?"-"+money(x.discountAmountMinor,x.currency):"—"}</td><td className="px-5 py-4 font-bold">{money(x.finalAmountMinor,x.currency)}</td><td className="px-5 py-4"><span className={"inline-flex rounded-full border px-2.5 py-1 text-xs font-bold "+meta.className}>{meta.label}</span></td><td className="px-5 py-4 text-xs text-zinc-500">{date(x.issuedAt)}</td><td className="px-5 py-4 text-right"><Link href={"/admin/invoices/"+x.id} className="font-semibold text-amber-700 hover:text-amber-900">Detail →</Link></td></tr>})}</tbody></table>{!loading&&filtered.length===0&&<div className="p-10 text-center text-sm text-zinc-500">Tidak ada invoice yang sesuai filter.</div>}</div></div>
+ </section>;
+}

@@ -264,40 +264,81 @@ export class BillingSubscriptionService {
   ): Promise<BillingSubscriptionMessageResponse> {
     await this.ensureTenantMember(tenantId, userId);
 
-    const subscriptions = await this.prisma.client.orm.public.TenantSubscription
-      .where({ tenantId })
-      .select('id', 'status', 'createdAt')
-      .all();
+    let cancelledId: string;
 
-    const subscription = subscriptions
-      .filter((item) =>
-        ['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)),
-      )
-      .sort((a, b) =>
-        String(b.createdAt).localeCompare(String(a.createdAt)),
-      )[0];
+    try {
+      cancelledId = await this.prisma.client.transaction(async (tx) => {
+        const subscriptions = await tx.orm.public.TenantSubscription
+          .where({ tenantId })
+          .select('id', 'status', 'createdAt')
+          .all();
 
-    if (!subscription) {
-      throw new NotFoundException(
-        'Tidak ada subscription aktif untuk workspace',
-      );
-    }
+        const subscription = subscriptions
+          .filter((item) =>
+            ['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)),
+          )
+          .sort((a, b) =>
+            String(b.createdAt).localeCompare(String(a.createdAt)),
+          )[0];
 
-    const updated = await this.prisma.client.orm.public.TenantSubscription
-      .where({ id: subscription.id })
-      .update({
-        status: 'CANCELLED',
-        cancelledAt: new Date().toISOString(),
+        if (!subscription) {
+          throw new NotFoundException(
+            'Tidak ada subscription aktif untuk workspace',
+          );
+        }
+
+        // Lock the selected subscription row so cancellation and payment
+        // activation cannot both commit conflicting lifecycle transitions.
+        const lockPlan = this.prisma.client.raw.sql`
+          UPDATE "public"."tenantSubscription"
+          SET "updatedAt" = "updatedAt"
+          WHERE "id" = ${subscription.id}
+            AND "tenantId" = ${tenantId}
+        `.affectedCount().build();
+
+        await tx.execute(lockPlan);
+
+        const current = await tx.orm.public.TenantSubscription
+          .where({ id: subscription.id, tenantId })
+          .first();
+
+        if (!current) {
+          throw new NotFoundException('Subscription tidak ditemukan');
+        }
+
+        if (!['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(current.status))) {
+          throw new ConflictException(
+            'Subscription sudah berubah status dan tidak dapat dibatalkan',
+          );
+        }
+
+        const updated = await tx.orm.public.TenantSubscription
+          .where({
+            id: current.id,
+            tenantId,
+            status: current.status,
+          })
+          .update({
+            status: 'CANCELLED',
+            cancelledAt: new Date().toISOString(),
+          });
+
+        if (!updated) {
+          throw new ConflictException(
+            'Subscription sudah berubah status dan tidak dapat dibatalkan',
+          );
+        }
+
+        return current.id;
       });
-
-    if (!updated) {
-      throw new NotFoundException('Subscription gagal dibatalkan');
+    } catch (error) {
+      throw error;
     }
 
     await this.auditService.create({
       action: 'BILLING.SUBSCRIPTION_CANCELLED',
       entity: 'TenantSubscription',
-      entityId: subscription.id,
+      entityId: cancelledId,
       tenantId,
       userId,
       description: 'Subscription dibatalkan',

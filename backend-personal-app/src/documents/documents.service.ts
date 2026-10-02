@@ -68,6 +68,20 @@ export class DocumentsService {
     file: UploadedDocumentFile,
   ): Promise<DocumentResponse> {
     try {
+      const currentUsage = (
+        await this.prisma.client.orm.public.Document
+          .where({ tenantId })
+          .select('id')
+          .all()
+      ).length;
+
+      await this.billingFeatureService.assertWithinLimit(
+        tenantId,
+        userId,
+        'DOCUMENT',
+        currentUsage,
+      );
+
       return await this.prisma.client.orm.public.Document.create({
         title,
         description,

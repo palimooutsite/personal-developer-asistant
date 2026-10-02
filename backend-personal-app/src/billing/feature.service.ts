@@ -1,5 +1,8 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { db } from '../prisma/db.js';
+
+type BillingTransactionClient = { orm: typeof db.orm };
 
 export interface BillingFeatureAccess {
   code: string;
@@ -222,6 +225,64 @@ export class BillingFeatureService {
       throw new ConflictException(
         'Feature tidak tersedia pada subscription aktif workspace ini',
       );
+    }
+  }
+
+  async assertWithinLimitWithClient(
+    client: BillingTransactionClient,
+    tenantId: string,
+    userId: string,
+    code: string,
+    currentUsage: number,
+  ): Promise<void> {
+    const member = await client.orm.public.TenantMember
+      .where({ tenantId, userId })
+      .first();
+    if (!member) throw new NotFoundException('Workspace member tidak ditemukan');
+
+    const subscriptions = await client.orm.public.TenantSubscription
+      .where({ tenantId })
+      .all();
+    const subscription = subscriptions
+      .filter((item) => ['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)))
+      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
+    if (!subscription) throw new ConflictException('Workspace belum memiliki subscription aktif');
+
+    const feature = await client.orm.public.SubscriptionFeature
+      .where({ code })
+      .first();
+    if (!feature || !feature.isActive) {
+      throw new NotFoundException('Subscription feature tidak ditemukan atau tidak aktif');
+    }
+
+    const packageFeature = await client.orm.public.SubscriptionPackageFeature
+      .where({ packageId: subscription.packageId, featureId: feature.id })
+      .first();
+    const enabled = packageFeature?.enabled === true;
+    const limitValue = packageFeature?.limitValue ?? null;
+
+    if (feature.valueType === 'BOOLEAN' && limitValue !== null) {
+      throw new ConflictException('Konfigurasi subscription feature tidak konsisten: BOOLEAN tidak boleh memiliki limitValue');
+    }
+    if (feature.valueType === 'LIMIT' && enabled && limitValue === null) {
+      throw new ConflictException('Konfigurasi subscription feature tidak konsisten: LIMIT aktif wajib memiliki limitValue');
+    }
+
+    if (!enabled) {
+      throw new ConflictException('Feature tidak tersedia pada subscription aktif workspace ini');
+    }
+    if (feature.valueType !== 'LIMIT') {
+      throw new ConflictException('Feature bukan merupakan feature berbasis limit');
+    }
+    if (limitValue !== null && currentUsage >= limitValue) {
+      throw new ConflictException({
+        code: 'FEATURE_LIMIT_REACHED',
+        message: 'Limit feature subscription workspace sudah tercapai',
+        feature: feature.code,
+        currentUsage,
+        limit: limitValue,
+        remaining: Math.max(0, limitValue - currentUsage),
+      });
     }
   }
 

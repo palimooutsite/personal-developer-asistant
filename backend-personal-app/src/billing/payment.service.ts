@@ -227,43 +227,82 @@ export class BillingPaymentService {
       throw new ConflictException('Payment tidak dalam status PENDING');
     }
 
-    const updatedPayment = await this.prisma.client.orm.public.Payment
-      .where({ id: paymentId, tenantId, status: 'PENDING' })
-      .update({ status: 'FAILED' });
+    const updatedPayment = await this.prisma.client.transaction(async (tx) => {
+      const claimed = await tx.orm.public.Payment
+        .where({ id: paymentId, tenantId, status: 'PENDING' })
+        .update({ status: 'FAILED' });
 
-    if (updatedPayment) {
-      await this.auditService.create({
-        action: 'BILLING.PAYMENT_FAILED',
-        entity: 'Payment',
-        entityId: updatedPayment.id,
-        tenantId,
-        userId,
-        description: 'Payment gagal',
-        metadata: {
-          invoiceId: payment.invoiceId,
-          subscriptionId: payment.subscriptionId,
-          amountMinor: payment.amountMinor,
-        },
-      });
-      return this.toResponse(updatedPayment);
+      if (!claimed) {
+        const current = await tx.orm.public.Payment
+          .where({ id: paymentId, tenantId })
+          .first();
+
+        if (!current) {
+          throw new NotFoundException('Payment tidak ditemukan');
+        }
+
+        if (current.status === 'FAILED') {
+          return current;
+        }
+
+        if (current.status === 'SUCCEEDED') {
+          throw new ConflictException('Payment sudah berhasil diselesaikan');
+        }
+
+        throw new ConflictException('Payment sedang diproses atau sudah berubah status');
+      }
+
+      const invoice = await tx.orm.public.SubscriptionInvoice
+        .where({ id: payment.invoiceId, tenantId })
+        .first();
+
+      if (!invoice) {
+        throw new ConflictException('Invoice terkait payment tidak ditemukan');
+      }
+
+      if (invoice.status !== 'PENDING') {
+        throw new ConflictException(
+          'Invoice terkait payment sudah berubah status sehingga payment gagal tidak dapat diproses',
+        );
+      }
+
+      const subscription = await tx.orm.public.TenantSubscription
+        .where({ id: payment.subscriptionId, tenantId })
+        .first();
+
+      if (!subscription) {
+        throw new ConflictException('Subscription terkait payment tidak ditemukan');
+      }
+
+      if (subscription.status !== 'PENDING') {
+        throw new ConflictException(
+          'Subscription terkait payment sudah berubah status sehingga payment gagal tidak dapat diproses',
+        );
+      }
+
+      return tx.orm.public.Payment
+        .where({ id: paymentId, tenantId })
+        .first();
+    });
+
+    if (!updatedPayment) {
+      throw new ConflictException('Payment gagal diperbarui');
     }
 
-    const current = await this.prisma.client.orm.public.Payment
-      .where({ id: paymentId, tenantId })
-      .first();
+    await this.auditService.create({
+      action: 'BILLING.PAYMENT_FAILED',
+      entity: 'Payment',
+      entityId: updatedPayment.id,
+      tenantId,
+      userId,
+      description: 'Payment gagal',
+      metadata: {
+        invoiceId: payment.invoiceId,
+        subscriptionId: payment.subscriptionId,
+        amountMinor: payment.amountMinor,
+      },
+    });
 
-    if (!current) {
-      throw new NotFoundException('Payment tidak ditemukan');
-    }
-
-    if (current.status === 'FAILED') {
-      return this.toResponse(current);
-    }
-
-    if (current.status === 'SUCCEEDED') {
-      throw new ConflictException('Payment sudah berhasil diselesaikan');
-    }
-
-    throw new ConflictException('Payment sedang diproses atau sudah berubah status');
+    return this.toResponse(updatedPayment);
   }
 }

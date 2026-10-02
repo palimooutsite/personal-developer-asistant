@@ -149,6 +149,10 @@ export class BillingCheckoutSessionService {
       packagePriceId: price.id,
       workspaceName: data.workspaceName.trim(),
       discountCode: data.discountCode?.trim().toUpperCase() || null,
+      discountId: discount?.id ?? null,
+      discountType: discount?.type ?? null,
+      discountValueMinor: discount?.valueMinor ?? null,
+      discountPercentage: discount?.percentage ?? null,
       originalAmountMinor,
       discountAmountMinor,
       taxAmountMinor,
@@ -336,60 +340,37 @@ export class BillingCheckoutSessionService {
 
         if (!invoice) throw new ConflictException('Invoice gagal dibuat');
 
-        if (session.discountCode) {
+        if (session.discountId) {
+          // Checkout pricing is a session snapshot. The discount definition may
+          // be edited/deactivated before payment, but the session keeps the
+          // original definition and amount shown to the customer.
+          const lockPlan = this.prisma.client.raw.sql`
+            UPDATE "public"."discount"
+            SET "updatedAt" = "updatedAt"
+            WHERE "id" = ${session.discountId}
+          `.affectedCount().build();
+
+          await tx.execute(lockPlan);
+
           const discount = await tx.orm.public.Discount
-            .where({ code: session.discountCode })
+            .where({ id: session.discountId })
             .first();
 
           if (!discount) {
             throw new ConflictException('Discount checkout tidak ditemukan');
           }
 
-          if (
-            discount.usageLimit !== null &&
-            discount.usageCount >= discount.usageLimit
-          ) {
+          if (discount.usageLimit !== null && discount.usageCount >= discount.usageLimit) {
             throw new ConflictException('Batas penggunaan discount sudah tercapai');
-          }
-
-          const packageLinks = await tx.orm.public.DiscountPackage
-            .where({ discountId: discount.id })
-            .all();
-
-          if (
-            packageLinks.length > 0 &&
-            !packageLinks.some((item) => item.packageId === pkg.id)
-          ) {
-            throw new ConflictException('Discount tidak berlaku untuk package ini');
-          }
-
-          const previousUsages = await tx.orm.public.DiscountUsage
-            .where({ discountId: discount.id, tenantId: tenant.id })
-            .all();
-
-          if (discount.duration === 'ONCE' && previousUsages.length > 0) {
-            throw new ConflictException(
-              'Discount hanya dapat digunakan satu kali untuk workspace ini',
-            );
-          }
-
-          if (
-            discount.duration === 'RECURRING_CYCLES' &&
-            discount.durationCycles !== null &&
-            previousUsages.length >= discount.durationCycles
-          ) {
-            throw new ConflictException(
-              'Masa penggunaan discount untuk workspace ini sudah habis',
-            );
           }
 
           await tx.orm.public.InvoiceDiscount.create({
             invoiceId: invoice.id,
             discountId: discount.id,
-            codeSnapshot: discount.code,
-            discountType: discount.type,
-            discountValueMinor: discount.valueMinor,
-            discountPercentage: discount.percentage,
+            codeSnapshot: session.discountCode ?? discount.code,
+            discountType: session.discountType ?? discount.type,
+            discountValueMinor: session.discountValueMinor ?? discount.valueMinor,
+            discountPercentage: session.discountPercentage ?? discount.percentage,
             amountMinor: session.discountAmountMinor,
           });
 
@@ -405,7 +386,6 @@ export class BillingCheckoutSessionService {
             .where({ id: discount.id })
             .update({ usageCount: Number(discount.usageCount) + 1 });
         }
-
         const payment = await tx.orm.public.Payment.create({
           tenantId: tenant.id,
           subscriptionId: subscription.id,
@@ -447,8 +427,16 @@ export class BillingCheckoutSessionService {
       await this.writeCheckoutAudit(userId, session, pkg, price, result);
       return result;
     } catch (error) {
-      // The unique provider payment ID makes the operation idempotent under
-      // concurrent requests. If another request committed first, return it.
+      // Only recover when the deterministic provider payment already exists.
+      // Other errors must remain visible instead of being masked as success.
+      const isUniqueViolation =
+        typeof error === 'object' &&
+        error !== null &&
+        'sqlState' in error &&
+        (error as { sqlState?: string }).sqlState === '23505';
+
+      if (!isUniqueViolation) throw error;
+
       const existingPayment = await this.prisma.client.orm.public.Payment
         .where({ providerPaymentId: deterministicProviderPaymentId })
         .first();

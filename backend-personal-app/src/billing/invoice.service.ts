@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AuditService } from '../audit/audit.service.js';
 import { CreateInvoiceDto, PreviewInvoiceDto } from './dto/preview-invoice.dto.js';
 
 export interface BillingInvoiceResponse {
@@ -28,7 +29,7 @@ export interface BillingInvoiceResponse {
 
 @Injectable()
 export class BillingInvoiceService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
 
   private async getActiveSubscription(tenantId: string, userId: string) {
     const member = await this.prisma.client.orm.public.TenantMember
@@ -304,6 +305,8 @@ export class BillingInvoiceService {
     });
 
     if (!invoice) throw new ConflictException('Invoice gagal dibuat');
+
+    await this.auditService.create({ action: 'BILLING.INVOICE_CREATED', entity: 'SubscriptionInvoice', entityId: invoice.id, tenantId, userId, description: `Invoice ${invoice.id} dibuat`, metadata: { subscriptionId: result.subscription.id, packageCode: result.package.code, finalAmountMinor: result.finalAmountMinor } });
 
     if (result.discount) {
       await this.prisma.client.orm.public.InvoiceDiscount.create({

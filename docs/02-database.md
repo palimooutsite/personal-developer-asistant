@@ -2,36 +2,66 @@
 
 Source schema: backend-personal-app/src/prisma/contract.prisma
 
-## 1. Core ERD
+## 1. ERD berdasarkan relation yang didefinisikan pada contract
 
-    User 1---N Tenant (createdBy)
+    User 1---N Tenant (Tenant.createdBy)
     User 1---N TenantMember N---1 Tenant
-    Tenant 1---N TenantCustomRole 1---N TenantRolePermission
+    Tenant 1---N TenantCustomRole
+    TenantCustomRole 1---N TenantRolePermission
+    TenantCustomRole 1---N TenantMember
+    TenantCustomRole 1---N TenantInvitation
     Tenant 1---N TenantInvitation
+    User 1---N TenantInvitation (invitedBy)
 
-    Tenant 1---N Project 1---N Task
+    Tenant 1---N Project
+    User 1---N Project (createdBy)
     Project 1---N ProjectMember N---1 User
-    Task 1---N TaskAssignee N---1 ProjectMember
+    Project 1---N Task
+    Tenant 1---N Task
+    User 1---N Task (createdBy)
+    Task 1---N TaskAssignee
+    ProjectMember 1---N TaskAssignee
 
-    Tenant 1---N KnowledgeArticle N---N Tag
-    Tenant 1---N CodeSnippet N---N Tag
+    Tenant 1---N KnowledgeArticle
+    User 1---N KnowledgeArticle (createdBy)
+    KnowledgeArticle 1---N KnowledgeArticleTag N---1 Tag
+    Tenant 1---N Tag
+
+    Tenant 1---N CodeSnippet
+    User 1---N CodeSnippet (createdBy)
+    CodeSnippet 1---N SnippetTag N---1 Tag
     Tenant 1---N Document
+    User 1---N Document (createdBy)
 
     SubscriptionPackage 1---N SubscriptionPackagePrice
     SubscriptionPackage 1---N SubscriptionPackageFeature N---1 SubscriptionFeature
-    Discount 1---N DiscountPackage N---1 SubscriptionPackage
-
-    Tenant 1---N TenantSubscription N---1 SubscriptionPackage
+    SubscriptionPackage 1---N DiscountPackage N---1 Discount
+    Tenant 1---N TenantSubscription
+    SubscriptionPackage 1---N TenantSubscription
+    SubscriptionPackagePrice 1---N TenantSubscription
     TenantSubscription 1---N SubscriptionInvoice
-    SubscriptionInvoice 1---N Payment
-    Discount 1---N DiscountUsage
+    Tenant 1---N SubscriptionInvoice
+    SubscriptionPackagePrice 1---N SubscriptionInvoice
     SubscriptionInvoice 1---N InvoiceDiscount N---1 Discount
+    SubscriptionInvoice 1---N DiscountUsage
+    Discount 1---N DiscountUsage
+    Tenant 1---N DiscountUsage
+    TenantSubscription 1---N DiscountUsage (optional)
+    TenantSubscription 1---N Payment
+    Tenant 1---N Payment
+    SubscriptionInvoice 1---N Payment
 
-    User 1---N AuditLog
-    Tenant 1---N AuditLog
-    User 1---N BillingCheckoutSession
+## 2. Catatan non-relational identifier
 
-## 2. Tabel identity/workspace
+### BillingCheckoutSession
+
+Field userId, packageId, dan packagePriceId disimpan sebagai identifier biasa. Contract saat ini belum mendefinisikan Prisma foreign-key relation ke User, SubscriptionPackage, atau SubscriptionPackagePrice.
+
+### AuditLog
+
+Field userId dan tenantId juga tidak mempunyai Prisma relation declaration. Audit service melakukan enrichment actor/workspace pada application layer.
+
+## 3. Tabel identity/workspace
 
 ### User
 PK: id. Unique: username, email. Menyimpan identity, credential hash, profile dan flag Platform Admin.

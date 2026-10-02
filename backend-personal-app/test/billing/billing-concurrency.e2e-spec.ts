@@ -396,12 +396,20 @@ describe.sequential('Billing concurrency integration', () => {
     const { pkg, price } = await seedPackage();
     const fixture = await seedTenantWithMember(user.id, pkg.id, price.id);
 
-    const feature = await prisma.client.orm.public.SubscriptionFeature.create({
-      code: `PROJECT_${randomUUID().replaceAll('-', '')}`,
+    const existingFeature = await prisma.client.orm.public.SubscriptionFeature
+      .where({ code: 'PROJECT' })
+      .first();
+
+    const feature = existingFeature ?? (await prisma.client.orm.public.SubscriptionFeature.create({
+      code: 'PROJECT',
       name: 'Project limit test',
       valueType: 'LIMIT',
       isActive: true,
-    });
+    }));
+
+    if (feature.valueType !== 'LIMIT' || !feature.isActive) {
+      throw new Error('PROJECT feature must be an active LIMIT feature for this regression test.');
+    }
 
     await prisma.client.orm.public.SubscriptionPackageFeature.create({
       packageId: pkg.id,

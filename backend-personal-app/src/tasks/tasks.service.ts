@@ -80,31 +80,26 @@ export class TasksService {
       throw new NotFoundException('Project tidak ditemukan');
     }
 
-    const currentTaskUsage = (
-      await this.prisma.client.orm.public.Task
-        .where({ tenantId })
-        .select('id')
-        .all()
-    ).length;
-
-    await this.billingFeatureService.assertWithinLimit(
+    return this.billingFeatureService.withLimitLock(
       tenantId,
       userId,
       'TASK',
-      currentTaskUsage,
+      async (client) =>
+        (await client.orm.public.Task.where({ tenantId }).select('id').all()).length,
+      async (tx) => {
+        const task = await tx.orm.public.Task.create({
+          projectId,
+          tenantId,
+          createdBy: userId,
+          title: data.title,
+          description: data.description,
+          priority: data.priority ?? 'MEDIUM',
+          dueDate: data.dueDate,
+        });
+
+        return this.toTaskResponse(task);
+      },
     );
-
-    const task = await this.prisma.client.orm.public.Task.create({
-      projectId,
-      tenantId,
-      createdBy: userId,
-      title: data.title,
-      description: data.description,
-      priority: data.priority ?? 'MEDIUM',
-      dueDate: data.dueDate,
-    });
-
-    return this.toTaskResponse(task);
   }
 
   async findAll(

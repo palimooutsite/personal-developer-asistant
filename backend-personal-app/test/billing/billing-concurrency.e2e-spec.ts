@@ -263,7 +263,7 @@ describe.sequential('Billing concurrency integration', () => {
     const suffix = randomUUID().replaceAll('-', '');
 
     const discount = await prisma.client.orm.public.Discount.create({
-      code: `TEST_ONCE_${suffix}`,
+      code: `TEST_ONCE_${suffix}`.toUpperCase(),
       name: 'Concurrent once discount',
       description: 'Ephemeral concurrency test discount',
       type: 'PERCENTAGE',
@@ -287,19 +287,6 @@ describe.sequential('Billing concurrency integration', () => {
         discountCode: discount.code,
       }),
     ]);
-
-    if (results.some((item) => item.status === 'rejected')) {
-      console.error(
-        'DISCOUNT CONCURRENCY RESULTS',
-        results.map((item) =>
-          item.status === 'rejected'
-            ? item.reason instanceof Error
-              ? item.reason.stack
-              : item.reason
-            : 'fulfilled',
-        ),
-      );
-    }
 
     const succeeded = results.filter((item) => item.status === 'fulfilled');
     const usages = await prisma.client.orm.public.DiscountUsage
@@ -327,19 +314,6 @@ describe.sequential('Billing concurrency integration', () => {
         provider: 'SANDBOX',
       }),
     ]);
-
-    if (results.some((item) => item.status === 'rejected')) {
-      console.error(
-        'SUBSCRIPTION CONCURRENCY RESULTS',
-        results.map((item) =>
-          item.status === 'rejected'
-            ? item.reason instanceof Error
-              ? item.reason.stack
-              : item.reason
-            : 'fulfilled',
-        ),
-      );
-    }
 
     const subscriptionsInDb = await prisma.client.orm.public.TenantSubscription
       .where({ tenantId: fixture.tenant.id })

@@ -179,13 +179,63 @@ export class BillingCheckoutSessionService {
     if (session.provider !== 'SANDBOX') {
       throw new ConflictException('Simulasi hanya tersedia untuk SANDBOX');
     }
+
+    const deterministicProviderPaymentId = `SANDBOX-SESSION-${session.id}`;
+
+    // Idempotent retry: a completed session returns the same billing result.
+    if (session.status === 'SUCCEEDED') {
+      const existingPayment = await this.prisma.client.orm.public.Payment
+        .where({ providerPaymentId: deterministicProviderPaymentId })
+        .first();
+
+      if (!existingPayment) {
+        throw new ConflictException(
+          'Checkout session sudah SUCCEEDED tetapi payment tidak ditemukan',
+        );
+      }
+
+      return {
+        sessionId: session.id,
+        tenantId: existingPayment.tenantId,
+        paymentId: existingPayment.id,
+        invoiceId: existingPayment.invoiceId,
+        subscriptionId: existingPayment.subscriptionId,
+        status: 'SUCCEEDED',
+      };
+    }
+
     if (session.status !== 'PENDING') {
       throw new ConflictException('Checkout session tidak dalam status PENDING');
     }
+
     if (new Date(String(session.expiresAt)).getTime() <= Date.now()) {
-      await this.prisma.client.orm.public.BillingCheckoutSession
-        .where({ id: session.id })
+      const expired = await this.prisma.client.orm.public.BillingCheckoutSession
+        .where({ id: session.id, userId, status: 'PENDING' })
         .update({ status: 'EXPIRED' });
+
+      if (!expired) {
+        const latest = await this.prisma.client.orm.public.BillingCheckoutSession
+          .where({ id: session.id, userId })
+          .first();
+
+        if (latest?.status === 'SUCCEEDED') {
+          const payment = await this.prisma.client.orm.public.Payment
+            .where({ providerPaymentId: deterministicProviderPaymentId })
+            .first();
+
+          if (payment) {
+            return {
+              sessionId: session.id,
+              tenantId: payment.tenantId,
+              paymentId: payment.id,
+              invoiceId: payment.invoiceId,
+              subscriptionId: payment.subscriptionId,
+              status: 'SUCCEEDED',
+            };
+          }
+        }
+      }
+
       throw new ConflictException('Checkout session sudah kedaluwarsa');
     }
 
@@ -220,184 +270,215 @@ export class BillingCheckoutSessionService {
       throw new ConflictException('Billing period tidak didukung');
     }
 
-    const result = await this.prisma.client.transaction(async (tx) => {
-      const tenant = await tx.orm.public.Tenant.create({
-        name: session.workspaceName,
-        createdBy: userId,
-      });
+    try {
+      const result = await this.prisma.client.transaction(async (tx) => {
+        // The deterministic provider payment ID is the database idempotency key.
+        // If two requests race, the second transaction fails on the unique key and
+        // rolls back the tenant/subscription/invoice it created.
+        const tenant = await tx.orm.public.Tenant.create({
+          name: session.workspaceName,
+          createdBy: userId,
+        });
 
-      const ownerRole = await tx.orm.public.TenantCustomRole.create({
-        tenantId: tenant.id,
-        name: 'Owner',
-        description: 'System role dengan akses penuh workspace.',
-        isSystem: true,
-      });
+        const ownerRole = await tx.orm.public.TenantCustomRole.create({
+          tenantId: tenant.id,
+          name: 'Owner',
+          description: 'System role dengan akses penuh workspace.',
+          isSystem: true,
+        });
 
-      for (const module of PERMISSION_MODULES) {
-        await tx.orm.public.TenantRolePermission.create({
+        for (const module of PERMISSION_MODULES) {
+          await tx.orm.public.TenantRolePermission.create({
+            roleId: ownerRole.id,
+            module,
+            canCreate: true,
+            canRead: true,
+            canUpdate: true,
+            canDelete: true,
+          });
+        }
+
+        await tx.orm.public.TenantMember.create({
+          tenantId: tenant.id,
+          userId,
+          role: 'OWNER',
           roleId: ownerRole.id,
-          module,
-          canCreate: true,
-          canRead: true,
-          canUpdate: true,
-          canDelete: true,
-        });
-      }
-
-      await tx.orm.public.TenantMember.create({
-        tenantId: tenant.id,
-        userId,
-        role: 'OWNER',
-        roleId: ownerRole.id,
-      });
-
-      const subscription = await tx.orm.public.TenantSubscription.create({
-        tenantId: tenant.id,
-        packageId: pkg.id,
-        packagePriceId: price.id,
-        status: 'ACTIVE',
-        provider: session.provider,
-        startedAt: now.toISOString(),
-        currentPeriodStart: now.toISOString(),
-        currentPeriodEnd: periodEnd.toISOString(),
-      });
-
-      const invoice = await tx.orm.public.SubscriptionInvoice.create({
-        tenantId: tenant.id,
-        subscriptionId: subscription.id,
-        packagePriceId: price.id,
-        packageCode: pkg.code,
-        packageName: pkg.name,
-        billingPeriod: price.billingPeriod,
-        currency: session.currency,
-        originalAmountMinor: session.originalAmountMinor,
-        discountAmountMinor: session.discountAmountMinor,
-        taxAmountMinor: session.taxAmountMinor,
-        finalAmountMinor: session.finalAmountMinor,
-        status: 'SUCCEEDED',
-        issuedAt: now.toISOString(),
-        paidAt: now.toISOString(),
-        dueAt: now.toISOString(),
-      });
-
-      if (!invoice) throw new ConflictException('Invoice gagal dibuat');
-
-      let discountId: string | null = null;
-      if (session.discountCode) {
-        const discount = await tx.orm.public.Discount
-          .where({ code: session.discountCode })
-          .first();
-
-        if (!discount) {
-          throw new ConflictException('Discount checkout tidak ditemukan');
-        }
-
-        if (
-          discount.usageLimit !== null &&
-          discount.usageCount >= discount.usageLimit
-        ) {
-          throw new ConflictException('Batas penggunaan discount sudah tercapai');
-        }
-
-        const packageLinks = await tx.orm.public.DiscountPackage
-          .where({ discountId: discount.id })
-          .all();
-
-        if (
-          packageLinks.length > 0 &&
-          !packageLinks.some((item) => item.packageId === pkg.id)
-        ) {
-          throw new ConflictException('Discount tidak berlaku untuk package ini');
-        }
-
-        const previousUsages = await tx.orm.public.DiscountUsage
-          .where({ discountId: discount.id, tenantId: tenant.id })
-          .all();
-
-        if (discount.duration === 'ONCE' && previousUsages.length > 0) {
-          throw new ConflictException(
-            'Discount hanya dapat digunakan satu kali untuk workspace ini',
-          );
-        }
-        if (
-          discount.duration === 'RECURRING_CYCLES' &&
-          discount.durationCycles !== null &&
-          previousUsages.length >= discount.durationCycles
-        ) {
-          throw new ConflictException(
-            'Masa penggunaan discount untuk workspace ini sudah habis',
-          );
-        }
-
-        await tx.orm.public.InvoiceDiscount.create({
-          invoiceId: invoice.id,
-          discountId: discount.id,
-          codeSnapshot: discount.code,
-          discountType: discount.type,
-          discountValueMinor: discount.valueMinor,
-          discountPercentage: discount.percentage,
-          amountMinor: session.discountAmountMinor,
         });
 
-        await tx.orm.public.DiscountUsage.create({
-          discountId: discount.id,
+        const subscription = await tx.orm.public.TenantSubscription.create({
+          tenantId: tenant.id,
+          packageId: pkg.id,
+          packagePriceId: price.id,
+          status: 'ACTIVE',
+          provider: session.provider,
+          startedAt: now.toISOString(),
+          currentPeriodStart: now.toISOString(),
+          currentPeriodEnd: periodEnd.toISOString(),
+        });
+
+        const invoice = await tx.orm.public.SubscriptionInvoice.create({
+          tenantId: tenant.id,
+          subscriptionId: subscription.id,
+          packagePriceId: price.id,
+          packageCode: pkg.code,
+          packageName: pkg.name,
+          billingPeriod: price.billingPeriod,
+          currency: session.currency,
+          originalAmountMinor: session.originalAmountMinor,
+          discountAmountMinor: session.discountAmountMinor,
+          taxAmountMinor: session.taxAmountMinor,
+          finalAmountMinor: session.finalAmountMinor,
+          status: 'SUCCEEDED',
+          issuedAt: now.toISOString(),
+          paidAt: now.toISOString(),
+          dueAt: now.toISOString(),
+        });
+
+        if (!invoice) throw new ConflictException('Invoice gagal dibuat');
+
+        if (session.discountCode) {
+          const discount = await tx.orm.public.Discount
+            .where({ code: session.discountCode })
+            .first();
+
+          if (!discount) {
+            throw new ConflictException('Discount checkout tidak ditemukan');
+          }
+
+          if (
+            discount.usageLimit !== null &&
+            discount.usageCount >= discount.usageLimit
+          ) {
+            throw new ConflictException('Batas penggunaan discount sudah tercapai');
+          }
+
+          const packageLinks = await tx.orm.public.DiscountPackage
+            .where({ discountId: discount.id })
+            .all();
+
+          if (
+            packageLinks.length > 0 &&
+            !packageLinks.some((item) => item.packageId === pkg.id)
+          ) {
+            throw new ConflictException('Discount tidak berlaku untuk package ini');
+          }
+
+          const previousUsages = await tx.orm.public.DiscountUsage
+            .where({ discountId: discount.id, tenantId: tenant.id })
+            .all();
+
+          if (discount.duration === 'ONCE' && previousUsages.length > 0) {
+            throw new ConflictException(
+              'Discount hanya dapat digunakan satu kali untuk workspace ini',
+            );
+          }
+
+          if (
+            discount.duration === 'RECURRING_CYCLES' &&
+            discount.durationCycles !== null &&
+            previousUsages.length >= discount.durationCycles
+          ) {
+            throw new ConflictException(
+              'Masa penggunaan discount untuk workspace ini sudah habis',
+            );
+          }
+
+          await tx.orm.public.InvoiceDiscount.create({
+            invoiceId: invoice.id,
+            discountId: discount.id,
+            codeSnapshot: discount.code,
+            discountType: discount.type,
+            discountValueMinor: discount.valueMinor,
+            discountPercentage: discount.percentage,
+            amountMinor: session.discountAmountMinor,
+          });
+
+          await tx.orm.public.DiscountUsage.create({
+            discountId: discount.id,
+            tenantId: tenant.id,
+            subscriptionId: subscription.id,
+            invoiceId: invoice.id,
+            usedAt: now.toISOString(),
+          });
+
+          await tx.orm.public.Discount
+            .where({ id: discount.id })
+            .update({ usageCount: Number(discount.usageCount) + 1 });
+        }
+
+        const payment = await tx.orm.public.Payment.create({
           tenantId: tenant.id,
           subscriptionId: subscription.id,
           invoiceId: invoice.id,
-          usedAt: now.toISOString(),
+          provider: session.provider,
+          providerPaymentId: deterministicProviderPaymentId,
+          status: 'SUCCEEDED',
+          amountMinor: session.finalAmountMinor,
+          currency: session.currency,
+          checkoutUrl: 'sandbox://payment/' + invoice.id,
+          paidAt: now.toISOString(),
+          expiresAt: session.expiresAt,
         });
 
-        await tx.orm.public.Discount
-          .where({ id: discount.id })
-          .update({ usageCount: Number(discount.usageCount) + 1 });
+        if (!payment) throw new ConflictException('Payment gagal dibuat');
 
-        discountId = discount.id;
-      }
+        const updatedSession = await tx.orm.public.BillingCheckoutSession
+          .where({ id: session.id, userId, status: 'PENDING' })
+          .update({
+            status: 'SUCCEEDED',
+            providerPaymentId: payment.providerPaymentId,
+            completedAt: now.toISOString(),
+          });
 
-      const payment = await tx.orm.public.Payment.create({
-        tenantId: tenant.id,
-        subscriptionId: subscription.id,
-        invoiceId: invoice.id,
-        provider: session.provider,
-        providerPaymentId: session.providerPaymentId ?? ('SANDBOX-' + invoice.id),
-        status: 'SUCCEEDED',
-        amountMinor: session.finalAmountMinor,
-        currency: session.currency,
-        checkoutUrl: 'sandbox://payment/' + invoice.id,
-        paidAt: now.toISOString(),
-        expiresAt: session.expiresAt,
+        if (!updatedSession) {
+          throw new ConflictException('Checkout session sudah berubah status');
+        }
+
+        return {
+          sessionId: session.id,
+          tenantId: tenant.id,
+          paymentId: payment.id,
+          invoiceId: invoice.id,
+          subscriptionId: subscription.id,
+          status: 'SUCCEEDED' as const,
+        };
       });
 
-      if (!payment) throw new ConflictException('Payment gagal dibuat');
+      await this.writeCheckoutAudit(userId, session, pkg, price, result);
+      return result;
+    } catch (error) {
+      // The unique provider payment ID makes the operation idempotent under
+      // concurrent requests. If another request committed first, return it.
+      const existingPayment = await this.prisma.client.orm.public.Payment
+        .where({ providerPaymentId: deterministicProviderPaymentId })
+        .first();
 
-      const updatedSession = await tx.orm.public.BillingCheckoutSession
-        .where({ id: session.id, userId })
-        .update({
+      if (existingPayment) {
+        return {
+          sessionId: session.id,
+          tenantId: existingPayment.tenantId,
+          paymentId: existingPayment.id,
+          invoiceId: existingPayment.invoiceId,
+          subscriptionId: existingPayment.subscriptionId,
           status: 'SUCCEEDED',
-          providerPaymentId: payment.providerPaymentId,
-          completedAt: now.toISOString(),
-        });
-
-      if (!updatedSession) {
-        throw new ConflictException('Checkout session gagal diperbarui');
+        };
       }
 
-      return {
-        sessionId: session.id,
-        tenantId: tenant.id,
-        paymentId: payment.id,
-        invoiceId: invoice.id,
-        subscriptionId: subscription.id,
-        status: 'SUCCEEDED' as const,
-      };
-    });
+      throw error;
+    }
+  }
 
+  private async writeCheckoutAudit(
+    userId: string,
+    session: any,
+    pkg: any,
+    price: any,
+    result: BillingCheckoutSessionSuccessResponse,
+  ): Promise<void> {
     await this.auditService.create({ action: 'WORKSPACE.CREATED', entity: 'Tenant', entityId: result.tenantId, tenantId: result.tenantId, userId, description: `Workspace ${session.workspaceName} dibuat melalui checkout`, metadata: { packageId: pkg.id, packageCode: pkg.code, subscriptionId: result.subscriptionId, source: 'CHECKOUT_SANDBOX' } });
     await this.auditService.create({ action: 'BILLING.SUBSCRIPTION_CREATED', entity: 'TenantSubscription', entityId: result.subscriptionId, tenantId: result.tenantId, userId, description: `Subscription ${pkg.code} dibuat melalui checkout`, metadata: { packageId: pkg.id, packagePriceId: price.id, source: 'CHECKOUT_SANDBOX' } });
     await this.auditService.create({ action: 'BILLING.INVOICE_CREATED', entity: 'SubscriptionInvoice', entityId: result.invoiceId, tenantId: result.tenantId, userId, description: `Invoice ${result.invoiceId} dibuat melalui checkout`, metadata: { finalAmountMinor: session.finalAmountMinor, source: 'CHECKOUT_SANDBOX' } });
     await this.auditService.create({ action: 'BILLING.PAYMENT_SUCCEEDED', entity: 'Payment', entityId: result.paymentId, tenantId: result.tenantId, userId, description: 'Payment checkout berhasil', metadata: { invoiceId: result.invoiceId, amountMinor: session.finalAmountMinor, source: 'CHECKOUT_SANDBOX' } });
-
-    return result;
   }
 
   async sandboxFail(

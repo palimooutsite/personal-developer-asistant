@@ -27,7 +27,8 @@ export interface BillingSubscriptionResponse {
   updatedAt: string;
 }
 
-export interface BillingSubscriptionDetailResponse extends BillingSubscriptionResponse {
+export interface BillingSubscriptionDetailResponse
+  extends BillingSubscriptionResponse {
   package: {
     id: string;
     code: string;
@@ -48,7 +49,10 @@ export interface BillingSubscriptionMessageResponse {
 
 @Injectable()
 export class BillingSubscriptionService {
-  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   private async ensureTenantMember(tenantId: string, userId: string) {
     const member = await this.prisma.client.orm.public.TenantMember
@@ -56,7 +60,9 @@ export class BillingSubscriptionService {
       .first();
 
     if (!member) {
-      throw new NotFoundException('Workspace tidak ditemukan atau Anda bukan member workspace');
+      throw new NotFoundException(
+        'Workspace tidak ditemukan atau Anda bukan member workspace',
+      );
     }
 
     return member;
@@ -68,6 +74,48 @@ export class BillingSubscriptionService {
   ): Promise<BillingSubscriptionDetailResponse | null> {
     await this.ensureTenantMember(tenantId, userId);
 
+    const subscriptions = await this.prisma.client.orm.public.TenantSubscription
+      .where({ tenantId })
+      .select(
+        'id',
+        'tenantId',
+        'packageId',
+        'packagePriceId',
+        'status',
+        'provider',
+        'providerCustomerId',
+        'providerSubscriptionId',
+        'startedAt',
+        'currentPeriodStart',
+        'currentPeriodEnd',
+        'cancelledAt',
+        'createdAt',
+        'updatedAt',
+      )
+      .all();
+
+    const current = subscriptions
+      .filter((item) =>
+        ['PENDING', 'TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)),
+      )
+      .sort((a, b) =>
+        String(b.createdAt).localeCompare(String(a.createdAt)),
+      )[0];
+
+    if (!current) {
+      return null;
+    }
+
+    return this.buildDetail(current as BillingSubscriptionResponse);
+  }
+
+  async create(
+    tenantId: string,
+    userId: string,
+    data: CreateSubscriptionDto,
+  ): Promise<BillingSubscriptionDetailResponse> {
+    await this.ensureTenantMember(tenantId, userId);
+
     const [pkg, price] = await Promise.all([
       this.prisma.client.orm.public.SubscriptionPackage
         .where({ id: data.packageId })
@@ -77,19 +125,31 @@ export class BillingSubscriptionService {
         .first(),
     ]);
 
-    if (!pkg) throw new NotFoundException('Package tidak ditemukan');
-    if (!pkg.isActive) throw new ConflictException('Package sedang tidak aktif');
-    if (!price) throw new NotFoundException('Harga package tidak ditemukan');
+    if (!pkg) {
+      throw new NotFoundException('Package tidak ditemukan');
+    }
+
+    if (!pkg.isActive) {
+      throw new ConflictException('Package sedang tidak aktif');
+    }
+
+    if (!price) {
+      throw new NotFoundException('Harga package tidak ditemukan');
+    }
 
     if (price.packageId !== pkg.id) {
-      throw new ConflictException('Harga package tidak sesuai dengan package yang dipilih');
+      throw new ConflictException(
+        'Harga package tidak sesuai dengan package yang dipilih',
+      );
     }
 
     if (!price.isActive) {
       throw new ConflictException('Harga package sedang tidak aktif');
     }
 
-    const provider = data.provider ?? BillingSubscriptionProviderDto.SANDBOX;
+    const provider =
+      data.provider ?? BillingSubscriptionProviderDto.SANDBOX;
+
     if (provider !== BillingSubscriptionProviderDto.SANDBOX) {
       throw new ConflictException(
         'Provider pembayaran selain SANDBOX belum tersedia pada tahap ini',
@@ -107,7 +167,7 @@ export class BillingSubscriptionService {
       throw new ConflictException('Billing period tidak didukung');
     }
 
-    let created: BillingSubscriptionResponse | null = null;
+    let created: BillingSubscriptionResponse;
 
     try {
       created = await this.prisma.client.transaction(async (tx) => {
@@ -120,17 +180,21 @@ export class BillingSubscriptionService {
         `.affectedCount().build();
 
         const lockResult = await tx.execute(lockPlan);
+
         if (lockResult.affectedRows !== 1) {
           throw new NotFoundException('Workspace tidak ditemukan');
         }
 
-        const subscriptions = await tx.orm.public.TenantSubscription
-          .where({ tenantId })
-          .select('id', 'status')
-          .all();
+        const subscriptions =
+          await tx.orm.public.TenantSubscription
+            .where({ tenantId })
+            .select('id', 'status')
+            .all();
 
         const activeSubscription = subscriptions.find((item) =>
-          ['PENDING', 'TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)),
+          ['PENDING', 'TRIAL', 'ACTIVE', 'PAST_DUE'].includes(
+            String(item.status),
+          ),
         );
 
         if (activeSubscription) {
@@ -159,7 +223,10 @@ export class BillingSubscriptionService {
           : '';
       const message = error instanceof Error ? error.message : String(error);
 
-      if (code === '23505' || message.includes('tenant_subscription_active_uq')) {
+      if (
+        code === '23505' ||
+        message.includes('tenant_subscription_active_uq')
+      ) {
         throw new ConflictException(
           'Workspace sudah memiliki subscription yang masih aktif',
         );
@@ -168,7 +235,20 @@ export class BillingSubscriptionService {
       throw error;
     }
 
-    await this.auditService.create({ action: 'BILLING.SUBSCRIPTION_CREATED', entity: 'TenantSubscription', entityId: created.id, tenantId, userId, description: `Subscription ${pkg.code} dibuat`, metadata: { packageId: pkg.id, packagePriceId: price.id, provider } });
+    await this.auditService.create({
+      action: 'BILLING.SUBSCRIPTION_CREATED',
+      entity: 'TenantSubscription',
+      entityId: created.id,
+      tenantId,
+      userId,
+      description: `Subscription ${pkg.code} dibuat`,
+      metadata: {
+        packageId: pkg.id,
+        packagePriceId: price.id,
+        provider,
+      },
+    });
+
     return this.buildDetail(created);
   }
 
@@ -180,17 +260,21 @@ export class BillingSubscriptionService {
 
     const subscriptions = await this.prisma.client.orm.public.TenantSubscription
       .where({ tenantId })
-      .select(
-        'id', 'status', 'createdAt',
-      )
+      .select('id', 'status', 'createdAt')
       .all();
 
     const subscription = subscriptions
-      .filter((item) => ['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)))
-      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
+      .filter((item) =>
+        ['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)),
+      )
+      .sort((a, b) =>
+        String(b.createdAt).localeCompare(String(a.createdAt)),
+      )[0];
 
     if (!subscription) {
-      throw new NotFoundException('Tidak ada subscription aktif untuk workspace');
+      throw new NotFoundException(
+        'Tidak ada subscription aktif untuk workspace',
+      );
     }
 
     const updated = await this.prisma.client.orm.public.TenantSubscription
@@ -204,7 +288,15 @@ export class BillingSubscriptionService {
       throw new NotFoundException('Subscription gagal dibatalkan');
     }
 
-    await this.auditService.create({ action: 'BILLING.SUBSCRIPTION_CANCELLED', entity: 'TenantSubscription', entityId: subscription.id, tenantId, userId, description: 'Subscription dibatalkan' });
+    await this.auditService.create({
+      action: 'BILLING.SUBSCRIPTION_CANCELLED',
+      entity: 'TenantSubscription',
+      entityId: subscription.id,
+      tenantId,
+      userId,
+      description: 'Subscription dibatalkan',
+    });
+
     return { message: 'Subscription berhasil dibatalkan' };
   }
 
@@ -216,12 +308,20 @@ export class BillingSubscriptionService {
         .first(),
       this.prisma.client.orm.public.SubscriptionPackagePrice
         .where({ id: subscription.packagePriceId })
-        .select('id', 'billingPeriod', 'amountMinor', 'currency', 'version')
+        .select(
+          'id',
+          'billingPeriod',
+          'amountMinor',
+          'currency',
+          'version',
+        )
         .first(),
     ]);
 
     if (!pkg || !price) {
-      throw new ConflictException('Data package subscription tidak lengkap');
+      throw new ConflictException(
+        'Data package subscription tidak lengkap',
+      );
     }
 
     return {

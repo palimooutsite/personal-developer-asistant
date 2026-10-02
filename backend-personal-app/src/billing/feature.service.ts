@@ -236,11 +236,13 @@ export class BillingFeatureService {
     operation: (client: BillingTransactionClient) => Promise<T>,
   ): Promise<T> {
     return this.prisma.client.transaction(async (tx) => {
-      await tx.execute(`
+      const lockPlan = this.prisma.client.raw.sql`
         UPDATE "public"."tenant"
         SET "updatedAt" = "updatedAt"
         WHERE "id" = ${tenantId}
-      `);
+      `.affectedCount().build();
+
+      await tx.execute(lockPlan);
 
       const usage = await currentUsage(tx);
       await this.assertWithinLimitWithClient(tx, tenantId, userId, code, usage);

@@ -975,6 +975,16 @@ describe.sequential('Billing concurrency integration', () => {
       tenants.acceptInvitation(invitationB.token, userB.id),
     ]);
 
+    const rejected = results.filter(
+      (item): item is PromiseRejectedResult => item.status === 'rejected',
+    );
+    if (rejected.length > 0) {
+      console.error(
+        'invitation acceptance failures:',
+        rejected.map((item) => item.reason),
+      );
+    }
+
     expect(results.filter((item) => item.status === 'fulfilled')).toHaveLength(1);
     expect(results.filter((item) => item.status === 'rejected')).toHaveLength(1);
 

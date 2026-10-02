@@ -56,39 +56,106 @@ export class BillingPaymentService {
     };
   }
 
-  async create(tenantId: string, userId: string, invoiceId: string, provider: BillingPaymentProviderDto): Promise<BillingPaymentResponse> {
+  async create(
+    tenantId: string,
+    userId: string,
+    invoiceId: string,
+    provider: BillingPaymentProviderDto,
+  ): Promise<BillingPaymentResponse> {
     await this.ensureMember(tenantId, userId);
-    const invoice = await this.getInvoice(tenantId, invoiceId);
 
-    if (invoice.status !== 'PENDING') {
-      throw new ConflictException('Invoice tidak dalam status PENDING');
-    }
     if (provider !== BillingPaymentProviderDto.SANDBOX) {
-      throw new ConflictException('Payment provider tersebut belum diimplementasikan');
+      throw new ConflictException(
+        'Payment provider tersebut belum diimplementasikan',
+      );
     }
-
-    const existing = await this.prisma.client.orm.public.Payment.where({ invoiceId }).all();
-    const pending = existing.find((payment) => payment.status === 'PENDING');
-    if (pending) return this.toResponse(pending);
 
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-    const payment = await this.prisma.client.orm.public.Payment.create({
-      tenantId,
-      subscriptionId: invoice.subscriptionId,
-      invoiceId: invoice.id,
-      provider,
-      providerPaymentId: 'SANDBOX-' + invoice.id,
-      status: 'PENDING',
-      amountMinor: invoice.finalAmountMinor,
-      currency: invoice.currency,
-      checkoutUrl: 'sandbox://payment/' + invoice.id,
-      expiresAt,
-    });
+    try {
+      const payment = await this.prisma.client.transaction(async (tx) => {
+        // Serialize payment creation for the same invoice. This prevents two
+        // concurrent requests from both observing "no pending payment".
+        const lockPlan = this.prisma.client.raw.sql`
+          UPDATE "public"."subscriptionInvoice"
+          SET "updatedAt" = "updatedAt"
+          WHERE "id" = ${invoiceId}
+            AND "tenantId" = ${tenantId}
+        `.affectedCount().build();
 
-    if (!payment) throw new ConflictException('Payment gagal dibuat');
-    await this.auditService.create({ action: 'BILLING.PAYMENT_CREATED', entity: 'Payment', entityId: payment.id, tenantId, userId, description: `Payment untuk invoice ${invoice.id} dibuat`, metadata: { invoiceId: invoice.id, amountMinor: payment.amountMinor, provider: payment.provider } });
-    return this.toResponse(payment);
+        await tx.execute(lockPlan);
+
+        const invoice = await tx.orm.public.SubscriptionInvoice
+          .where({ id: invoiceId, tenantId })
+          .first();
+
+        if (!invoice) {
+          throw new NotFoundException('Invoice tidak ditemukan');
+        }
+
+        if (invoice.status !== 'PENDING') {
+          throw new ConflictException('Invoice tidak dalam status PENDING');
+        }
+
+        const existing = await tx.orm.public.Payment
+          .where({ invoiceId })
+          .all();
+
+        const pending = existing.find((item) => item.status === 'PENDING');
+        if (pending) {
+          return pending;
+        }
+
+        const created = await tx.orm.public.Payment.create({
+          tenantId,
+          subscriptionId: invoice.subscriptionId,
+          invoiceId: invoice.id,
+          provider,
+          providerPaymentId: 'SANDBOX-' + invoice.id,
+          status: 'PENDING',
+          amountMinor: invoice.finalAmountMinor,
+          currency: invoice.currency,
+          checkoutUrl: 'sandbox://payment/' + invoice.id,
+          expiresAt,
+        });
+
+        if (!created) {
+          throw new ConflictException('Payment gagal dibuat');
+        }
+
+        return created;
+      });
+
+      await this.auditService.create({
+        action: 'BILLING.PAYMENT_CREATED',
+        entity: 'Payment',
+        entityId: payment.id,
+        tenantId,
+        userId,
+        description: `Payment untuk invoice ${invoiceId} dibuat`,
+        metadata: {
+          invoiceId,
+          amountMinor: payment.amountMinor,
+          provider: payment.provider,
+        },
+      });
+
+      return this.toResponse(payment);
+    } catch (error) {
+      // A unique provider payment ID may be the winner of a concurrent
+      // request. Return that existing payment instead of surfacing a
+      // duplicate-key failure to the caller.
+      const existing = await this.prisma.client.orm.public.Payment
+        .where({ invoiceId, tenantId })
+        .all();
+      const pending = existing.find((item) => item.status === 'PENDING');
+
+      if (pending) {
+        return this.toResponse(pending);
+      }
+
+      throw error;
+    }
   }
 
   async list(tenantId: string, userId: string): Promise<BillingPaymentResponse[]> {

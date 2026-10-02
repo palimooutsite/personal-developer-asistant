@@ -29,17 +29,30 @@ export class TenantContextGuard implements CanActivate {
       );
     }
 
-    const tenantId = request.headers['x-tenant-id'];
+    const headerTenantId = request.headers['x-tenant-id'];
 
-    if (typeof tenantId !== 'string' || !tenantId.trim()) {
+    if (typeof headerTenantId !== 'string' || !headerTenantId.trim()) {
       throw new ForbiddenException(
         'X-Tenant-Id header is required',
       );
     }
 
+    const tenantId = headerTenantId.trim();
+    const routeTenantId = request.params?.tenantId;
+
+    // Billing/resource controllers use :tenantId from the route when calling
+    // their services. Never allow the validated header tenant and route tenant
+    // to diverge, otherwise a member of tenant A could authenticate the guard
+    // with tenant A while the service operates on tenant B.
+    if (typeof routeTenantId === 'string' && routeTenantId.trim() !== tenantId) {
+      throw new ForbiddenException(
+        'Tenant context does not match the requested tenant',
+      );
+    }
+
     const membership =
       await this.tenantService.getMembershipForContext(
-        tenantId.trim(),
+        tenantId,
         userId,
       );
 

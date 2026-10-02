@@ -66,9 +66,14 @@ export class BillingCheckoutService {
         payment,
       };
     } catch (error) {
+      // Roll back only a subscription that is still PENDING. A concurrent
+      // request or downstream payment flow may already have advanced it.
       await this.prisma.client.orm.public.TenantSubscription
-        .where({ id: subscription.id, tenantId })
-        .update({ status: 'CANCELLED', cancelledAt: new Date().toISOString() });
+        .where({ id: subscription.id, tenantId, status: 'PENDING' })
+        .update({
+          status: 'CANCELLED',
+          cancelledAt: new Date().toISOString(),
+        });
       throw error;
     }
   }

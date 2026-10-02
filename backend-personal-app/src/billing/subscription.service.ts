@@ -149,16 +149,36 @@ export class BillingSubscriptionService {
       throw new ConflictException('Billing period tidak didukung');
     }
 
-    const created = await this.prisma.client.orm.public.TenantSubscription.create({
-      tenantId,
-      packageId: pkg.id,
-      packagePriceId: price.id,
-      status: 'PENDING',
-      provider,
-      startedAt: now.toISOString(),
-      currentPeriodStart: now.toISOString(),
-      currentPeriodEnd: periodEnd.toISOString(),
-    });
+    let created: BillingSubscriptionResponse | null = null;
+
+    try {
+      created = await this.prisma.client.orm.public.TenantSubscription.create({
+        tenantId,
+        packageId: pkg.id,
+        packagePriceId: price.id,
+        status: 'PENDING',
+        provider,
+        startedAt: now.toISOString(),
+        currentPeriodStart: now.toISOString(),
+        currentPeriodEnd: periodEnd.toISOString(),
+      });
+    } catch (error) {
+      const code =
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error
+          ? String((error as { code?: unknown }).code)
+          : '';
+      const message = error instanceof Error ? error.message : String(error);
+
+      if (code === '23505' || message.includes('tenant_subscription_active_uq')) {
+        throw new ConflictException(
+          'Workspace sudah memiliki subscription yang masih aktif',
+        );
+      }
+
+      throw error;
+    }
 
     await this.auditService.create({ action: 'BILLING.SUBSCRIPTION_CREATED', entity: 'TenantSubscription', entityId: created.id, tenantId, userId, description: `Subscription ${pkg.code} dibuat`, metadata: { packageId: pkg.id, packagePriceId: price.id, provider } });
     return this.buildDetail(created);

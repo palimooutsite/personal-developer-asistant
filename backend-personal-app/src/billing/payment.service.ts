@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AuditService } from '../audit/audit.service.js';
 import { BillingPaymentProviderDto } from './dto/create-payment.dto.js';
 
 export interface BillingPaymentResponse {
@@ -20,7 +21,7 @@ export interface BillingPaymentResponse {
 
 @Injectable()
 export class BillingPaymentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
 
   private async ensureMember(tenantId: string, userId: string) {
     const member = await this.prisma.client.orm.public.TenantMember
@@ -86,6 +87,7 @@ export class BillingPaymentService {
     });
 
     if (!payment) throw new ConflictException('Payment gagal dibuat');
+    await this.auditService.create({ action: 'BILLING.PAYMENT_CREATED', entity: 'Payment', entityId: payment.id, tenantId, userId, description: `Payment untuk invoice ${invoice.id} dibuat`, metadata: { invoiceId: invoice.id, amountMinor: payment.amountMinor, provider: payment.provider } });
     return this.toResponse(payment);
   }
 
@@ -131,6 +133,7 @@ export class BillingPaymentService {
       });
 
     if (!updatedPayment) throw new ConflictException('Payment gagal diperbarui');
+    await this.auditService.create({ action: 'BILLING.PAYMENT_SUCCEEDED', entity: 'Payment', entityId: updatedPayment.id, tenantId, userId, description: 'Payment berhasil', metadata: { invoiceId: payment.invoiceId, subscriptionId: payment.subscriptionId, amountMinor: payment.amountMinor } });
     return this.toResponse(updatedPayment);
   }
 
@@ -147,6 +150,7 @@ export class BillingPaymentService {
       .update({ status: 'FAILED' });
 
     if (!updatedPayment) throw new ConflictException('Payment gagal diperbarui');
+    await this.auditService.create({ action: 'BILLING.PAYMENT_FAILED', entity: 'Payment', entityId: updatedPayment.id, tenantId, userId, description: 'Payment gagal', metadata: { invoiceId: payment.invoiceId, subscriptionId: payment.subscriptionId, amountMinor: payment.amountMinor } });
     return this.toResponse(updatedPayment);
   }
 }

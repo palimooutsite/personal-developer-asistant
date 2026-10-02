@@ -7,6 +7,7 @@ import { UpdateFeatureDto } from './dto/update-feature.dto.js';
 import { CreatePriceDto, BillingPeriodDto } from './dto/create-price.dto.js';
 import { UpdatePriceDto } from './dto/update-price.dto.js';
 import { SetPackageFeatureDto } from './dto/set-package-feature.dto.js';
+import { AuditService } from '../audit/audit.service.js';
 
 export interface BillingPackageResponse {
   id: string;
@@ -59,7 +60,7 @@ export interface BillingMessageResponse {
 
 @Injectable()
 export class BillingCatalogService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
 
   async listPackages() {
     const packages = await this.prisma.client.orm.public.SubscriptionPackage
@@ -332,12 +333,14 @@ export class BillingCatalogService {
 
     if (existing) throw new ConflictException('Package dengan code tersebut sudah ada');
 
-    return this.prisma.client.orm.public.SubscriptionPackage.create({
+    const created = await this.prisma.client.orm.public.SubscriptionPackage.create({
       code,
       name: data.name.trim(),
       description: data.description?.trim() || null,
       sortOrder: data.sortOrder ?? 0,
     });
+    await this.auditService.create({ action: 'BILLING.PACKAGE_CREATED', entity: 'SubscriptionPackage', entityId: created.id, description: `Package ${created.code} dibuat`, metadata: { code: created.code, name: created.name } });
+    return created;
   }
 
   async updatePackage(id: string, data: UpdatePackageDto): Promise<BillingPackageResponse> {
@@ -357,6 +360,7 @@ export class BillingCatalogService {
       });
 
     if (!updated) throw new NotFoundException('Package gagal diperbarui');
+    await this.auditService.create({ action: 'BILLING.PACKAGE_UPDATED', entity: 'SubscriptionPackage', entityId: id, description: `Package ${updated.code} diperbarui`, metadata: data });
     return updated;
   }
 
@@ -384,13 +388,15 @@ export class BillingCatalogService {
 
     if (existing) throw new ConflictException('Feature dengan code tersebut sudah ada');
 
-    return this.prisma.client.orm.public.SubscriptionFeature.create({
+    const created = await this.prisma.client.orm.public.SubscriptionFeature.create({
       code,
       name: data.name.trim(),
       description: data.description?.trim() || null,
       valueType: data.valueType as BillingFeatureValueTypeDto,
       unit: data.unit?.trim() || null,
     });
+    await this.auditService.create({ action: 'BILLING.FEATURE_CREATED', entity: 'SubscriptionFeature', entityId: created.id, description: `Feature ${created.code} dibuat`, metadata: { code: created.code } });
+    return created;
   }
 
   async updateFeature(id: string, data: UpdateFeatureDto): Promise<BillingFeatureResponse> {
@@ -439,6 +445,7 @@ export class BillingCatalogService {
       });
 
     if (!updated) throw new NotFoundException('Feature gagal diperbarui');
+    await this.auditService.create({ action: 'BILLING.FEATURE_UPDATED', entity: 'SubscriptionFeature', entityId: id, description: `Feature ${updated.code} diperbarui`, metadata: data });
     return updated;
   }
 
@@ -481,13 +488,15 @@ export class BillingCatalogService {
       0,
     ) + 1;
 
-    return this.prisma.client.orm.public.SubscriptionPackagePrice.create({
+    const created = await this.prisma.client.orm.public.SubscriptionPackagePrice.create({
       packageId,
       version,
       billingPeriod: data.billingPeriod as BillingPeriodDto,
       amountMinor: data.amountMinor,
       currency: data.currency?.trim().toUpperCase() || 'IDR',
     });
+    await this.auditService.create({ action: 'BILLING.PRICE_CREATED', entity: 'SubscriptionPackagePrice', entityId: created.id, description: `Harga package ${packageId} dibuat`, metadata: { packageId, billingPeriod: created.billingPeriod, amountMinor: created.amountMinor } });
+    return created;
   }
 
   async updatePrice(id: string, data: UpdatePriceDto): Promise<BillingPriceResponse> {
@@ -505,6 +514,7 @@ export class BillingCatalogService {
       });
 
     if (!updated) throw new NotFoundException('Harga gagal diperbarui');
+    await this.auditService.create({ action: 'BILLING.PRICE_UPDATED', entity: 'SubscriptionPackagePrice', entityId: id, description: 'Harga package diperbarui', metadata: data });
     return updated;
   }
 

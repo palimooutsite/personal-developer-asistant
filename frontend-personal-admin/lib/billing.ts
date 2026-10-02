@@ -48,3 +48,12 @@ export interface AdminInvoice {
 }
 export async function listAdminInvoices(){return apiRequest<AdminInvoice[]>("/billing/admin/invoices");}
 export async function getAdminInvoice(id:string){return apiRequest<AdminInvoice>(`/billing/admin/invoices/${id}`);}
+
+export interface AdminPayment {
+  id:string; tenantId:string; workspaceName:string; subscriptionId:string; invoiceId:string;
+  packageName:string; packageCode:string; provider:string; providerPaymentId:string|null;
+  status:string; amountMinor:number; currency:string; checkoutUrl:string|null;
+  paidAt:string|null; expiresAt:string|null; createdAt:string;
+}
+export async function listAdminPayments(){return apiRequest<AdminPayment[]>("/billing/admin/payments");}
+export async function getAdminPayment(id:string){return apiRequest<AdminPayment>("/billing/admin/payments/"+id);}

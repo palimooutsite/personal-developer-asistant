@@ -381,7 +381,7 @@ export class BillingInvoiceService {
             invoiceId: createdInvoice.id,
             onceUsageKey:
               discount.duration === 'ONCE'
-                ? \`\${discount.id}:\${tenantId}\`
+                ? `${discount.id}:${tenantId}`
                 : null,
             usedAt: now,
           });
@@ -407,7 +407,7 @@ export class BillingInvoiceService {
         entityId: invoice.id,
         tenantId,
         userId,
-        description: \`Invoice \${invoice.id} dibuat\`,
+        description: `Invoice ${invoice.id} dibuat`,
         metadata: {
           subscriptionId: result.subscription.id,
           packageCode: result.package.code,

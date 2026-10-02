@@ -202,6 +202,48 @@ export class BillingPaymentService {
     const now = new Date().toISOString();
 
     const updatedPayment = await this.prisma.client.transaction(async (tx) => {
+      const invoice = await tx.orm.public.SubscriptionInvoice
+        .where({ id: payment.invoiceId, tenantId })
+        .first();
+
+      if (!invoice) {
+        throw new ConflictException('Invoice terkait payment tidak ditemukan');
+      }
+
+      const subscription = await tx.orm.public.TenantSubscription
+        .where({ id: payment.subscriptionId, tenantId })
+        .first();
+
+      if (!subscription) {
+        throw new ConflictException('Subscription terkait payment tidak ditemukan');
+      }
+
+      // A payment must settle the exact invoice and subscription it belongs to.
+      // Foreign keys alone do not guarantee this cross-entity invariant.
+      if (invoice.subscriptionId !== subscription.id) {
+        throw new ConflictException(
+          'Invoice dan subscription terkait payment tidak konsisten',
+        );
+      }
+
+      if (invoice.finalAmountMinor !== payment.amountMinor || invoice.currency !== payment.currency) {
+        throw new ConflictException(
+          'Nominal atau currency payment tidak sesuai dengan invoice',
+        );
+      }
+
+      if (subscription.status !== 'PENDING') {
+        throw new ConflictException(
+          'Subscription terkait payment tidak dalam status PENDING',
+        );
+      }
+
+      if (invoice.status !== 'PENDING') {
+        throw new ConflictException(
+          'Invoice terkait payment tidak dalam status PENDING',
+        );
+      }
+
       const claimed = await tx.orm.public.Payment
         .where({ id: paymentId, tenantId, status: 'PENDING' })
         .update({ status: 'SUCCEEDED', paidAt: now });
@@ -219,7 +261,7 @@ export class BillingPaymentService {
       }
 
       const updatedInvoice = await tx.orm.public.SubscriptionInvoice
-        .where({ id: payment.invoiceId, tenantId, status: 'PENDING' })
+        .where({ id: invoice.id, tenantId, status: 'PENDING' })
         .update({ status: 'SUCCEEDED', paidAt: now });
 
       if (!updatedInvoice) {
@@ -233,7 +275,7 @@ export class BillingPaymentService {
       }
 
       const updatedSubscription = await tx.orm.public.TenantSubscription
-        .where({ id: payment.subscriptionId, tenantId, status: 'PENDING' })
+        .where({ id: subscription.id, tenantId, status: 'PENDING' })
         .update({
           status: 'ACTIVE',
           startedAt: now,

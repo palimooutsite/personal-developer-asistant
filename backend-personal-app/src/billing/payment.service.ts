@@ -106,34 +106,104 @@ export class BillingPaymentService {
     return this.toResponse(payment);
   }
 
-  async sandboxSucceed(tenantId: string, userId: string, paymentId: string): Promise<BillingPaymentResponse> {
+  async sandboxSucceed(
+    tenantId: string,
+    userId: string,
+    paymentId: string,
+  ): Promise<BillingPaymentResponse> {
     await this.ensureMember(tenantId, userId);
-    const payment = await this.prisma.client.orm.public.Payment.where({ id: paymentId, tenantId }).first();
+
+    const payment = await this.prisma.client.orm.public.Payment
+      .where({ id: paymentId, tenantId })
+      .first();
 
     if (!payment) throw new NotFoundException('Payment tidak ditemukan');
-    if (payment.provider !== 'SANDBOX') throw new ConflictException('Simulasi hanya tersedia untuk SANDBOX');
-    if (payment.status !== 'PENDING') throw new ConflictException('Payment tidak dalam status PENDING');
+    if (payment.provider !== 'SANDBOX') {
+      throw new ConflictException('Simulasi hanya tersedia untuk SANDBOX');
+    }
+
+    if (payment.status === 'SUCCEEDED') {
+      return this.toResponse(payment);
+    }
+
+    if (payment.status !== 'PENDING') {
+      throw new ConflictException('Payment tidak dalam status PENDING');
+    }
 
     const now = new Date().toISOString();
 
-    const updatedPayment = await this.prisma.client.orm.public.Payment
-      .where({ id: paymentId })
-      .update({ status: 'SUCCEEDED', paidAt: now });
+    const updatedPayment = await this.prisma.client.transaction(async (tx) => {
+      const claimed = await tx.orm.public.Payment
+        .where({ id: paymentId, tenantId, status: 'PENDING' })
+        .update({ status: 'SUCCEEDED', paidAt: now });
 
-    await this.prisma.client.orm.public.SubscriptionInvoice
-      .where({ id: payment.invoiceId, tenantId })
-      .update({ status: 'SUCCEEDED', paidAt: now });
+      if (!claimed) {
+        const current = await tx.orm.public.Payment
+          .where({ id: paymentId, tenantId })
+          .first();
 
-    await this.prisma.client.orm.public.TenantSubscription
-      .where({ id: payment.subscriptionId, tenantId })
-      .update({
-        status: 'ACTIVE',
-        startedAt: now,
-        currentPeriodStart: now,
-      });
+        if (current?.status === 'SUCCEEDED') {
+          return current;
+        }
 
-    if (!updatedPayment) throw new ConflictException('Payment gagal diperbarui');
-    await this.auditService.create({ action: 'BILLING.PAYMENT_SUCCEEDED', entity: 'Payment', entityId: updatedPayment.id, tenantId, userId, description: 'Payment berhasil', metadata: { invoiceId: payment.invoiceId, subscriptionId: payment.subscriptionId, amountMinor: payment.amountMinor } });
+        throw new ConflictException('Payment sudah berubah status');
+      }
+
+      const updatedInvoice = await tx.orm.public.SubscriptionInvoice
+        .where({ id: payment.invoiceId, tenantId, status: 'PENDING' })
+        .update({ status: 'SUCCEEDED', paidAt: now });
+
+      if (!updatedInvoice) {
+        const invoice = await tx.orm.public.SubscriptionInvoice
+          .where({ id: payment.invoiceId, tenantId })
+          .first();
+
+        if (invoice?.status !== 'SUCCEEDED') {
+          throw new ConflictException('Invoice gagal diperbarui');
+        }
+      }
+
+      const updatedSubscription = await tx.orm.public.TenantSubscription
+        .where({ id: payment.subscriptionId, tenantId, status: 'PENDING' })
+        .update({
+          status: 'ACTIVE',
+          startedAt: now,
+          currentPeriodStart: now,
+        });
+
+      if (!updatedSubscription) {
+        const subscription = await tx.orm.public.TenantSubscription
+          .where({ id: payment.subscriptionId, tenantId })
+          .first();
+
+        if (subscription?.status !== 'ACTIVE') {
+          throw new ConflictException('Subscription gagal diaktifkan');
+        }
+      }
+
+      return tx.orm.public.Payment
+        .where({ id: paymentId, tenantId })
+        .first();
+    });
+
+    if (!updatedPayment) {
+      throw new ConflictException('Payment gagal diperbarui');
+    }
+
+    await this.auditService.create({
+      action: 'BILLING.PAYMENT_SUCCEEDED',
+      entity: 'Payment',
+      entityId: updatedPayment.id,
+      tenantId,
+      userId,
+      description: 'Payment berhasil',
+      metadata: {
+        invoiceId: payment.invoiceId,
+        subscriptionId: payment.subscriptionId,
+        amountMinor: payment.amountMinor,
+      },
+    });
+
     return this.toResponse(updatedPayment);
   }
 

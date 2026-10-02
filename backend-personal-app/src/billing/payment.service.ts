@@ -433,5 +433,4 @@ export class BillingPaymentService {
 
     return this.toResponse(updatedPayment);
   }
-  }
 }

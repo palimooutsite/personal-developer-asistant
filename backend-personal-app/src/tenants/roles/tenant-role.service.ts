@@ -249,9 +249,29 @@ export class TenantRoleService {
       uniquePermissions.set(permission.module, permission);
     }
 
-    // Do not use delete-all + create-all here. Two concurrent role updates
-    // can otherwise race each other and violate the (roleId, module) unique
-    // constraint. Update existing rows and create missing rows instead.
+    // Replacement semantics: every permission module omitted by the client
+    // must be explicitly revoked. Otherwise an old permission survives a role
+    // update even though the administrator removed it from the payload.
+    const existingPermissions = await this.prisma.client.orm.public.TenantRolePermission
+      .where({ roleId })
+      .select('id', 'module')
+      .all();
+
+    for (const existing of existingPermissions) {
+      if (uniquePermissions.has(existing.module as PermissionModule)) continue;
+
+      await this.prisma.client.orm.public.TenantRolePermission
+        .where({ id: existing.id })
+        .update({
+          canCreate: false,
+          canRead: false,
+          canUpdate: false,
+          canDelete: false,
+        });
+    }
+
+    // Update existing rows and create missing rows instead of delete-all +
+    // create-all, preserving the unique (roleId, module) invariant.
     for (const permission of uniquePermissions.values()) {
       const values = {
         canCreate: Boolean(permission.canCreate),
@@ -278,8 +298,6 @@ export class TenantRoleService {
           ...values,
         });
       } catch (error) {
-        // Another concurrent update may have inserted the same module
-        // between the lookup and create. Re-read and update that row.
         if (
           error &&
           typeof error === 'object' &&

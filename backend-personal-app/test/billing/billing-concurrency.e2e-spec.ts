@@ -204,6 +204,42 @@ describe.sequential('Billing concurrency integration', () => {
     expect(tenants).toHaveLength(1);
   });
 
+  it('does not complete an expired checkout session after the lifecycle race', async () => {
+    const user = await seedUser();
+    const { pkg, price } = await seedPackage();
+
+    const session = await checkoutSessions.create(user.id, {
+      packageId: pkg.id,
+      packagePriceId: price.id,
+      workspaceName: 'Expired Checkout Workspace',
+      provider: BillingCheckoutSessionProviderDto.SANDBOX,
+    });
+
+    await prisma.client.orm.public.BillingCheckoutSession
+      .where({ id: session.id })
+      .update({ expiresAt: new Date(Date.now() - 1000).toISOString() });
+
+    await expect(
+      checkoutSessions.sandboxSucceed(user.id, session.id),
+    ).rejects.toMatchObject({
+      response: {
+        message: 'Checkout session sudah kedaluwarsa',
+      },
+    });
+
+    const persistedSession = await prisma.client.orm.public.BillingCheckoutSession
+      .where({ id: session.id })
+      .first();
+
+    expect(persistedSession?.status).toBe('EXPIRED');
+
+    const tenants = await prisma.client.orm.public.Tenant
+      .where({ createdBy: user.id })
+      .all();
+
+    expect(tenants).toHaveLength(0);
+  });
+
   it('makes concurrent payment succeed calls idempotent', async () => {
     const user = await seedUser();
     const fixture = await seedPendingPayment(user.id);

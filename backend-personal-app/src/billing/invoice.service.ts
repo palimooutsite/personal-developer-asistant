@@ -287,70 +287,167 @@ export class BillingInvoiceService {
     const result = await this.calculate(tenantId, userId, data.discountCode);
     const now = new Date().toISOString();
 
-    const invoice = await this.prisma.client.orm.public.SubscriptionInvoice.create({
-      tenantId,
-      subscriptionId: result.subscription.id,
-      packagePriceId: result.price.id,
-      packageCode: result.package.code,
-      packageName: result.package.name,
-      billingPeriod: result.price.billingPeriod,
-      currency: result.price.currency,
-      originalAmountMinor: result.originalAmountMinor,
-      discountAmountMinor: result.discountAmountMinor,
-      taxAmountMinor: result.taxAmountMinor,
-      finalAmountMinor: result.finalAmountMinor,
-      status: 'PENDING',
-      issuedAt: now,
-      dueAt: now,
-    });
+    try {
+      const invoice = await this.prisma.client.transaction(async (tx) => {
+        let discount = result.discount;
 
-    if (!invoice) throw new ConflictException('Invoice gagal dibuat');
+        if (discount) {
+          // Serialize concurrent consumption attempts for the same discount.
+          // The no-op UPDATE acquires PostgreSQL's row lock without changing
+          // usageCount, so usage-limit checks below see the latest committed value.
+          const lockPlan = this.prisma.client.raw.sql`
+            UPDATE "Discount"
+            SET "usageCount" = "usageCount"
+            WHERE "id" = ${discount.id}
+          `.affectedCount().build();
 
-    await this.auditService.create({ action: 'BILLING.INVOICE_CREATED', entity: 'SubscriptionInvoice', entityId: invoice.id, tenantId, userId, description: `Invoice ${invoice.id} dibuat`, metadata: { subscriptionId: result.subscription.id, packageCode: result.package.code, finalAmountMinor: result.finalAmountMinor } });
+          const lockResult = await tx.execute(lockPlan);
+          if (lockResult.affectedRows !== 1) {
+            throw new NotFoundException('Discount tidak ditemukan');
+          }
 
-    if (result.discount) {
-      await this.prisma.client.orm.public.InvoiceDiscount.create({
-        invoiceId: invoice.id,
-        discountId: result.discount.id,
-        codeSnapshot: result.discount.code,
-        discountType: result.discount.type,
-        discountValueMinor: result.discount.valueMinor,
-        discountPercentage: result.discount.percentage,
-        amountMinor: result.discountAmountMinor,
+          discount = await tx.orm.public.Discount
+            .where({ id: result.discount.id })
+            .first();
+
+          if (!discount) {
+            throw new NotFoundException('Discount tidak ditemukan');
+          }
+
+          if (
+            discount.usageLimit !== null &&
+            Number(discount.usageCount) >= discount.usageLimit
+          ) {
+            throw new ConflictException('Batas penggunaan discount sudah tercapai');
+          }
+
+          const previousUsages = await tx.orm.public.DiscountUsage
+            .where({ discountId: discount.id, tenantId })
+            .all();
+
+          if (discount.duration === 'ONCE' && previousUsages.length > 0) {
+            throw new ConflictException(
+              'Discount hanya dapat digunakan satu kali untuk workspace ini',
+            );
+          }
+
+          if (
+            discount.duration === 'RECURRING_CYCLES' &&
+            discount.durationCycles !== null &&
+            previousUsages.length >= discount.durationCycles
+          ) {
+            throw new ConflictException(
+              'Masa penggunaan discount untuk workspace ini sudah habis',
+            );
+          }
+        }
+
+        const createdInvoice = await tx.orm.public.SubscriptionInvoice.create({
+          tenantId,
+          subscriptionId: result.subscription.id,
+          packagePriceId: result.price.id,
+          packageCode: result.package.code,
+          packageName: result.package.name,
+          billingPeriod: result.price.billingPeriod,
+          currency: result.price.currency,
+          originalAmountMinor: result.originalAmountMinor,
+          discountAmountMinor: result.discountAmountMinor,
+          taxAmountMinor: result.taxAmountMinor,
+          finalAmountMinor: result.finalAmountMinor,
+          status: 'PENDING',
+          issuedAt: now,
+          dueAt: now,
+        });
+
+        if (!createdInvoice) {
+          throw new ConflictException('Invoice gagal dibuat');
+        }
+
+        if (discount) {
+          await tx.orm.public.InvoiceDiscount.create({
+            invoiceId: createdInvoice.id,
+            discountId: discount.id,
+            codeSnapshot: discount.code,
+            discountType: discount.type,
+            discountValueMinor: discount.valueMinor,
+            discountPercentage: discount.percentage,
+            amountMinor: result.discountAmountMinor,
+          });
+
+          await tx.orm.public.DiscountUsage.create({
+            discountId: discount.id,
+            tenantId,
+            subscriptionId: result.subscription.id,
+            invoiceId: createdInvoice.id,
+            onceUsageKey:
+              discount.duration === 'ONCE'
+                ? \`\${discount.id}:\${tenantId}\`
+                : null,
+            usedAt: now,
+          });
+
+          const incrementPlan = this.prisma.client.raw.sql`
+            UPDATE "Discount"
+            SET "usageCount" = "usageCount" + 1
+            WHERE "id" = ${discount.id}
+          `.affectedCount().build();
+
+          const incrementResult = await tx.execute(incrementPlan);
+          if (incrementResult.affectedRows !== 1) {
+            throw new ConflictException('Discount gagal diperbarui');
+          }
+        }
+
+        return createdInvoice;
       });
 
-      await this.prisma.client.orm.public.DiscountUsage.create({
-        discountId: result.discount.id,
+      await this.auditService.create({
+        action: 'BILLING.INVOICE_CREATED',
+        entity: 'SubscriptionInvoice',
+        entityId: invoice.id,
+        tenantId,
+        userId,
+        description: \`Invoice \${invoice.id} dibuat\`,
+        metadata: {
+          subscriptionId: result.subscription.id,
+          packageCode: result.package.code,
+          finalAmountMinor: result.finalAmountMinor,
+        },
+      });
+
+      return {
+        id: invoice.id,
         tenantId,
         subscriptionId: result.subscription.id,
-        invoiceId: invoice.id,
-        usedAt: now,
-      });
+        packagePriceId: result.price.id,
+        packageCode: result.package.code,
+        packageName: result.package.name,
+        billingPeriod: result.price.billingPeriod,
+        currency: result.price.currency,
+        originalAmountMinor: result.originalAmountMinor,
+        discountAmountMinor: result.discountAmountMinor,
+        taxAmountMinor: result.taxAmountMinor,
+        finalAmountMinor: result.finalAmountMinor,
+        status: invoice.status,
+        issuedAt: invoice.issuedAt,
+        dueAt: invoice.dueAt,
+        discounts: result.discounts,
+      };
+    } catch (error) {
+      const sqlState =
+        typeof error === 'object' &&
+        error !== null &&
+        'sqlState' in error
+          ? String((error as { sqlState?: unknown }).sqlState)
+          : '';
 
-      await this.prisma.client.orm.public.Discount
-        .where({ id: result.discount.id })
-        .update({
-          usageCount: Number(result.discount.usageCount) + 1,
-        });
+      if (sqlState === '23505') {
+        throw new ConflictException(
+          'Discount hanya dapat digunakan satu kali untuk workspace ini',
+        );
+      }
+
+      throw error;
     }
-
-    return {
-      id: invoice.id,
-      tenantId,
-      subscriptionId: result.subscription.id,
-      packagePriceId: result.price.id,
-      packageCode: result.package.code,
-      packageName: result.package.name,
-      billingPeriod: result.price.billingPeriod,
-      currency: result.price.currency,
-      originalAmountMinor: result.originalAmountMinor,
-      discountAmountMinor: result.discountAmountMinor,
-      taxAmountMinor: result.taxAmountMinor,
-      finalAmountMinor: result.finalAmountMinor,
-      status: invoice.status,
-      issuedAt: invoice.issuedAt,
-      dueAt: invoice.dueAt,
-      discounts: result.discounts,
-    };
   }
 }

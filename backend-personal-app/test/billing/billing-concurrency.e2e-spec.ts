@@ -299,6 +299,54 @@ describe.sequential('Billing concurrency integration', () => {
     expect(results.some((item) => item.status === 'fulfilled')).toBe(true);
   });
 
+  it('uses the latest locked discount definition for the created invoice', async () => {
+    const user = await seedUser();
+    const fixture = await seedPendingPayment(user.id);
+    const suffix = randomUUID().replaceAll('-', '');
+
+    const discount = await prisma.client.orm.public.Discount.create({
+      code: `TEST_SNAPSHOT_${suffix}`.toUpperCase(),
+      name: 'Discount snapshot test',
+      description: 'Verifies invoice pricing uses the locked definition',
+      type: 'PERCENTAGE',
+      percentage: 10,
+      duration: 'ONCE',
+      usageLimit: 10,
+      usageCount: 0,
+      isActive: true,
+    });
+
+    await prisma.client.orm.public.DiscountPackage.create({
+      discountId: discount.id,
+      packageId: fixture.pkg.id,
+    });
+
+    // Simulate an earlier preview using the old 10% definition, then change
+    // the discount before the final invoice is created.
+    await prisma.client.orm.public.Discount
+      .where({ id: discount.id })
+      .update({ percentage: 25 });
+
+    const invoice = await invoices.create(fixture.tenant.id, user.id, {
+      discountCode: discount.code,
+    });
+
+    expect(invoice.originalAmountMinor).toBe(fixture.price.amountMinor);
+    expect(invoice.discountAmountMinor).toBe(
+      Math.floor(fixture.price.amountMinor * 25 / 100),
+    );
+    expect(invoice.finalAmountMinor).toBe(
+      fixture.price.amountMinor - invoice.discountAmountMinor,
+    );
+
+    const snapshot = await prisma.client.orm.public.InvoiceDiscount
+      .where({ invoiceId: invoice.id })
+      .first();
+
+    expect(snapshot?.discountPercentage).toBe(25);
+    expect(snapshot?.amountMinor).toBe(invoice.discountAmountMinor);
+  });
+
   it('does not allow a one-use discount to be consumed twice by concurrent invoices', async () => {
     const user = await seedUser();
     const fixture = await seedPendingPayment(user.id);

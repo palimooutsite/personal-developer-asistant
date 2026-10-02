@@ -174,7 +174,7 @@ export class BillingSubscriptionService {
         // Serialize subscription creation for the same tenant by locking
         // the tenant row for the duration of this transaction.
         const lockPlan = this.prisma.client.raw.sql`
-          UPDATE "Tenant"
+          UPDATE "public"."Tenant"
           SET "updatedAt" = "updatedAt"
           WHERE "id" = ${tenantId}
         `.affectedCount().build();

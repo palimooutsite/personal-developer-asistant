@@ -7,6 +7,7 @@ import { TenantController } from './tenant.controller.js';
 import { TenantService } from './tenant.service.js';
 import { TenantContextGuard } from './guard/tenant-context.guard.js';
 import { AuditModule } from '../audit/audit.module.js';
+import { EmailModule } from '../email/email.module.js';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AuditModule } from '../audit/audit.module.js';
       defaultStrategy: 'jwt',
     }),
     AuditModule,
+    EmailModule,
   ],
   controllers: [TenantController],
   providers: [

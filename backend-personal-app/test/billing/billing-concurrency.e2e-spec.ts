@@ -9,6 +9,8 @@ import { BillingSubscriptionProviderDto } from '../../src/billing/dto/create-sub
 import { BillingPaymentService } from '../../src/billing/payment.service.js';
 import { BillingPaymentProviderDto } from '../../src/billing/dto/create-payment.dto.js';
 import { BillingInvoiceService } from '../../src/billing/invoice.service.js';
+import { BillingDiscountService } from '../../src/billing/discount.service.js';
+import { BillingDiscountTypeDto } from '../../src/billing/dto/create-discount.dto.js';
 import { ProjectsService } from '../../src/projects/projects.service.js';
 import { BillingFeatureService } from '../../src/billing/feature.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
@@ -35,6 +37,7 @@ describe.sequential('Billing concurrency integration', () => {
   let subscriptions: BillingSubscriptionService;
   let payments: BillingPaymentService;
   let invoices: BillingInvoiceService;
+  let discounts: BillingDiscountService;
   let projects: ProjectsService;
 
   beforeAll(async () => {
@@ -48,6 +51,7 @@ describe.sequential('Billing concurrency integration', () => {
     subscriptions = moduleRef.get(BillingSubscriptionService);
     payments = moduleRef.get(BillingPaymentService);
     invoices = moduleRef.get(BillingInvoiceService);
+    discounts = moduleRef.get(BillingDiscountService);
     projects = moduleRef.get(ProjectsService);
   });
 
@@ -349,6 +353,59 @@ describe.sequential('Billing concurrency integration', () => {
 
     expect(snapshot?.discountPercentage).toBe(25);
     expect(snapshot?.amountMinor).toBe(invoice.discountAmountMinor);
+  });
+
+  it('does not allow financial discount definition changes after first usage', async () => {
+    const user = await seedUser();
+    const fixture = await seedPendingPayment(user.id);
+    const suffix = randomUUID().replaceAll('-', '');
+
+    const discount = await prisma.client.orm.public.Discount.create({
+      code: `TEST_IMMUTABLE_${suffix}`.toUpperCase(),
+      name: 'Immutable discount test',
+      description: 'Verifies used discount definitions cannot change',
+      type: 'PERCENTAGE',
+      percentage: 10,
+      duration: 'ONCE',
+      usageLimit: 10,
+      usageCount: 0,
+      isActive: true,
+    });
+
+    await prisma.client.orm.public.DiscountPackage.create({
+      discountId: discount.id,
+      packageId: fixture.pkg.id,
+    });
+
+    await invoices.create(fixture.tenant.id, user.id, {
+      discountCode: discount.code,
+    });
+
+    await expect(
+      discounts.update(discount.id, {
+        percentage: 25,
+      }),
+    ).rejects.toMatchObject({
+      response: {
+        message: 'Definisi discount tidak dapat diubah setelah discount pernah digunakan. Nonaktifkan discount dan buat discount baru untuk mengubah aturan.',
+      },
+    });
+
+    const metadataUpdated = await discounts.update(discount.id, {
+      name: 'Renamed immutable discount',
+      description: 'Metadata can still be maintained',
+      isActive: false,
+    });
+
+    expect(metadataUpdated.name).toBe('Renamed immutable discount');
+    expect(metadataUpdated.isActive).toBe(false);
+
+    const persisted = await prisma.client.orm.public.Discount
+      .where({ id: discount.id })
+      .first();
+
+    expect(persisted?.percentage).toBe(10);
+    expect(persisted?.usageCount).toBe(1);
   });
 
   it('does not allow a one-use discount to be consumed twice by concurrent invoices', async () => {

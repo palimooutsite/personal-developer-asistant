@@ -900,8 +900,8 @@ describe.sequential('Billing concurrency integration', () => {
 
   it('does not allow concurrent invitations to exceed workspace member reservation limit', async () => {
     const fixture = await seedMemberCapacityFixture(2);
-    const emailA = \`invite_\${randomUUID()}@example.test\`;
-    const emailB = \`invite_\${randomUUID()}@example.test\`;
+    const emailA = `invite_${randomUUID()}@example.test`;
+    const emailB = `invite_${randomUUID()}@example.test`;
 
     const results = await Promise.allSettled([
       tenants.createInvitation(fixture.tenant.id, fixture.owner.id, {
@@ -945,7 +945,7 @@ describe.sequential('Billing concurrency integration', () => {
       email: userA.email,
       role: 'MEMBER',
       roleId: fixture.role.id,
-      token: \`TEST-INVITE-\${randomUUID()}\`,
+      token: `TEST-INVITE-${randomUUID()}`,
       invitedBy: fixture.owner.id,
       expiresAt: new Date(Date.now() + 86400000).toISOString(),
     });
@@ -955,7 +955,7 @@ describe.sequential('Billing concurrency integration', () => {
       email: userB.email,
       role: 'MEMBER',
       roleId: fixture.role.id,
-      token: \`TEST-INVITE-\${randomUUID()}\`,
+      token: `TEST-INVITE-${randomUUID()}`,
       invitedBy: fixture.owner.id,
       expiresAt: new Date(Date.now() + 86400000).toISOString(),
     });

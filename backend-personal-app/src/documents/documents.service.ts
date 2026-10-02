@@ -72,30 +72,24 @@ export class DocumentsService {
     file: UploadedDocumentFile,
   ): Promise<DocumentResponse> {
     try {
-      const currentUsage = (
-        await this.prisma.client.orm.public.Document
-          .where({ tenantId })
-          .select('id')
-          .all()
-      ).length;
-
-      await this.billingFeatureService.assertWithinLimit(
+      return await this.billingFeatureService.withLimitLock(
         tenantId,
         userId,
         'DOCUMENT',
-        currentUsage,
+        async (client) =>
+          (await client.orm.public.Document.where({ tenantId }).select('id').all()).length,
+        async (tx) =>
+          tx.orm.public.Document.create({
+            title,
+            description,
+            fileName: file.originalname,
+            filePath: file.path,
+            mimeType: file.mimetype,
+            fileSize: String(file.size),
+            createdBy: userId,
+            tenantId,
+          }),
       );
-
-      return await this.prisma.client.orm.public.Document.create({
-        title,
-        description,
-        fileName: file.originalname,
-        filePath: file.path,
-        mimeType: file.mimetype,
-        fileSize: String(file.size),
-        createdBy: userId,
-        tenantId,
-      });
     } catch (error) {
       await unlink(file.path).catch(() => undefined);
       throw error;

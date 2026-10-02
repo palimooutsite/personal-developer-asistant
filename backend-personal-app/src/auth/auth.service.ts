@@ -6,6 +6,7 @@ import {
 import * as argon2 from 'argon2';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/user.service.js';
+import { AuditService } from '../audit/audit.service.js';
 
 
 export interface RegisterUserInput {
@@ -36,6 +37,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly auditService: AuditService,
   ) {}
 
   async register(
@@ -88,6 +90,7 @@ export class AuthService {
   );
 
   if (!user) {
+    await this.auditService.create({ action: 'AUTH.LOGIN_FAILED', entity: 'User', description: 'Login gagal: user tidak ditemukan', metadata: { email: data.email } });
     throw new UnauthorizedException(
       'Email atau password salah',
     );
@@ -99,6 +102,7 @@ export class AuthService {
   );
 
   if (!passwordValid) {
+    await this.auditService.create({ userId: user.id, action: 'AUTH.LOGIN_FAILED', entity: 'User', entityId: user.id, description: 'Login gagal: password salah' });
     throw new UnauthorizedException(
       'Username atau password salah',
     );
@@ -113,6 +117,8 @@ export class AuthService {
   const accessToken = await this.jwtService.signAsync(
     payload,
   );
+
+  await this.auditService.create({ userId: user.id, action: 'AUTH.LOGIN_SUCCESS', entity: 'User', entityId: user.id, description: 'Login berhasil' });
 
   return {
     accessToken,

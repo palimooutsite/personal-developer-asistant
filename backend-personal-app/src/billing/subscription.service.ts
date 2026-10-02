@@ -179,9 +179,15 @@ export class BillingSubscriptionService {
           WHERE "id" = ${tenantId}
         `.affectedCount().build();
 
-        const lockResult = await tx.execute(lockPlan);
+        await tx.execute(lockPlan);
 
-        if (lockResult.affectedRows !== 1) {
+        // Verify the tenant inside the same transaction after acquiring
+        // the row lock. The lock remains held until this transaction commits.
+        const tenant = await tx.orm.public.Tenant
+          .where({ id: tenantId })
+          .first();
+
+        if (!tenant) {
           throw new NotFoundException('Workspace tidak ditemukan');
         }
 

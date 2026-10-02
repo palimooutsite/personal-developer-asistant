@@ -729,4 +729,69 @@ describe.sequential('Billing concurrency integration', () => {
       results.filter((item) => item.status === 'fulfilled'),
     ).toHaveLength(1);
   });
+
+  it('does not allow payment failure when invoice and subscription are inconsistent', async () => {
+    const user = await seedUser();
+    const fixture = await seedPendingPayment(user.id);
+
+    await prisma.client.orm.public.SubscriptionInvoice
+      .where({ id: fixture.invoice.id })
+      .update({ subscriptionId: randomUUID() });
+
+    await expect(
+      payments.sandboxFail(fixture.tenant.id, user.id, fixture.payment.id),
+    ).rejects.toMatchObject({
+      response: {
+        message: 'Invoice dan subscription terkait payment tidak konsisten',
+      },
+    });
+
+    const payment = await prisma.client.orm.public.Payment
+      .where({ id: fixture.payment.id })
+      .first();
+
+    expect(payment?.status).toBe('PENDING');
+  });
+
+  it('preserves the checkout session financial invariant across completed billing records', async () => {
+    const user = await seedUser();
+    const { pkg, price } = await seedPackage();
+
+    const session = await checkoutSessions.create(user.id, {
+      packageId: pkg.id,
+      packagePriceId: price.id,
+      workspaceName: 'Checkout Invariant Workspace',
+      provider: BillingCheckoutSessionProviderDto.SANDBOX,
+    });
+
+    const result = await checkoutSessions.sandboxSucceed(user.id, session.id);
+
+    const [persistedSession, subscription, invoice, payment] = await Promise.all([
+      prisma.client.orm.public.BillingCheckoutSession
+        .where({ id: session.id })
+        .first(),
+      prisma.client.orm.public.TenantSubscription
+        .where({ id: result.subscriptionId })
+        .first(),
+      prisma.client.orm.public.SubscriptionInvoice
+        .where({ id: result.invoiceId })
+        .first(),
+      prisma.client.orm.public.Payment
+        .where({ id: result.paymentId })
+        .first(),
+    ]);
+
+    expect(persistedSession?.status).toBe('SUCCEEDED');
+    expect(persistedSession?.finalAmountMinor).toBe(invoice?.finalAmountMinor);
+    expect(persistedSession?.currency).toBe(invoice?.currency);
+    expect(invoice?.subscriptionId).toBe(subscription?.id);
+    expect(payment?.subscriptionId).toBe(subscription?.id);
+    expect(payment?.invoiceId).toBe(invoice?.id);
+    expect(payment?.amountMinor).toBe(invoice?.finalAmountMinor);
+    expect(payment?.currency).toBe(invoice?.currency);
+    expect(payment?.status).toBe('SUCCEEDED');
+    expect(invoice?.status).toBe('SUCCEEDED');
+    expect(subscription?.status).toBe('ACTIVE');
+  });
+
 });

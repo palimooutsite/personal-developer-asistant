@@ -733,3 +733,23 @@ model BillingCheckoutSession {
   @@index([expiresAt])
 }
 
+
+model AuditLog {
+  id          String            @id @default(uuid())
+  userId      String?
+  tenantId    String?
+  action      String
+  entity      String
+  entityId    String?
+  description String?
+  metadata    String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   TimestamptzString @default(now())
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([tenantId, createdAt])
+  @@index([entity, entityId])
+  @@index([action, createdAt])
+}

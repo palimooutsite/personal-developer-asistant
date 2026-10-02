@@ -13,13 +13,14 @@ import {
 import type { AuthRequest } from '../auth/types/auth-request.js';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard.js';
 import { TenantContextGuard } from './guard/tenant-context.guard.js';
+import { PermissionGuard } from './roles/permission.guard.js';
+import { RequirePermission } from './roles/require-permission.decorator.js';
 
 import {
   TenantListItem,
   TenantMemberListItem,
   TenantResponse,
   TenantService,
-  
 } from './tenant.service.js';
 
 import { CreateTenantDto } from './dto/create-tenant.dto.js';
@@ -89,6 +90,8 @@ export class TenantController {
     );
   }
   @Get(':id/members')
+@UseGuards(JwtAuthGuard, TenantContextGuard, PermissionGuard)
+@RequirePermission('WORKSPACE_MEMBERS', 'READ')
 async findMembers(
   @Param('id') id: string,
   @Req() req: AuthRequest,
@@ -100,6 +103,8 @@ async findMembers(
 }
 
 @Post(':id/invitations')
+@UseGuards(JwtAuthGuard, TenantContextGuard, PermissionGuard)
+@RequirePermission('WORKSPACE_MEMBERS', 'CREATE')
 async createInvitation(
   @Param('id') id: string,
   @Body() body: CreateTenantInvitationDto,
@@ -113,6 +118,8 @@ async createInvitation(
 }
 
 @Post(':id/members')
+@UseGuards(JwtAuthGuard, TenantContextGuard, PermissionGuard)
+@RequirePermission('WORKSPACE_MEMBERS', 'CREATE')
 async addMember(
   @Param('id') id: string,
   @Body() body: AddTenantMemberDto,
@@ -126,6 +133,8 @@ async addMember(
 }
 
 @Patch(':id/members/:userId')
+@UseGuards(JwtAuthGuard, TenantContextGuard, PermissionGuard)
+@RequirePermission('WORKSPACE_MEMBERS', 'UPDATE')
 async updateMemberRole(
   @Param('id') id: string,
   @Param('userId') userId: string,
@@ -152,6 +161,8 @@ async acceptInvitation(
 }
 
 @Delete(':id/members/:userId')
+@UseGuards(JwtAuthGuard, TenantContextGuard, PermissionGuard)
+@RequirePermission('WORKSPACE_MEMBERS', 'DELETE')
 async removeMember(
   @Param('id') id: string,
   @Param('userId') userId: string,

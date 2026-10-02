@@ -34,9 +34,8 @@ export interface AuditLogListItem {
 export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(input: CreateAuditLogInput) {
-    return this.prisma.client.orm.public.AuditLog.create({
-      data: {
+  async create(input: CreateAuditLogInput): Promise<void> {
+    await this.prisma.client.orm.public.AuditLog.create({
         userId: input.userId ?? null,
         tenantId: input.tenantId ?? null,
         action: input.action,
@@ -45,8 +44,7 @@ export class AuditService {
         description: input.description ?? null,
         metadata: input.metadata == null ? null : JSON.stringify(input.metadata),
         ipAddress: input.ipAddress ?? null,
-        userAgent: input.userAgent ?? null,
-      },
+      userAgent: input.userAgent ?? null,
     });
   }
 

@@ -707,15 +707,27 @@ export class BillingCatalogService {
   }
 
   async removePackageFeature(packageId: string, featureId: string): Promise<BillingMessageResponse> {
-    const existing = await this.prisma.client.orm.public.SubscriptionPackageFeature
-      .where({ packageId, featureId })
-      .first();
+    await this.prisma.client.transaction(async (tx) => {
+      const lockPlan = this.prisma.client.raw.sql`
+        UPDATE "public"."subscriptionFeature"
+        SET "updatedAt" = "updatedAt"
+        WHERE "id" = ${featureId}
+      `.affectedCount().build();
 
-    if (!existing) throw new NotFoundException('Feature belum terpasang pada package');
+      await tx.execute(lockPlan);
 
-    await this.prisma.client.orm.public.SubscriptionPackageFeature
-      .where({ packageId, featureId })
-      .delete();
+      const existing = await tx.orm.public.SubscriptionPackageFeature
+        .where({ packageId, featureId })
+        .first();
+
+      if (!existing) {
+        throw new NotFoundException('Feature belum terpasang pada package');
+      }
+
+      await tx.orm.public.SubscriptionPackageFeature
+        .where({ packageId, featureId })
+        .delete();
+    });
 
     return { message: 'Feature berhasil dilepas dari package' };
   }

@@ -16,6 +16,7 @@ import { TenantModule } from './tenants/tenant.module.js';
 import { EmailModule } from './email/email.module.js';
 import { TenantRoleModule } from './tenants/roles/tenant-role.module.js';
 import { BillingModule } from './billing/billing.module.js';
+import { AuditModule } from './audit/audit.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -33,6 +34,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     TenantModule,
     TenantRoleModule,
     BillingModule,
+    AuditModule,
     EmailModule,
     UsersModule,
     AuthModule,

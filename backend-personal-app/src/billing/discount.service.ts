@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AuditService } from '../audit/audit.service.js';
 import {
   BillingDiscountDurationDto,
   BillingDiscountTypeDto,
@@ -42,7 +43,7 @@ export interface BillingDiscountMessageResponse {
 
 @Injectable()
 export class BillingDiscountService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
 
   private validateDefinition(data: {
     type: BillingDiscountTypeDto;
@@ -147,7 +148,7 @@ export class BillingDiscountService {
       throw new ConflictException('usageLimit harus lebih dari 0');
     }
 
-    return this.prisma.client.orm.public.Discount.create({
+    const created = await this.prisma.client.orm.public.Discount.create({
       code,
       name: data.name.trim(),
       description: data.description?.trim() || null,
@@ -162,6 +163,8 @@ export class BillingDiscountService {
       startsAt: data.startsAt ?? null,
       expiresAt: data.expiresAt ?? null,
     });
+    await this.auditService.create({ action: 'BILLING.DISCOUNT_CREATED', entity: 'Discount', entityId: created.id, description: `Discount ${created.code} dibuat`, metadata: { code: created.code, type: created.type } });
+    return created;
   }
 
   async update(id: string, data: UpdateDiscountDto): Promise<BillingDiscountResponse> {
@@ -217,6 +220,7 @@ export class BillingDiscountService {
       });
 
     if (!updated) throw new NotFoundException('Discount gagal diperbarui');
+    await this.auditService.create({ action: 'BILLING.DISCOUNT_UPDATED', entity: 'Discount', entityId: id, description: `Discount ${updated.code} diperbarui`, metadata: data });
     return updated;
   }
 

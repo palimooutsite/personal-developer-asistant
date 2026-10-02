@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AuditService } from '../audit/audit.service.js';
 import {
   BillingSubscriptionProviderDto,
   CreateSubscriptionDto,
@@ -47,7 +48,7 @@ export interface BillingSubscriptionMessageResponse {
 
 @Injectable()
 export class BillingSubscriptionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
 
   private async ensureTenantMember(tenantId: string, userId: string) {
     const member = await this.prisma.client.orm.public.TenantMember
@@ -154,6 +155,7 @@ export class BillingSubscriptionService {
       currentPeriodEnd: periodEnd.toISOString(),
     });
 
+    await this.auditService.create({ action: 'BILLING.SUBSCRIPTION_CREATED', entity: 'TenantSubscription', entityId: created.id, tenantId, userId, description: `Subscription ${pkg.code} dibuat`, metadata: { packageId: pkg.id, packagePriceId: price.id, provider } });
     return this.buildDetail(created);
   }
 
@@ -189,6 +191,7 @@ export class BillingSubscriptionService {
       throw new NotFoundException('Subscription gagal dibatalkan');
     }
 
+    await this.auditService.create({ action: 'BILLING.SUBSCRIPTION_CANCELLED', entity: 'TenantSubscription', entityId: subscription.id, tenantId, userId, description: 'Subscription dibatalkan' });
     return { message: 'Subscription berhasil dibatalkan' };
   }
 

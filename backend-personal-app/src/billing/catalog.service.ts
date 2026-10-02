@@ -551,21 +551,65 @@ export class BillingCatalogService {
   }
 
   async updatePrice(id: string, data: UpdatePriceDto): Promise<BillingPriceResponse> {
-    const existing = await this.prisma.client.orm.public.SubscriptionPackagePrice
-      .where({ id })
-      .first();
-    if (!existing) throw new NotFoundException('Harga package tidak ditemukan');
+    const financialFieldsChanged =
+      data.amountMinor !== undefined || data.currency !== undefined;
 
-    const updated = await this.prisma.client.orm.public.SubscriptionPackagePrice
-      .where({ id })
-      .update({
-        ...(data.amountMinor !== undefined ? { amountMinor: data.amountMinor } : {}),
-        ...(data.currency !== undefined ? { currency: data.currency.trim().toUpperCase() } : {}),
-        ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
-      });
+    const updated = await this.prisma.client.transaction(async (tx) => {
+      // Serialize price mutation with subscription/invoice creation paths.
+      const lockPlan = this.prisma.client.raw.sql`
+        UPDATE "public"."subscriptionPackagePrice"
+        SET "updatedAt" = "updatedAt"
+        WHERE "id" = ${id}
+      `.affectedCount().build();
 
-    if (!updated) throw new NotFoundException('Harga gagal diperbarui');
-    await this.auditService.create({ action: 'BILLING.PRICE_UPDATED', entity: 'SubscriptionPackagePrice', entityId: id, description: 'Harga package diperbarui', metadata: data });
+      await tx.execute(lockPlan);
+
+      const existing = await tx.orm.public.SubscriptionPackagePrice
+        .where({ id })
+        .first();
+
+      if (!existing) {
+        throw new NotFoundException('Harga package tidak ditemukan');
+      }
+
+      if (financialFieldsChanged) {
+        const [subscription, invoice] = await Promise.all([
+          tx.orm.public.TenantSubscription
+            .where({ packagePriceId: id })
+            .select('id')
+            .first(),
+          tx.orm.public.SubscriptionInvoice
+            .where({ packagePriceId: id })
+            .select('id')
+            .first(),
+        ]);
+
+        if (subscription || invoice) {
+          throw new ConflictException(
+            'Harga package tidak dapat mengubah amount/currency setelah pernah digunakan. Buat versi harga baru untuk perubahan finansial.',
+          );
+        }
+      }
+
+      const result = await tx.orm.public.SubscriptionPackagePrice
+        .where({ id })
+        .update({
+          ...(data.amountMinor !== undefined ? { amountMinor: data.amountMinor } : {}),
+          ...(data.currency !== undefined ? { currency: data.currency.trim().toUpperCase() } : {}),
+          ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
+        });
+
+      if (!result) throw new NotFoundException('Harga gagal diperbarui');
+      return result;
+    });
+
+    await this.auditService.create({
+      action: 'BILLING.PRICE_UPDATED',
+      entity: 'SubscriptionPackagePrice',
+      entityId: id,
+      description: 'Harga package diperbarui',
+      metadata: data,
+    });
     return updated;
   }
 

@@ -202,6 +202,25 @@ export class BillingPaymentService {
     const now = new Date().toISOString();
 
     const updatedPayment = await this.prisma.client.transaction(async (tx) => {
+      const paymentLock = this.prisma.client.raw.sql`
+        UPDATE "public"."payment"
+        SET "updatedAt" = "updatedAt"
+        WHERE "id" = ${paymentId}
+          AND "tenantId" = ${tenantId}
+      `.affectedCount().build();
+
+      await tx.execute(paymentLock);
+
+      const currentPayment = await tx.orm.public.Payment
+        .where({ id: paymentId, tenantId })
+        .first();
+
+      if (!currentPayment) throw new NotFoundException('Payment tidak ditemukan');
+      if (currentPayment.status === 'SUCCEEDED') return currentPayment;
+      if (currentPayment.status !== 'PENDING') {
+        throw new ConflictException('Payment tidak dalam status PENDING');
+      }
+
       const invoice = await tx.orm.public.SubscriptionInvoice
         .where({ id: payment.invoiceId, tenantId })
         .first();
@@ -339,6 +358,28 @@ export class BillingPaymentService {
     }
 
     const updatedPayment = await this.prisma.client.transaction(async (tx) => {
+      const paymentLock = this.prisma.client.raw.sql`
+        UPDATE "public"."payment"
+        SET "updatedAt" = "updatedAt"
+        WHERE "id" = ${paymentId}
+          AND "tenantId" = ${tenantId}
+      `.affectedCount().build();
+
+      await tx.execute(paymentLock);
+
+      const currentPayment = await tx.orm.public.Payment
+        .where({ id: paymentId, tenantId })
+        .first();
+
+      if (!currentPayment) throw new NotFoundException('Payment tidak ditemukan');
+      if (currentPayment.status === 'FAILED') return currentPayment;
+      if (currentPayment.status === 'SUCCEEDED') {
+        throw new ConflictException('Payment sudah berhasil diselesaikan');
+      }
+      if (currentPayment.status !== 'PENDING') {
+        throw new ConflictException('Payment tidak dalam status PENDING');
+      }
+
       // Validate the complete payment relationship before claiming the payment.
       // If any invariant is invalid, the payment must remain PENDING.
       const invoice = await tx.orm.public.SubscriptionInvoice

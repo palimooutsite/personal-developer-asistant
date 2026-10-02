@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PERMISSION_MODULES } from '../tenants/roles/permission.constants.js';
 import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto.js';
+import { AuditService } from '../audit/audit.service.js';
 
 export interface BillingCheckoutSessionResponse {
   id: string;
@@ -35,7 +36,7 @@ export interface BillingCheckoutSessionSuccessResponse {
 
 @Injectable()
 export class BillingCheckoutSessionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
 
   async create(
     userId: string,
@@ -390,6 +391,11 @@ export class BillingCheckoutSessionService {
         status: 'SUCCEEDED' as const,
       };
     });
+
+    await this.auditService.create({ action: 'WORKSPACE.CREATED', entity: 'Tenant', entityId: result.tenantId, tenantId: result.tenantId, userId, description: `Workspace ${session.workspaceName} dibuat melalui checkout`, metadata: { packageId: pkg.id, packageCode: pkg.code, subscriptionId: result.subscriptionId, source: 'CHECKOUT_SANDBOX' } });
+    await this.auditService.create({ action: 'BILLING.SUBSCRIPTION_CREATED', entity: 'TenantSubscription', entityId: result.subscriptionId, tenantId: result.tenantId, userId, description: `Subscription ${pkg.code} dibuat melalui checkout`, metadata: { packageId: pkg.id, packagePriceId: price.id, source: 'CHECKOUT_SANDBOX' } });
+    await this.auditService.create({ action: 'BILLING.INVOICE_CREATED', entity: 'SubscriptionInvoice', entityId: result.invoiceId, tenantId: result.tenantId, userId, description: `Invoice ${result.invoiceId} dibuat melalui checkout`, metadata: { finalAmountMinor: session.finalAmountMinor, source: 'CHECKOUT_SANDBOX' } });
+    await this.auditService.create({ action: 'BILLING.PAYMENT_SUCCEEDED', entity: 'Payment', entityId: result.paymentId, tenantId: result.tenantId, userId, description: 'Payment checkout berhasil', metadata: { invoiceId: result.invoiceId, amountMinor: session.finalAmountMinor, source: 'CHECKOUT_SANDBOX' } });
 
     return result;
   }

@@ -24,9 +24,10 @@ import { BillingCheckoutSessionController } from './checkout-session.controller.
 import { BillingCheckoutSessionService } from './checkout-session.service.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { TenantModule } from '../tenants/tenant.module.js';
+import { AuditModule } from '../audit/audit.module.js';
 
 @Module({
-  imports: [AuthModule, TenantModule],
+  imports: [AuthModule, TenantModule, AuditModule],
   controllers: [
     BillingCatalogController,
     BillingDiscountController,

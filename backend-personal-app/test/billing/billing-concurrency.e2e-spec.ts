@@ -358,6 +358,53 @@ describe.sequential('Billing concurrency integration', () => {
     expect(snapshot?.amountMinor).toBe(invoice.discountAmountMinor);
   });
 
+  it('keeps checkout-session discount pricing as a snapshot when the definition changes', async () => {
+    const user = await seedUser();
+    const { pkg, price } = await seedPackage();
+    const suffix = randomUUID().replaceAll('-', '');
+    const discount = await prisma.client.orm.public.Discount.create({
+      code: `TEST_SESSION_SNAPSHOT_${suffix}`.toUpperCase(),
+      name: 'Checkout session snapshot test',
+      description: 'Verifies session-time discount definition is preserved',
+      type: 'PERCENTAGE',
+      percentage: 10,
+      duration: 'ONCE',
+      usageLimit: 10,
+      usageCount: 0,
+      isActive: true,
+    });
+
+    await prisma.client.orm.public.DiscountPackage.create({
+      discountId: discount.id,
+      packageId: pkg.id,
+    });
+
+    const session = await checkoutSessions.create(user.id, {
+      packageId: pkg.id,
+      packagePriceId: price.id,
+      workspaceName: 'Snapshot Workspace',
+      discountCode: discount.code,
+      provider: BillingCheckoutSessionProviderDto.SANDBOX,
+    });
+
+    await prisma.client.orm.public.Discount
+      .where({ id: discount.id })
+      .update({ percentage: 25, isActive: false });
+
+    const result = await checkoutSessions.sandboxSucceed(user.id, session.id);
+    const invoice = await prisma.client.orm.public.SubscriptionInvoice
+      .where({ id: result.invoiceId })
+      .first();
+    const snapshot = await prisma.client.orm.public.InvoiceDiscount
+      .where({ invoiceId: result.invoiceId })
+      .first();
+
+    expect(invoice?.discountAmountMinor).toBe(Math.floor(price.amountMinor * 10 / 100));
+    expect(invoice?.finalAmountMinor).toBe(price.amountMinor - Math.floor(price.amountMinor * 10 / 100));
+    expect(snapshot?.discountPercentage).toBe(10);
+    expect(snapshot?.amountMinor).toBe(Math.floor(price.amountMinor * 10 / 100));
+  });
+
   it('does not allow financial discount definition changes after first usage', async () => {
     const user = await seedUser();
     const fixture = await seedPendingPayment(user.id);

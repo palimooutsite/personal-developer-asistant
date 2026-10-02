@@ -40,7 +40,7 @@ export interface TenantMemberListItem {
 export interface TenantResponse extends TenantListItem {}
 
 type TenantOrmClient = Pick<typeof db, 'orm'>;
-type TenantTransactionClient = TenantOrmClient & { execute: (plan: any) => Promise<number> };
+type TenantTransactionClient = TenantOrmClient & { execute: (plan: any) => Promise<{ affectedCount: number }> };
 
 @Injectable()
 export class TenantService {

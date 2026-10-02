@@ -976,6 +976,16 @@ async removeMember(
       roleId: invitation.roleId,
     });
 
+    await this.auditService.create({
+      action: 'WORKSPACE.MEMBER_ADDED',
+      entity: 'TenantMember',
+      entityId: invitation.tenantId,
+      tenantId: invitation.tenantId,
+      userId,
+      description: `Member ${user.email} bergabung melalui invitation`,
+      metadata: { memberUserId: user.id, memberEmail: user.email, roleId: invitation.roleId, roleName: invitationRole.name, source: 'INVITATION' },
+    });
+
     await this.prisma.client.orm.public.TenantInvitation
       .where({ id: invitation.id })
       .update({

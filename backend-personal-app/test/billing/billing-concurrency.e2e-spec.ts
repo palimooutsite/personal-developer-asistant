@@ -232,7 +232,7 @@ describe.sequential('Billing concurrency integration', () => {
       canDelete: true,
     });
 
-    return { owner, ...fixture, memberFeature, role };
+    return { owner, pkg, price, ...fixture, memberFeature, role };
   }
 
   it('makes concurrent checkout-session succeed calls converge to one billing result', async () => {

@@ -5,6 +5,7 @@ import { BillingModule } from '../../src/billing/billing.module.js';
 import { BillingCheckoutSessionService } from '../../src/billing/checkout-session.service.js';
 import { BillingSubscriptionService } from '../../src/billing/subscription.service.js';
 import { BillingPaymentService } from '../../src/billing/payment.service.js';
+import { BillingInvoiceService } from '../../src/billing/invoice.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
 
 const TEST_DATABASE_URL = process.env.BILLING_TEST_DATABASE_URL;
@@ -28,6 +29,7 @@ describe.sequential('Billing concurrency integration', () => {
   let checkoutSessions: BillingCheckoutSessionService;
   let subscriptions: BillingSubscriptionService;
   let payments: BillingPaymentService;
+  let invoices: BillingInvoiceService;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
@@ -38,6 +40,7 @@ describe.sequential('Billing concurrency integration', () => {
     checkoutSessions = moduleRef.get(BillingCheckoutSessionService);
     subscriptions = moduleRef.get(BillingSubscriptionService);
     payments = moduleRef.get(BillingPaymentService);
+    invoices = moduleRef.get(BillingInvoiceService);
   });
 
   afterAll(async () => {
@@ -253,9 +256,9 @@ describe.sequential('Billing concurrency integration', () => {
     expect(results.some((item) => item.status === 'fulfilled')).toBe(true);
   });
 
-  it('does not allow a one-use discount to be consumed twice by concurrent checkouts', async () => {
+  it('does not allow a one-use discount to be consumed twice by concurrent invoices', async () => {
     const user = await seedUser();
-    const { pkg, price } = await seedPackage();
+    const fixture = await seedPendingPayment(user.id);
     const suffix = randomUUID().replaceAll('-', '');
 
     const discount = await prisma.client.orm.public.Discount.create({
@@ -265,41 +268,28 @@ describe.sequential('Billing concurrency integration', () => {
       type: 'PERCENTAGE',
       percentage: 10,
       duration: 'ONCE',
-      usageLimit: 2,
+      usageLimit: 10,
       usageCount: 0,
       isActive: true,
     });
 
     await prisma.client.orm.public.DiscountPackage.create({
       discountId: discount.id,
-      packageId: pkg.id,
+      packageId: fixture.pkg.id,
     });
 
-    const [sessionA, sessionB] = await Promise.all([
-      checkoutSessions.create(user.id, {
-        packageId: pkg.id,
-        packagePriceId: price.id,
-        workspaceName: 'Discount Race A',
-        discountCode: discount.code,
-        provider: 'SANDBOX',
-      }),
-      checkoutSessions.create(user.id, {
-        packageId: pkg.id,
-        packagePriceId: price.id,
-        workspaceName: 'Discount Race B',
-        discountCode: discount.code,
-        provider: 'SANDBOX',
-      }),
-    ]);
-
     const results = await Promise.allSettled([
-      checkoutSessions.sandboxSucceed(user.id, sessionA.id),
-      checkoutSessions.sandboxSucceed(user.id, sessionB.id),
+      invoices.create(fixture.tenant.id, user.id, {
+        discountCode: discount.code,
+      }),
+      invoices.create(fixture.tenant.id, user.id, {
+        discountCode: discount.code,
+      }),
     ]);
 
     const succeeded = results.filter((item) => item.status === 'fulfilled');
     const usages = await prisma.client.orm.public.DiscountUsage
-      .where({ discountId: discount.id })
+      .where({ discountId: discount.id, tenantId: fixture.tenant.id })
       .all();
 
     expect(succeeded.length).toBe(1);

@@ -311,6 +311,50 @@ describe.sequential('Billing concurrency integration', () => {
     expect(paymentsInDb[0]?.status).toBe('PENDING');
   });
 
+  it('rejects payment success when invoice and subscription are already inconsistent', async () => {
+    const user = await seedUser();
+    const fixture = await seedPendingPayment(user.id);
+
+    await prisma.client.orm.public.SubscriptionInvoice
+      .where({ id: fixture.invoice.id })
+      .update({ status: 'SUCCEEDED', paidAt: new Date().toISOString() });
+
+    await expect(
+      payments.sandboxSucceed(fixture.tenant.id, user.id, fixture.payment.id),
+    ).rejects.toMatchObject({
+      response: {
+        message: 'Invoice terkait payment tidak dalam status PENDING',
+      },
+    });
+
+    const payment = await prisma.client.orm.public.Payment
+      .where({ id: fixture.payment.id })
+      .first();
+    expect(payment?.status).toBe('PENDING');
+  });
+
+  it('rejects payment success when payment amount differs from invoice', async () => {
+    const user = await seedUser();
+    const fixture = await seedPendingPayment(user.id);
+
+    await prisma.client.orm.public.Payment
+      .where({ id: fixture.payment.id })
+      .update({ amountMinor: fixture.invoice.finalAmountMinor + 1000 });
+
+    await expect(
+      payments.sandboxSucceed(fixture.tenant.id, user.id, fixture.payment.id),
+    ).rejects.toMatchObject({
+      response: {
+        message: 'Nominal atau currency payment tidak sesuai dengan invoice',
+      },
+    });
+
+    const payment = await prisma.client.orm.public.Payment
+      .where({ id: fixture.payment.id })
+      .first();
+    expect(payment?.status).toBe('PENDING');
+  });
+
   it('keeps payment succeed-vs-fail transitions mutually exclusive', async () => {
     const user = await seedUser();
     const fixture = await seedPendingPayment(user.id);

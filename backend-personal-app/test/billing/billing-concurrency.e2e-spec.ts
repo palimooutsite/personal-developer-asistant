@@ -17,6 +17,7 @@ import { BillingCatalogService } from '../../src/billing/catalog.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
 import { TenantService } from '../../src/tenants/tenant.service.js';
 import { EmailService } from '../../src/email/email.service.js';
+import { TenantRoleService } from '../../src/tenants/roles/tenant-role.service.js';
 
 const TEST_DATABASE_URL = process.env.BILLING_TEST_DATABASE_URL;
 
@@ -48,7 +49,7 @@ describe.sequential('Billing concurrency integration', () => {
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
       imports: [BillingModule],
-      providers: [ProjectsService, BillingFeatureService],
+      providers: [ProjectsService, BillingFeatureService, TenantRoleService],
     })
       .overrideProvider(EmailService)
       .useValue({ sendTenantInvitation: async () => undefined })

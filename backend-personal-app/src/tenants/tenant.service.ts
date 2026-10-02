@@ -851,33 +851,60 @@ async removeMember(
       .select('name', 'username')
       .first();
 
-    const oldInvitation =
-      await this.prisma.client.orm.public.TenantInvitation
-        .where({ tenantId, email })
-        .select('id')
-        .first();
-
-    if (oldInvitation) {
-      await this.prisma.client.orm.public.TenantInvitation
-        .where({ id: oldInvitation.id })
-        .delete();
-    }
-
-    await this.assertWorkspaceMemberCapacity(tenantId);
-
     const token = randomBytes(32).toString('hex');
     const expiresAt = new Date(
       Date.now() + 7 * 24 * 60 * 60 * 1000,
     ).toISOString();
 
-    await this.prisma.client.orm.public.TenantInvitation.create({
-      tenantId,
-      email,
-      role: 'MEMBER',
-      roleId: data.roleId,
-      token,
-      invitedBy: currentUserId,
-      expiresAt,
+    await this.prisma.client.transaction(async (tx) => {
+      await this.lockTenantForMemberCapacity(tx, tenantId);
+
+      const currentUserMember = await tx.orm.public.TenantMember
+        .where({ tenantId, userId: currentUserId })
+        .first();
+      if (!currentUserMember) {
+        throw new ForbiddenException('Anda bukan member workspace ini');
+      }
+
+      const existingMember = user
+        ? await tx.orm.public.TenantMember
+            .where({ tenantId, userId: user.id })
+            .first()
+        : null;
+      if (existingMember) {
+        throw new ConflictException(
+          'Email tersebut sudah menjadi member workspace',
+        );
+      }
+
+      const oldInvitation = await tx.orm.public.TenantInvitation
+        .where({ tenantId, email })
+        .select('id')
+        .first();
+
+      // Replacing an existing invitation releases its reservation, so exclude
+      // it from the capacity calculation before creating the new reservation.
+      await this.assertWorkspaceMemberCapacityWithClient(
+        tx,
+        tenantId,
+        oldInvitation?.id,
+      );
+
+      if (oldInvitation) {
+        await tx.orm.public.TenantInvitation
+          .where({ id: oldInvitation.id })
+          .delete();
+      }
+
+      await tx.orm.public.TenantInvitation.create({
+        tenantId,
+        email,
+        role: 'MEMBER',
+        roleId: data.roleId,
+        token,
+        invitedBy: currentUserId,
+        expiresAt,
+      });
     });
 
     const frontendUrl = (

@@ -9,6 +9,10 @@ import { UpdatePriceDto } from './dto/update-price.dto.js';
 import { SetPackageFeatureDto } from './dto/set-package-feature.dto.js';
 import { AuditService } from '../audit/audit.service.js';
 
+function isUniqueViolation(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'sqlState' in error && String((error as { sqlState?: unknown }).sqlState) === '23505';
+}
+
 export interface BillingPackageResponse {
   id: string;
   code: string;
@@ -333,12 +337,20 @@ export class BillingCatalogService {
 
     if (existing) throw new ConflictException('Package dengan code tersebut sudah ada');
 
-    const created = await this.prisma.client.orm.public.SubscriptionPackage.create({
-      code,
-      name: data.name.trim(),
-      description: data.description?.trim() || null,
-      sortOrder: data.sortOrder ?? 0,
-    });
+    let created: BillingPackageResponse;
+    try {
+      created = await this.prisma.client.orm.public.SubscriptionPackage.create({
+        code,
+        name: data.name.trim(),
+        description: data.description?.trim() || null,
+        sortOrder: data.sortOrder ?? 0,
+      });
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new ConflictException('Package dengan code tersebut sudah ada');
+      }
+      throw error;
+    }
     await this.auditService.create({ action: 'BILLING.PACKAGE_CREATED', entity: 'SubscriptionPackage', entityId: created.id, description: `Package ${created.code} dibuat`, metadata: { code: created.code, name: created.name } });
     return created;
   }
@@ -388,13 +400,21 @@ export class BillingCatalogService {
 
     if (existing) throw new ConflictException('Feature dengan code tersebut sudah ada');
 
-    const created = await this.prisma.client.orm.public.SubscriptionFeature.create({
-      code,
-      name: data.name.trim(),
-      description: data.description?.trim() || null,
-      valueType: data.valueType as BillingFeatureValueTypeDto,
-      unit: data.unit?.trim() || null,
-    });
+    let created: BillingFeatureResponse;
+    try {
+      created = await this.prisma.client.orm.public.SubscriptionFeature.create({
+        code,
+        name: data.name.trim(),
+        description: data.description?.trim() || null,
+        valueType: data.valueType as BillingFeatureValueTypeDto,
+        unit: data.unit?.trim() || null,
+      });
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new ConflictException('Feature dengan code tersebut sudah ada');
+      }
+      throw error;
+    }
     await this.auditService.create({ action: 'BILLING.FEATURE_CREATED', entity: 'SubscriptionFeature', entityId: created.id, description: `Feature ${created.code} dibuat`, metadata: { code: created.code } });
     return created;
   }
@@ -473,29 +493,60 @@ export class BillingCatalogService {
   }
 
   async addPrice(packageId: string, data: CreatePriceDto): Promise<BillingPriceResponse> {
-    const pkg = await this.prisma.client.orm.public.SubscriptionPackage
-      .where({ id: packageId })
-      .first();
-    if (!pkg) throw new NotFoundException('Package tidak ditemukan');
+    const created = await this.prisma.client.transaction(async (tx) => {
+      const pkg = await tx.orm.public.SubscriptionPackage
+        .where({ id: packageId })
+        .first();
+      if (!pkg) throw new NotFoundException('Package tidak ditemukan');
 
-    const existingPrices = await this.prisma.client.orm.public.SubscriptionPackagePrice
-      .where({ packageId, billingPeriod: data.billingPeriod as BillingPeriodDto })
-      .select('version')
-      .all();
+      // Serialize version allocation per package. The unique constraint
+      // remains the final database guard for package/period/version.
+      const lockPlan = this.prisma.client.raw.sql`
+        UPDATE "public"."subscriptionPackage"
+        SET "updatedAt" = "updatedAt"
+        WHERE "id" = ${packageId}
+      `.affectedCount().build();
 
-    const version = existingPrices.reduce(
-      (max, price) => Math.max(max, price.version),
-      0,
-    ) + 1;
+      await tx.execute(lockPlan);
 
-    const created = await this.prisma.client.orm.public.SubscriptionPackagePrice.create({
-      packageId,
-      version,
-      billingPeriod: data.billingPeriod as BillingPeriodDto,
-      amountMinor: data.amountMinor,
-      currency: data.currency?.trim().toUpperCase() || 'IDR',
+      const existingPrices = await tx.orm.public.SubscriptionPackagePrice
+        .where({ packageId, billingPeriod: data.billingPeriod as BillingPeriodDto })
+        .select('version')
+        .all();
+
+      const version = existingPrices.reduce(
+        (max, price) => Math.max(max, price.version),
+        0,
+      ) + 1;
+
+      try {
+        return await tx.orm.public.SubscriptionPackagePrice.create({
+          packageId,
+          version,
+          billingPeriod: data.billingPeriod as BillingPeriodDto,
+          amountMinor: data.amountMinor,
+          currency: data.currency?.trim().toUpperCase() || 'IDR',
+        });
+      } catch (error) {
+        if (isUniqueViolation(error)) {
+          throw new ConflictException('Versi harga package sudah digunakan. Silakan coba lagi.');
+        }
+        throw error;
+      }
     });
-    await this.auditService.create({ action: 'BILLING.PRICE_CREATED', entity: 'SubscriptionPackagePrice', entityId: created.id, description: `Harga package ${packageId} dibuat`, metadata: { packageId, billingPeriod: created.billingPeriod, amountMinor: created.amountMinor } });
+
+    await this.auditService.create({
+      action: 'BILLING.PRICE_CREATED',
+      entity: 'SubscriptionPackagePrice',
+      entityId: created.id,
+      description: `Harga package ${packageId} dibuat`,
+      metadata: {
+        packageId,
+        billingPeriod: created.billingPeriod,
+        version: created.version,
+        amountMinor: created.amountMinor,
+      },
+    });
     return created;
   }
 
@@ -558,18 +609,25 @@ export class BillingCatalogService {
       return updated;
     }
 
-    const created = await this.prisma.client.orm.public.SubscriptionPackageFeature.create({
-      packageId,
-      featureId,
-      enabled: data.enabled,
-      limitValue: data.limitValue ?? null,
-    });
+    try {
+      const created = await this.prisma.client.orm.public.SubscriptionPackageFeature.create({
+        packageId,
+        featureId,
+        enabled: data.enabled,
+        limitValue: data.limitValue ?? null,
+      });
 
-    if (!created) {
-      throw new ConflictException('Konfigurasi feature package gagal dibuat');
+      if (!created) {
+        throw new ConflictException('Konfigurasi feature package gagal dibuat');
+      }
+
+      return created;
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new ConflictException('Feature sudah terpasang pada package');
+      }
+      throw error;
     }
-
-    return created;
   }
 
   async removePackageFeature(packageId: string, featureId: string): Promise<BillingMessageResponse> {

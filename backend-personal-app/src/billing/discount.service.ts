@@ -9,6 +9,11 @@ import {
 import { SetDiscountPackageDto } from './dto/set-discount-package.dto.js';
 import { UpdateDiscountDto } from './dto/update-discount.dto.js';
 
+function isUniqueViolation(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'sqlState' in error && String((error as { sqlState?: unknown }).sqlState) === '23505';
+}
+
+
 export interface BillingDiscountResponse {
   id: string;
   code: string;
@@ -148,21 +153,29 @@ export class BillingDiscountService {
       throw new ConflictException('usageLimit harus lebih dari 0');
     }
 
-    const created = await this.prisma.client.orm.public.Discount.create({
-      code,
-      name: data.name.trim(),
-      description: data.description?.trim() || null,
-      type: data.type,
-      valueMinor: data.type === BillingDiscountTypeDto.FIXED_AMOUNT ? data.valueMinor : null,
-      percentage: data.type === BillingDiscountTypeDto.PERCENTAGE ? data.percentage : null,
-      maxDiscountMinor: data.maxDiscountMinor ?? null,
-      minimumAmountMinor: data.minimumAmountMinor ?? null,
-      duration,
-      durationCycles: duration === BillingDiscountDurationDto.RECURRING_CYCLES ? data.durationCycles : null,
-      usageLimit: data.usageLimit ?? null,
-      startsAt: data.startsAt ?? null,
-      expiresAt: data.expiresAt ?? null,
-    });
+    let created: BillingDiscountResponse;
+    try {
+      created = await this.prisma.client.orm.public.Discount.create({
+        code,
+        name: data.name.trim(),
+        description: data.description?.trim() || null,
+        type: data.type,
+        valueMinor: data.type === BillingDiscountTypeDto.FIXED_AMOUNT ? data.valueMinor : null,
+        percentage: data.type === BillingDiscountTypeDto.PERCENTAGE ? data.percentage : null,
+        maxDiscountMinor: data.maxDiscountMinor ?? null,
+        minimumAmountMinor: data.minimumAmountMinor ?? null,
+        duration,
+        durationCycles: duration === BillingDiscountDurationDto.RECURRING_CYCLES ? data.durationCycles : null,
+        usageLimit: data.usageLimit ?? null,
+        startsAt: data.startsAt ?? null,
+        expiresAt: data.expiresAt ?? null,
+      });
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new ConflictException('Discount dengan code tersebut sudah ada');
+      }
+      throw error;
+    }
     await this.auditService.create({ action: 'BILLING.DISCOUNT_CREATED', entity: 'Discount', entityId: created.id, description: `Discount ${created.code} dibuat`, metadata: { code: created.code, type: created.type } });
     return created;
   }
@@ -281,7 +294,16 @@ export class BillingDiscountService {
 
     if (data.enabled) {
       if (existing) return existing;
-      return this.prisma.client.orm.public.DiscountPackage.create({ discountId, packageId });
+      try {
+        return await this.prisma.client.orm.public.DiscountPackage.create({ discountId, packageId });
+      } catch (error) {
+        if (isUniqueViolation(error)) {
+          return (await this.prisma.client.orm.public.DiscountPackage
+            .where({ discountId, packageId })
+            .first()) ?? (() => { throw new ConflictException('Discount sudah terpasang pada package'); })();
+        }
+        throw error;
+      }
     }
 
     if (!existing) throw new NotFoundException('Discount belum dipasang pada package');

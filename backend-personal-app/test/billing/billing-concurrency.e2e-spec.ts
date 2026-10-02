@@ -963,27 +963,10 @@ describe.sequential('Billing concurrency integration', () => {
       expiresAt: new Date(Date.now() + 86400000).toISOString(),
     });
 
-    await prisma.client.orm.public.SubscriptionPackageFeature
-      .where({
-        packageId: fixture.pkg.id,
-        featureId: fixture.memberFeature.id,
-      })
-      .update({ limitValue: 2 });
-
     const results = await Promise.allSettled([
       tenants.acceptInvitation(invitationA.token, userA.id),
       tenants.acceptInvitation(invitationB.token, userB.id),
     ]);
-
-    const rejected = results.filter(
-      (item): item is PromiseRejectedResult => item.status === 'rejected',
-    );
-    if (rejected.length > 0) {
-      console.error(
-        'invitation acceptance failures:',
-        rejected.map((item) => item.reason),
-      );
-    }
 
     expect(results.filter((item) => item.status === 'fulfilled')).toHaveLength(1);
     expect(results.filter((item) => item.status === 'rejected')).toHaveLength(1);

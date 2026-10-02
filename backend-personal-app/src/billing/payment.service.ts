@@ -130,15 +130,15 @@ export class BillingPaymentService {
         await this.auditService.create({
         action: 'BILLING.PAYMENT_CREATED',
         entity: 'Payment',
-        entityId: payment.id,
-        tenantId,
-        userId,
-        description: `Payment untuk invoice ${invoiceId} dibuat`,
-        metadata: {
-          invoiceId,
-          amountMinor: payment.amountMinor,
-          provider: payment.payment.provider,
-        },
+          entityId: payment.payment.id,
+          tenantId,
+          userId,
+          description: `Payment untuk invoice ${invoiceId} dibuat`,
+          metadata: {
+            invoiceId,
+            amountMinor: payment.payment.amountMinor,
+            provider: payment.payment.provider,
+          },
       });
       }
 

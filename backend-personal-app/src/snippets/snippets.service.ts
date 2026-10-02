@@ -31,19 +31,22 @@ export class SnippetsService {
     tenantId: string,
     data: CreateCodeSnippetDto,
   ): Promise<CodeSnippetResponse> {
-    const currentUsage = (await this.prisma.client.orm.public.CodeSnippet.where({ tenantId }).select('id').all()).length;
-
-    await this.billingFeatureService.assertWithinLimit(tenantId, userId, 'CODE_SNIPPET', currentUsage);
-
-
-    return this.prisma.client.orm.public.CodeSnippet.create({
-      title: data.title,
-      language: data.language,
-      code: data.code,
-      description: data.description,
-      createdBy: userId,
+    return this.billingFeatureService.withLimitLock(
       tenantId,
-    });
+      userId,
+      'CODE_SNIPPET',
+      async (client) =>
+        (await client.orm.public.CodeSnippet.where({ tenantId }).select('id').all()).length,
+      async (tx) =>
+        tx.orm.public.CodeSnippet.create({
+          title: data.title,
+          language: data.language,
+          code: data.code,
+          description: data.description,
+          createdBy: userId,
+          tenantId,
+        }),
+    );
   }
 
   async findAll(

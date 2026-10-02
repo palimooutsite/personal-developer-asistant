@@ -35,7 +35,8 @@ export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(input: CreateAuditLogInput): Promise<void> {
-    await this.prisma.client.orm.public.AuditLog.create({
+    try {
+      await this.prisma.client.orm.public.AuditLog.create({
         userId: input.userId ?? null,
         tenantId: input.tenantId ?? null,
         action: input.action,
@@ -44,8 +45,16 @@ export class AuditService {
         description: input.description ?? null,
         metadata: input.metadata == null ? null : JSON.stringify(input.metadata),
         ipAddress: input.ipAddress ?? null,
-      userAgent: input.userAgent ?? null,
-    });
+        userAgent: input.userAgent ?? null,
+      });
+    } catch (error) {
+      console.error('[AuditService] Failed to write audit log', {
+        action: input.action,
+        entity: input.entity,
+        entityId: input.entityId,
+        error,
+      });
+    }
   }
 
   async findAll(filters: { q?: string; action?: string; entity?: string; tenantId?: string; userId?: string } = {}) {

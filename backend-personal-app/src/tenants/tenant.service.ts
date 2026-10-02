@@ -15,6 +15,7 @@ import { EmailService } from '../email/email.service.js';
 import { randomBytes } from 'node:crypto';
 import { PERMISSION_MODULES } from './roles/permission.constants.js';
 import { AuditService } from '../audit/audit.service.js';
+import { db } from '../prisma/db.js';
 
 export interface TenantListItem {
   id: string;
@@ -37,6 +38,8 @@ export interface TenantMemberListItem {
   };
 }
 export interface TenantResponse extends TenantListItem {}
+
+type TenantTransactionClient = typeof db;
 
 @Injectable()
 export class TenantService {
@@ -327,54 +330,41 @@ export class TenantService {
       .first();
   }
 
-  private async assertWorkspaceMemberCapacity(
+  private async assertWorkspaceMemberCapacityWithClient(
+    client: TenantTransactionClient,
     tenantId: string,
     excludedInvitationId?: string,
   ): Promise<void> {
-    const subscriptions = await this.prisma.client.orm.public.TenantSubscription
-      .where({ tenantId })
-      .all();
-
+    const subscriptions = await client.orm.public.TenantSubscription.where({ tenantId }).all();
     const subscription = subscriptions
       .filter((item) => ['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)))
-      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
+      .sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)))[0];
 
-    if (!subscription) {
-      throw new ConflictException('Workspace belum memiliki subscription aktif');
-    }
+    if (!subscription) throw new ConflictException('Workspace belum memiliki subscription aktif');
 
-    const feature = await this.prisma.client.orm.public.SubscriptionFeature
-      .where({ code: 'WORKSPACE_MEMBER' })
-      .first();
-
+    const feature = await client.orm.public.SubscriptionFeature.where({ code: 'WORKSPACE_MEMBER' }).first();
     if (!feature || !feature.isActive) {
       throw new ConflictException('Feature batas member workspace belum dikonfigurasi');
     }
 
-    const packageFeature = await this.prisma.client.orm.public.SubscriptionPackageFeature
-      .where({ packageId: subscription.packageId, featureId: feature.id })
-      .first();
-
+    const packageFeature = await client.orm.public.SubscriptionPackageFeature
+      .where({ packageId: subscription.packageId, featureId: feature.id }).first();
     if (!packageFeature?.enabled) {
       throw new ConflictException('Paket workspace tidak mengizinkan penambahan member');
     }
 
-    const memberRows = await this.prisma.client.orm.public.TenantMember
-      .where({ tenantId })
-      .select('id')
-      .all();
-    const pendingInvitationRows = await this.prisma.client.orm.public.TenantInvitation
-      .where({ tenantId })
-      .select('id', 'acceptedAt', 'expiresAt')
-      .all();
+    const memberRows = await client.orm.public.TenantMember.where({ tenantId }).select('id').all();
+    const invitationRows = await client.orm.public.TenantInvitation
+      .where({ tenantId }).select('id', 'acceptedAt', 'expiresAt').all();
 
     const now = Date.now();
-    const pendingInvitations = pendingInvitationRows.filter((item) =>
+    const pendingInvitations = invitationRows.filter((item) =>
       item.id !== excludedInvitationId &&
-      !item.acceptedAt && new Date(item.expiresAt as string | Date).getTime() > now,
+      !item.acceptedAt &&
+      new Date(item.expiresAt as string | Date).getTime() > now,
     ).length;
-    const reservedMembers = memberRows.length + pendingInvitations;
 
+    const reservedMembers = memberRows.length + pendingInvitations;
     if (packageFeature.limitValue !== null && reservedMembers >= packageFeature.limitValue) {
       throw new ConflictException({
         code: 'WORKSPACE_MEMBER_LIMIT_REACHED',
@@ -382,8 +372,34 @@ export class TenantService {
         currentMembers: memberRows.length,
         pendingInvitations,
         limit: packageFeature.limitValue,
-        remaining: Math.max(0, packageFeature.limitValue - memberRows.length - pendingInvitations),
+        remaining: Math.max(0, packageFeature.limitValue - reservedMembers),
       });
+    }
+  }
+
+  private async assertWorkspaceMemberCapacity(
+    tenantId: string,
+    excludedInvitationId?: string,
+  ): Promise<void> {
+    return this.assertWorkspaceMemberCapacityWithClient(
+      this.prisma.client,
+      tenantId,
+      excludedInvitationId,
+    );
+  }
+
+  private async lockTenantForMemberCapacity(
+    client: TenantTransactionClient,
+    tenantId: string,
+  ): Promise<void> {
+    const lockPlan = db.raw.sql`
+      UPDATE "public"."tenant"
+      SET "updatedAt" = "updatedAt"
+      WHERE "id" = ${tenantId}
+    `.affectedCount().build();
+
+    if ((await client.execute(lockPlan)) !== 1) {
+      throw new NotFoundException('Workspace tidak ditemukan');
     }
   }
 
@@ -537,29 +553,35 @@ async addMember(
     );
   }
 
-  await this.assertWorkspaceMemberCapacity(tenantId);
+  const member = await this.prisma.client.transaction(async (tx) => {
+    await this.lockTenantForMemberCapacity(tx, tenantId);
 
-  const customRole =
-    await this.prisma.client.orm.public.TenantCustomRole
+    const existingMember = await tx.orm.public.TenantMember
+      .where({ tenantId, userId: data.userId })
+      .first();
+    if (existingMember) {
+      throw new ConflictException('User sudah menjadi member workspace');
+    }
+
+    await this.assertWorkspaceMemberCapacityWithClient(tx, tenantId);
+
+    const customRole = await tx.orm.public.TenantCustomRole
       .where({ id: data.roleId, tenantId })
       .first();
+    if (!customRole) {
+      throw new NotFoundException('Role tidak ditemukan pada workspace ini');
+    }
+    if (customRole.isSystem) {
+      throw new ForbiddenException('System role tidak dapat diberikan kepada member biasa');
+    }
 
-  if (!customRole) {
-    throw new NotFoundException('Role tidak ditemukan pada workspace ini');
-  }
-
-  if (customRole.isSystem) {
-    throw new ForbiddenException('System role tidak dapat diberikan kepada member biasa');
-  }
-
-  const member =
-    await this.prisma.client.orm.public.TenantMember
-      .create({
-        tenantId,
-        userId: data.userId,
-        role: 'MEMBER',
-        roleId: data.roleId,
-      });
+    return tx.orm.public.TenantMember.create({
+      tenantId,
+      userId: data.userId,
+      role: 'MEMBER',
+      roleId: data.roleId,
+    });
+  });
 
   if (!member.roleId) {
     throw new ForbiddenException(

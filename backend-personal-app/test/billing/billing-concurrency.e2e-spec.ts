@@ -7,6 +7,7 @@ import { BillingCheckoutSessionProviderDto } from '../../src/billing/dto/create-
 import { BillingSubscriptionService } from '../../src/billing/subscription.service.js';
 import { BillingSubscriptionProviderDto } from '../../src/billing/dto/create-subscription.dto.js';
 import { BillingPaymentService } from '../../src/billing/payment.service.js';
+import { BillingPaymentProviderDto } from '../../src/billing/dto/create-payment.dto.js';
 import { BillingInvoiceService } from '../../src/billing/invoice.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
 

@@ -168,59 +168,100 @@ export class BillingDiscountService {
   }
 
   async update(id: string, data: UpdateDiscountDto): Promise<BillingDiscountResponse> {
-    const existing = await this.findOne(id);
-    const type = data.type ?? (existing.type as BillingDiscountTypeDto);
-    const duration = data.duration ?? (existing.duration as BillingDiscountDurationDto);
-    const valueMinor = data.valueMinor !== undefined ? data.valueMinor : existing.valueMinor;
-    const percentage = data.percentage !== undefined ? data.percentage : existing.percentage;
-    const maxDiscountMinor = data.maxDiscountMinor !== undefined ? data.maxDiscountMinor : existing.maxDiscountMinor;
-    const durationCycles = data.durationCycles !== undefined ? data.durationCycles : existing.durationCycles;
-    const startsAt = data.startsAt ?? existing.startsAt;
-    const expiresAt = data.expiresAt ?? existing.expiresAt;
+    const protectedFieldsChanged =
+      data.type !== undefined ||
+      data.valueMinor !== undefined ||
+      data.percentage !== undefined ||
+      data.maxDiscountMinor !== undefined ||
+      data.minimumAmountMinor !== undefined ||
+      data.duration !== undefined ||
+      data.durationCycles !== undefined ||
+      data.usageLimit !== undefined ||
+      data.startsAt !== undefined ||
+      data.expiresAt !== undefined;
 
-    this.validateDefinition({
-      type, valueMinor, percentage, maxDiscountMinor, duration, durationCycles, startsAt, expiresAt,
-    });
+    const updated = await this.prisma.client.transaction(async (tx) => {
+      // Serialize discount definition updates with invoice discount consumption.
+      // The invoice flow locks the same row before reading usageCount, so an
+      // update cannot pass the usage check against a stale snapshot.
+      const lockPlan = this.prisma.client.raw.sql`
+        UPDATE "public"."discount"
+        SET "updatedAt" = "updatedAt"
+        WHERE "id" = ${id}
+      `.affectedCount().build();
 
-    if (data.usageLimit !== undefined && data.usageLimit !== null && data.usageLimit < 1) {
-      throw new ConflictException('usageLimit harus lebih dari 0');
-    }
-    if (
-      data.usageLimit !== undefined &&
-      data.usageLimit !== null &&
-      data.usageLimit < existing.usageCount
-    ) {
-      throw new ConflictException('usageLimit tidak boleh lebih kecil dari usageCount saat ini');
-    }
+      await tx.execute(lockPlan);
 
-    const updated = await this.prisma.client.orm.public.Discount
-      .where({ id })
-      .update({
-        ...(data.name !== undefined ? { name: data.name.trim() } : {}),
-        ...(data.description !== undefined ? { description: data.description.trim() || null } : {}),
-        ...(data.type !== undefined ? {
-          type,
-          valueMinor: type === BillingDiscountTypeDto.FIXED_AMOUNT ? valueMinor : null,
-          percentage: type === BillingDiscountTypeDto.PERCENTAGE ? percentage : null,
-        } : {}),
-        ...(data.valueMinor !== undefined ? { valueMinor: type === BillingDiscountTypeDto.FIXED_AMOUNT ? data.valueMinor : null } : {}),
-        ...(data.percentage !== undefined ? { percentage: type === BillingDiscountTypeDto.PERCENTAGE ? data.percentage : null } : {}),
-        ...(data.maxDiscountMinor !== undefined ? { maxDiscountMinor: data.maxDiscountMinor } : {}),
-        ...(data.minimumAmountMinor !== undefined ? { minimumAmountMinor: data.minimumAmountMinor } : {}),
-        ...(data.duration !== undefined ? {
-          duration,
-          durationCycles: duration === BillingDiscountDurationDto.RECURRING_CYCLES ? durationCycles : null,
-        } : {}),
-        ...(data.durationCycles !== undefined && duration === BillingDiscountDurationDto.RECURRING_CYCLES
-          ? { durationCycles: data.durationCycles } : {}),
-        ...(data.usageLimit !== undefined ? { usageLimit: data.usageLimit } : {}),
-        ...(data.startsAt !== undefined ? { startsAt: data.startsAt || null } : {}),
-        ...(data.expiresAt !== undefined ? { expiresAt: data.expiresAt || null } : {}),
-        ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
+      const existing = await tx.orm.public.Discount.where({ id }).first();
+      if (!existing) throw new NotFoundException('Discount tidak ditemukan');
+
+      if (existing.usageCount > 0 && protectedFieldsChanged) {
+        throw new ConflictException(
+          'Definisi discount tidak dapat diubah setelah discount pernah digunakan. Nonaktifkan discount dan buat discount baru untuk mengubah aturan.',
+        );
+      }
+
+      const type = data.type ?? (existing.type as BillingDiscountTypeDto);
+      const duration = data.duration ?? (existing.duration as BillingDiscountDurationDto);
+      const valueMinor = data.valueMinor !== undefined ? data.valueMinor : existing.valueMinor;
+      const percentage = data.percentage !== undefined ? data.percentage : existing.percentage;
+      const maxDiscountMinor = data.maxDiscountMinor !== undefined ? data.maxDiscountMinor : existing.maxDiscountMinor;
+      const durationCycles = data.durationCycles !== undefined ? data.durationCycles : existing.durationCycles;
+      const startsAt = data.startsAt ?? existing.startsAt;
+      const expiresAt = data.expiresAt ?? existing.expiresAt;
+
+      this.validateDefinition({
+        type, valueMinor, percentage, maxDiscountMinor, duration, durationCycles, startsAt, expiresAt,
       });
 
-    if (!updated) throw new NotFoundException('Discount gagal diperbarui');
-    await this.auditService.create({ action: 'BILLING.DISCOUNT_UPDATED', entity: 'Discount', entityId: id, description: `Discount ${updated.code} diperbarui`, metadata: data });
+      if (data.usageLimit !== undefined && data.usageLimit !== null && data.usageLimit < 1) {
+        throw new ConflictException('usageLimit harus lebih dari 0');
+      }
+      if (
+        data.usageLimit !== undefined &&
+        data.usageLimit !== null &&
+        data.usageLimit < existing.usageCount
+      ) {
+        throw new ConflictException('usageLimit tidak boleh lebih kecil dari usageCount saat ini');
+      }
+
+      const result = await tx.orm.public.Discount
+        .where({ id })
+        .update({
+          ...(data.name !== undefined ? { name: data.name.trim() } : {}),
+          ...(data.description !== undefined ? { description: data.description.trim() || null } : {}),
+          ...(data.type !== undefined ? {
+            type,
+            valueMinor: type === BillingDiscountTypeDto.FIXED_AMOUNT ? valueMinor : null,
+            percentage: type === BillingDiscountTypeDto.PERCENTAGE ? percentage : null,
+          } : {}),
+          ...(data.valueMinor !== undefined ? { valueMinor: type === BillingDiscountTypeDto.FIXED_AMOUNT ? data.valueMinor : null } : {}),
+          ...(data.percentage !== undefined ? { percentage: type === BillingDiscountTypeDto.PERCENTAGE ? data.percentage : null } : {}),
+          ...(data.maxDiscountMinor !== undefined ? { maxDiscountMinor: data.maxDiscountMinor } : {}),
+          ...(data.minimumAmountMinor !== undefined ? { minimumAmountMinor: data.minimumAmountMinor } : {}),
+          ...(data.duration !== undefined ? {
+            duration,
+            durationCycles: duration === BillingDiscountDurationDto.RECURRING_CYCLES ? durationCycles : null,
+          } : {}),
+          ...(data.durationCycles !== undefined && duration === BillingDiscountDurationDto.RECURRING_CYCLES
+            ? { durationCycles: data.durationCycles } : {}),
+          ...(data.usageLimit !== undefined ? { usageLimit: data.usageLimit } : {}),
+          ...(data.startsAt !== undefined ? { startsAt: data.startsAt || null } : {}),
+          ...(data.expiresAt !== undefined ? { expiresAt: data.expiresAt || null } : {}),
+          ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
+        });
+
+      if (!result) throw new NotFoundException('Discount gagal diperbarui');
+      return result;
+    });
+
+    await this.auditService.create({
+      action: 'BILLING.DISCOUNT_UPDATED',
+      entity: 'Discount',
+      entityId: id,
+      description: `Discount ${updated.code} diperbarui`,
+      metadata: data,
+    });
     return updated;
   }
 

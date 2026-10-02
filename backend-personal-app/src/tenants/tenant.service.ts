@@ -40,7 +40,7 @@ export interface TenantMemberListItem {
 export interface TenantResponse extends TenantListItem {}
 
 type TenantOrmClient = Pick<typeof db, 'orm'>;
-type TenantTransactionClient = TenantOrmClient & { execute: (plan: any) => Promise<{ affectedCount: number }> };
+type TenantTransactionClient = TenantOrmClient & { execute: (plan: any) => Promise<unknown> };
 
 @Injectable()
 export class TenantService {
@@ -399,7 +399,14 @@ export class TenantService {
       WHERE "id" = ${tenantId}
     `.affectedCount().build();
 
-    if ((await client.execute(lockPlan)) !== 1) {
+    await client.execute(lockPlan);
+
+    const tenant = await client.orm.public.Tenant
+      .where({ id: tenantId })
+      .select('id')
+      .first();
+
+    if (!tenant) {
       throw new NotFoundException('Workspace tidak ditemukan');
     }
   }

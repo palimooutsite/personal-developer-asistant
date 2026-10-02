@@ -975,8 +975,6 @@ async removeMember(
       );
     }
 
-    await this.assertWorkspaceMemberCapacity(invitation.tenantId, invitation.id);
-
     if (!invitation.roleId) {
       throw new ForbiddenException('Invitation belum memiliki custom role');
     }
@@ -991,11 +989,60 @@ async removeMember(
       throw new ForbiddenException('Role invitation tidak ditemukan');
     }
 
-    await this.prisma.client.orm.public.TenantMember.create({
-      tenantId: invitation.tenantId,
-      userId,
-      role: 'MEMBER',
-      roleId: invitation.roleId,
+    await this.prisma.client.transaction(async (tx) => {
+      await this.lockTenantForMemberCapacity(tx, invitation.tenantId);
+
+      const currentInvitation = await tx.orm.public.TenantInvitation
+        .where({ id: invitation.id })
+        .select('id', 'acceptedAt', 'expiresAt')
+        .first();
+
+      if (!currentInvitation || currentInvitation.acceptedAt) {
+        throw new ConflictException('Invitation sudah digunakan');
+      }
+
+      if (
+        new Date(currentInvitation.expiresAt as string | Date).getTime() <=
+        Date.now()
+      ) {
+        throw new ForbiddenException('Invitation sudah kedaluwarsa');
+      }
+
+      const existingMember = await tx.orm.public.TenantMember
+        .where({ tenantId: invitation.tenantId, userId })
+        .first();
+
+      if (existingMember) {
+        throw new ConflictException('Anda sudah menjadi member workspace ini');
+      }
+
+      await this.assertWorkspaceMemberCapacityWithClient(
+        tx,
+        invitation.tenantId,
+        invitation.id,
+      );
+
+      const currentRole = await tx.orm.public.TenantCustomRole
+        .where({ id: invitation.roleId, tenantId: invitation.tenantId })
+        .select('id')
+        .first();
+
+      if (!currentRole) {
+        throw new ForbiddenException('Role invitation tidak ditemukan');
+      }
+
+      await tx.orm.public.TenantMember.create({
+        tenantId: invitation.tenantId,
+        userId,
+        role: 'MEMBER',
+        roleId: invitation.roleId,
+      });
+
+      await tx.orm.public.TenantInvitation
+        .where({ id: invitation.id })
+        .update({
+          acceptedAt: new Date().toISOString(),
+        });
     });
 
     await this.auditService.create({
@@ -1007,12 +1054,6 @@ async removeMember(
       description: `Member ${user.email} bergabung melalui invitation`,
       metadata: { memberUserId: user.id, memberEmail: user.email, roleId: invitation.roleId, roleName: invitationRole.name, source: 'INVITATION' },
     });
-
-    await this.prisma.client.orm.public.TenantInvitation
-      .where({ id: invitation.id })
-      .update({
-        acceptedAt: new Date().toISOString(),
-      });
 
     return {
       message: 'Invitation berhasil diterima',

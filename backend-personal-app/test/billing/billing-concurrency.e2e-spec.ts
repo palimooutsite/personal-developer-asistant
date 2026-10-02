@@ -386,6 +386,29 @@ describe.sequential('Billing concurrency integration', () => {
     expect(usages).toHaveLength(1);
   });
 
+  it('does not allow concurrent cancellation to cancel the same subscription twice', async () => {
+    const user = await seedUser();
+    const fixture = await seedPendingPayment(user.id);
+
+    await prisma.client.orm.public.TenantSubscription
+      .where({ id: fixture.subscription.id })
+      .update({ status: 'ACTIVE' });
+
+    const results = await Promise.allSettled([
+      subscriptions.cancel(fixture.tenant.id, user.id),
+      subscriptions.cancel(fixture.tenant.id, user.id),
+    ]);
+
+    expect(results.filter((item) => item.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((item) => item.status === 'rejected')).toHaveLength(1);
+
+    const subscription = await prisma.client.orm.public.TenantSubscription
+      .where({ id: fixture.subscription.id })
+      .first();
+
+    expect(subscription?.status).toBe('CANCELLED');
+  });
+
   it('does not create two active-ish subscriptions when creation races', async () => {
     const user = await seedUser();
     const { pkg, price } = await seedPackage();

@@ -2,7 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { PrismaService } from '../prisma/prisma.service.js';
 import { db } from '../prisma/db.js';
 
-type BillingTransactionClient = { orm: typeof db.orm };
+type BillingTransactionClient = Pick<typeof db, 'orm'>;
 
 export interface BillingFeatureAccess {
   code: string;
@@ -228,7 +228,26 @@ export class BillingFeatureService {
     }
   }
 
-  async assertWithinLimitWithClient(
+  async withLimitLock<T>(
+    tenantId: string,
+    userId: string,
+    code: string,
+    currentUsage: (client: BillingTransactionClient) => Promise<number>,
+    operation: (client: BillingTransactionClient) => Promise<T>,
+  ): Promise<T> {
+    return this.prisma.client.transaction(async (tx) => {
+      await tx.execute(`
+        UPDATE "public"."tenant"
+        SET "updatedAt" = "updatedAt"
+        WHERE "id" = ${tenantId}
+      `);
+
+      const usage = await currentUsage(tx);
+      await this.assertWithinLimitWithClient(tx, tenantId, userId, code, usage);
+      return operation(tx);
+    });
+  }
+  private async assertWithinLimitWithClient(
     client: BillingTransactionClient,
     tenantId: string,
     userId: string,

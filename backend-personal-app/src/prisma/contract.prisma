@@ -604,7 +604,6 @@ model TenantSubscription {
   discountUsages  DiscountUsage[]
 
   @@index([tenantId, status])
-  @@index([tenantId], unique: true, where: "status IN ('PENDING', 'TRIAL', 'ACTIVE', 'PAST_DUE')", map: "tenant_subscription_active_uq")
   @@index([packageId])
   @@index([providerSubscriptionId])
 }

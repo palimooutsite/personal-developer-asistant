@@ -404,25 +404,36 @@ export class BillingCheckoutSessionService {
     userId: string,
     sessionId: string,
   ): Promise<{ sessionId: string; status: 'FAILED' }> {
-    const session = await this.prisma.client.orm.public.BillingCheckoutSession
+    const updated = await this.prisma.client.orm.public.BillingCheckoutSession
+      .where({ id: sessionId, userId, status: 'PENDING' })
+      .update({ status: 'FAILED' });
+
+    if (updated) {
+      return { sessionId, status: 'FAILED' };
+    }
+
+    const current = await this.prisma.client.orm.public.BillingCheckoutSession
       .where({ id: sessionId, userId })
       .first();
 
-    if (!session) throw new NotFoundException('Checkout session tidak ditemukan');
-    if (session.provider !== 'SANDBOX') {
+    if (!current) {
+      throw new NotFoundException('Checkout session tidak ditemukan');
+    }
+    if (current.provider !== 'SANDBOX') {
       throw new ConflictException('Simulasi hanya tersedia untuk SANDBOX');
     }
-    if (session.status !== 'PENDING') {
-      throw new ConflictException('Checkout session tidak dalam status PENDING');
+    if (current.status === 'FAILED') {
+      // Idempotent retry: the requested state is already applied.
+      return { sessionId, status: 'FAILED' };
+    }
+    if (current.status === 'SUCCEEDED') {
+      throw new ConflictException('Checkout session sudah berhasil diselesaikan');
+    }
+    if (current.status === 'EXPIRED') {
+      throw new ConflictException('Checkout session sudah kedaluwarsa');
     }
 
-    const updated = await this.prisma.client.orm.public.BillingCheckoutSession
-      .where({ id: sessionId, userId })
-      .update({ status: 'FAILED' });
-
-    if (!updated) throw new ConflictException('Checkout session gagal diperbarui');
-
-    return { sessionId, status: 'FAILED' };
+    throw new ConflictException('Checkout session sedang diproses atau sudah berubah status');
   }
 
   private toResponse(session: any): BillingCheckoutSessionResponse {

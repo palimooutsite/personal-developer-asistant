@@ -222,7 +222,7 @@ export class BillingPaymentService {
       }
 
       const invoice = await tx.orm.public.SubscriptionInvoice
-        .where({ id: payment.invoiceId, tenantId })
+        .where({ id: currentPayment.invoiceId, tenantId })
         .first();
 
       if (!invoice) {
@@ -230,7 +230,7 @@ export class BillingPaymentService {
       }
 
       const subscription = await tx.orm.public.TenantSubscription
-        .where({ id: payment.subscriptionId, tenantId })
+        .where({ id: currentPayment.subscriptionId, tenantId })
         .first();
 
       if (!subscription) {
@@ -245,7 +245,7 @@ export class BillingPaymentService {
         );
       }
 
-      if (invoice.finalAmountMinor !== payment.amountMinor || invoice.currency !== payment.currency) {
+      if (invoice.finalAmountMinor !== currentPayment.amountMinor || invoice.currency !== currentPayment.currency) {
         throw new ConflictException(
           'Nominal atau currency payment tidak sesuai dengan invoice',
         );
@@ -285,7 +285,7 @@ export class BillingPaymentService {
 
       if (!updatedInvoice) {
         const invoice = await tx.orm.public.SubscriptionInvoice
-          .where({ id: payment.invoiceId, tenantId })
+          .where({ id: currentPayment.invoiceId, tenantId })
           .first();
 
         if (invoice?.status !== 'SUCCEEDED') {
@@ -303,7 +303,7 @@ export class BillingPaymentService {
 
       if (!updatedSubscription) {
         const subscription = await tx.orm.public.TenantSubscription
-          .where({ id: payment.subscriptionId, tenantId })
+          .where({ id: currentPayment.subscriptionId, tenantId })
           .first();
 
         if (subscription?.status !== 'ACTIVE') {
@@ -328,9 +328,9 @@ export class BillingPaymentService {
       userId,
       description: 'Payment berhasil',
       metadata: {
-        invoiceId: payment.invoiceId,
-        subscriptionId: payment.subscriptionId,
-        amountMinor: payment.amountMinor,
+        invoiceId: currentPayment.invoiceId,
+        subscriptionId: currentPayment.subscriptionId,
+        amountMinor: currentPayment.amountMinor,
       },
     });
 
@@ -383,7 +383,7 @@ export class BillingPaymentService {
       // Validate the complete payment relationship before claiming the payment.
       // If any invariant is invalid, the payment must remain PENDING.
       const invoice = await tx.orm.public.SubscriptionInvoice
-        .where({ id: payment.invoiceId, tenantId })
+        .where({ id: currentPayment.invoiceId, tenantId })
         .first();
 
       if (!invoice) {
@@ -391,7 +391,7 @@ export class BillingPaymentService {
       }
 
       const subscription = await tx.orm.public.TenantSubscription
-        .where({ id: payment.subscriptionId, tenantId })
+        .where({ id: currentPayment.subscriptionId, tenantId })
         .first();
 
       if (!subscription) {
@@ -405,8 +405,8 @@ export class BillingPaymentService {
       }
 
       if (
-        invoice.finalAmountMinor !== payment.amountMinor ||
-        invoice.currency !== payment.currency
+        invoice.finalAmountMinor !== currentPayment.amountMinor ||
+        invoice.currency !== currentPayment.currency
       ) {
         throw new ConflictException(
           'Nominal atau currency payment tidak sesuai dengan invoice',
@@ -466,9 +466,9 @@ export class BillingPaymentService {
       userId,
       description: 'Payment gagal',
       metadata: {
-        invoiceId: payment.invoiceId,
-        subscriptionId: payment.subscriptionId,
-        amountMinor: payment.amountMinor,
+        invoiceId: currentPayment.invoiceId,
+        subscriptionId: currentPayment.subscriptionId,
+        amountMinor: currentPayment.amountMinor,
       },
     });
 

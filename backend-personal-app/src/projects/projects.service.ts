@@ -58,44 +58,39 @@ export class ProjectsService {
     userId: string,
     tenantId: string,
   ): Promise<ProjectResponse> {
-    const existingProjects = await this.prisma.client.orm.public.Project
-      .where({ tenantId })
-      .select('id')
-      .all();
-
-    await this.billingFeatureService.assertWithinLimit(
+    return this.billingFeatureService.withLimitLock(
       tenantId,
       userId,
       'PROJECT',
-      existingProjects.length,
-    );
+      async (client) =>
+        (await client.orm.public.Project.where({ tenantId }).select('id').all()).length,
+      async (tx) => {
+        const project = await tx.orm.public.Project.create({
+          name: data.name,
+          description: data.description,
+          createdBy: userId,
+          tenantId,
+        });
 
-    return this.prisma.client.transaction(async (tx) => {
-      const project = await tx.orm.public.Project.create({
-        name: data.name,
-        description: data.description,
-        createdBy: userId,
-        tenantId,
-      });
-
-      await tx.orm.public.ProjectMember.create({
-        projectId: project.id,
-        userId,
-        role: 'OWNER',
-      });
-
-      return {
-        id: project.id,
-        name: project.name,
-        description: project.description,
-        status: project.status,
-        createdBy: project.createdBy,
-        owner: {
+        await tx.orm.public.ProjectMember.create({
+          projectId: project.id,
           userId,
           role: 'OWNER',
-        },
-      };
-    });
+        });
+
+        return {
+          id: project.id,
+          name: project.name,
+          description: project.description,
+          status: project.status,
+          createdBy: project.createdBy,
+          owner: {
+            userId,
+            role: 'OWNER',
+          },
+        };
+      },
+    );
   }
 
   async update(

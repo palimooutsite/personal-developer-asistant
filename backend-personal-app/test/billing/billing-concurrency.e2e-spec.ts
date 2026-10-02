@@ -3,6 +3,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import { BillingModule } from '../../src/billing/billing.module.js';
 import { BillingCheckoutSessionService } from '../../src/billing/checkout-session.service.js';
+import { BillingCheckoutSessionProviderDto } from '../../src/billing/dto/create-checkout-session.dto.js';
 import { BillingSubscriptionService } from '../../src/billing/subscription.service.js';
 import { BillingPaymentService } from '../../src/billing/payment.service.js';
 import { BillingInvoiceService } from '../../src/billing/invoice.service.js';
@@ -161,7 +162,7 @@ describe.sequential('Billing concurrency integration', () => {
       packageId: pkg.id,
       packagePriceId: price.id,
       workspaceName: 'Concurrent Checkout Workspace',
-      provider: 'SANDBOX',
+      provider: BillingCheckoutSessionProviderDto.SANDBOX,
     });
 
     const results = await Promise.allSettled([

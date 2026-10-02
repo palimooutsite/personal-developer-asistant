@@ -6,10 +6,12 @@ import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { UsersModule } from '../users/user.module.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
+import { AuditModule } from '../audit/audit.module.js';
 
 @Module({
   imports: [
     UsersModule,
+    AuditModule,
 
     PassportModule.register({
       defaultStrategy: 'jwt',

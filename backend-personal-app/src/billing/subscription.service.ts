@@ -68,48 +68,6 @@ export class BillingSubscriptionService {
   ): Promise<BillingSubscriptionDetailResponse | null> {
     await this.ensureTenantMember(tenantId, userId);
 
-    const subscriptions = await this.prisma.client.orm.public.TenantSubscription
-      .where({ tenantId })
-      .select(
-        'id', 'tenantId', 'packageId', 'packagePriceId', 'status', 'provider',
-        'providerCustomerId', 'providerSubscriptionId', 'startedAt',
-        'currentPeriodStart', 'currentPeriodEnd', 'cancelledAt', 'createdAt', 'updatedAt',
-      )
-      .all();
-
-    if (subscriptions.length === 0) return null;
-
-    const subscription = subscriptions
-      .filter((item) =>
-        ['PENDING', 'TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)),
-      )
-      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
-
-    if (!subscription) return null;
-
-    return this.buildDetail(subscription);
-  }
-
-  async create(
-    tenantId: string,
-    userId: string,
-    data: CreateSubscriptionDto,
-  ): Promise<BillingSubscriptionDetailResponse> {
-    await this.ensureTenantMember(tenantId, userId);
-
-    const subscriptions = await this.prisma.client.orm.public.TenantSubscription
-      .where({ tenantId })
-      .select('id', 'status')
-      .all();
-
-    const activeSubscription = subscriptions.find((item) =>
-      ['PENDING', 'TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)),
-    );
-
-    if (activeSubscription) {
-      throw new ConflictException('Workspace sudah memiliki subscription yang masih aktif');
-    }
-
     const [pkg, price] = await Promise.all([
       this.prisma.client.orm.public.SubscriptionPackage
         .where({ id: data.packageId })
@@ -152,15 +110,45 @@ export class BillingSubscriptionService {
     let created: BillingSubscriptionResponse | null = null;
 
     try {
-      created = await this.prisma.client.orm.public.TenantSubscription.create({
-        tenantId,
-        packageId: pkg.id,
-        packagePriceId: price.id,
-        status: 'PENDING',
-        provider,
-        startedAt: now.toISOString(),
-        currentPeriodStart: now.toISOString(),
-        currentPeriodEnd: periodEnd.toISOString(),
+      created = await this.prisma.client.transaction(async (tx) => {
+        // Serialize subscription creation for the same tenant by locking
+        // the tenant row for the duration of this transaction.
+        const lockPlan = this.prisma.client.raw.sql`
+          UPDATE "Tenant"
+          SET "updatedAt" = "updatedAt"
+          WHERE "id" = ${tenantId}
+        `.affectedCount().build();
+
+        const lockResult = await tx.execute(lockPlan);
+        if (lockResult.affectedRows !== 1) {
+          throw new NotFoundException('Workspace tidak ditemukan');
+        }
+
+        const subscriptions = await tx.orm.public.TenantSubscription
+          .where({ tenantId })
+          .select('id', 'status')
+          .all();
+
+        const activeSubscription = subscriptions.find((item) =>
+          ['PENDING', 'TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)),
+        );
+
+        if (activeSubscription) {
+          throw new ConflictException(
+            'Workspace sudah memiliki subscription yang masih aktif',
+          );
+        }
+
+        return tx.orm.public.TenantSubscription.create({
+          tenantId,
+          packageId: pkg.id,
+          packagePriceId: price.id,
+          status: 'PENDING',
+          provider,
+          startedAt: now.toISOString(),
+          currentPeriodStart: now.toISOString(),
+          currentPeriodEnd: periodEnd.toISOString(),
+        });
       });
     } catch (error) {
       const code =

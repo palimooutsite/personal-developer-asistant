@@ -276,9 +276,66 @@ export class BillingCheckoutSessionService {
 
     try {
       const result = await this.prisma.client.transaction(async (tx) => {
+        // Lock and re-read the checkout session inside the transaction. The
+        // pre-transaction expiry check is only an optimization; this check is
+        // authoritative and prevents a request that started before expiry from
+        // creating billing records after the session has expired.
+        const sessionLockPlan = this.prisma.client.raw.sql`
+          UPDATE "public"."billingCheckoutSession"
+          SET "updatedAt" = "updatedAt"
+          WHERE "id" = ${session.id}
+            AND "userId" = ${userId}
+        `.affectedCount().build();
+
+        await tx.execute(sessionLockPlan);
+
+        const currentSession = await tx.orm.public.BillingCheckoutSession
+          .where({ id: session.id, userId })
+          .first();
+
+        if (!currentSession) {
+          throw new NotFoundException('Checkout session tidak ditemukan');
+        }
+
+        if (currentSession.status === 'SUCCEEDED') {
+          const existingPayment = await tx.orm.public.Payment
+            .where({ providerPaymentId: deterministicProviderPaymentId })
+            .first();
+
+          if (!existingPayment) {
+            throw new ConflictException(
+              'Checkout session sudah SUCCEEDED tetapi payment tidak ditemukan',
+            );
+          }
+
+          return {
+            sessionId: currentSession.id,
+            tenantId: existingPayment.tenantId,
+            paymentId: existingPayment.id,
+            invoiceId: existingPayment.invoiceId,
+            subscriptionId: existingPayment.subscriptionId,
+            status: 'SUCCEEDED' as const,
+            idempotent: true,
+          };
+        }
+
+        if (currentSession.status !== 'PENDING') {
+          throw new ConflictException(
+            'Checkout session tidak dalam status PENDING',
+          );
+        }
+
+        if (new Date(String(currentSession.expiresAt)).getTime() <= Date.now()) {
+          await tx.orm.public.BillingCheckoutSession
+            .where({ id: currentSession.id, userId, status: 'PENDING' })
+            .update({ status: 'EXPIRED' });
+
+          throw new ConflictException('Checkout session sudah kedaluwarsa');
+        }
+
         // The deterministic provider payment ID is the database idempotency key.
-        // If two requests race, the second transaction fails on the unique key and
-        // rolls back the tenant/subscription/invoice it created.
+        // The session lock above makes the lifecycle transition authoritative
+        // before any tenant/subscription/invoice rows are created.
         const tenant = await tx.orm.public.Tenant.create({
           name: session.workspaceName,
           createdBy: userId,
@@ -424,7 +481,10 @@ export class BillingCheckoutSessionService {
         };
       });
 
-      await this.writeCheckoutAudit(userId, session, pkg, price, result);
+      if (!(result as { idempotent?: boolean }).idempotent) {
+        await this.writeCheckoutAudit(userId, session, pkg, price, result);
+      }
+
       return result;
     } catch (error) {
       // Only recover when the deterministic provider payment already exists.

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { TenantModule } from '../tenant.module.js';
 import { TenantRoleController } from './tenant-role.controller.js';
@@ -10,7 +10,7 @@ import { PermissionGuard } from './permission.guard.js';
     PassportModule.register({
       defaultStrategy: 'jwt',
     }),
-    TenantModule,
+    forwardRef(() => TenantModule),
   ],
   controllers: [TenantRoleController],
   providers: [TenantRoleService, PermissionGuard],

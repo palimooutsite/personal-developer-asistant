@@ -695,6 +695,7 @@ model Payment {
   invoice      SubscriptionInvoice @relation(fields: [invoiceId], references: [id])
 
   @@index([tenantId, status])
+  @@unique([provider, providerPaymentId], map: "payment_provider_payment_id_uq")
   @@index([provider, providerPaymentId])
   @@index([invoiceId])
 }
@@ -729,6 +730,7 @@ model BillingCheckoutSession {
   updatedAt           temporal.updatedAtString()
 
   @@index([userId, status])
+  @@unique([provider, providerSessionId], map: "checkout_provider_session_id_uq")
   @@index([provider, providerSessionId])
   @@index([expiresAt])
 }

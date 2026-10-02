@@ -13,6 +13,7 @@ import { BillingDiscountService } from '../../src/billing/discount.service.js';
 import { BillingDiscountTypeDto } from '../../src/billing/dto/create-discount.dto.js';
 import { ProjectsService } from '../../src/projects/projects.service.js';
 import { BillingFeatureService } from '../../src/billing/feature.service.js';
+import { BillingCatalogService } from '../../src/billing/catalog.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
 
 const TEST_DATABASE_URL = process.env.BILLING_TEST_DATABASE_URL;
@@ -39,6 +40,7 @@ describe.sequential('Billing concurrency integration', () => {
   let invoices: BillingInvoiceService;
   let discounts: BillingDiscountService;
   let projects: ProjectsService;
+  let catalog: BillingCatalogService;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
@@ -53,6 +55,7 @@ describe.sequential('Billing concurrency integration', () => {
     invoices = moduleRef.get(BillingInvoiceService);
     discounts = moduleRef.get(BillingDiscountService);
     projects = moduleRef.get(ProjectsService);
+    catalog = moduleRef.get(BillingCatalogService);
   });
 
   afterAll(async () => {
@@ -446,6 +449,32 @@ describe.sequential('Billing concurrency integration', () => {
 
     expect(succeeded.length).toBe(1);
     expect(usages).toHaveLength(1);
+  });
+
+  it('allocates unique sequential price versions when price creation races', async () => {
+    const { pkg } = await seedPackage();
+
+    const results = await Promise.all([
+      catalog.addPrice(pkg.id, {
+        billingPeriod: 'MONTHLY',
+        amountMinor: 14900000,
+        currency: 'IDR',
+      }),
+      catalog.addPrice(pkg.id, {
+        billingPeriod: 'MONTHLY',
+        amountMinor: 15900000,
+        currency: 'IDR',
+      }),
+    ]);
+
+    expect(new Set(results.map((item) => item.version)).size).toBe(2);
+    expect(results.map((item) => item.version).sort((a, b) => a - b)).toEqual([2, 3]);
+
+    const prices = await prisma.client.orm.public.SubscriptionPackagePrice
+      .where({ packageId: pkg.id, billingPeriod: 'MONTHLY' })
+      .all();
+
+    expect(prices.map((item) => item.version).sort((a, b) => a - b)).toEqual([1, 2, 3]);
   });
 
   it('does not allow concurrent project creation to exceed a feature limit', async () => {

@@ -940,6 +940,15 @@ describe.sequential('Billing concurrency integration', () => {
 
   it('does not allow concurrent invitation acceptance to exceed workspace member limit', async () => {
     const fixture = await seedMemberCapacityFixture(3);
+    const existingMemberUser = await seedUser();
+
+    await prisma.client.orm.public.TenantMember.create({
+      tenantId: fixture.tenant.id,
+      userId: existingMemberUser.id,
+      role: 'MEMBER',
+      roleId: fixture.role.id,
+    });
+
     const userA = await seedUser();
     const userB = await seedUser();
 

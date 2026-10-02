@@ -296,7 +296,7 @@ export class BillingInvoiceService {
           // The no-op UPDATE acquires PostgreSQL's row lock without changing
           // usageCount, so usage-limit checks below see the latest committed value.
           const lockPlan = this.prisma.client.raw.sql`
-            UPDATE "public"."Discount"
+            UPDATE "public"."discount"
             SET "usageCount" = "usageCount"
             WHERE "id" = ${discount.id}
           `.affectedCount().build();

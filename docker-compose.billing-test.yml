@@ -1,0 +1,16 @@
+services:
+  postgres-billing-test:
+    image: postgres:17
+    container_name: personal-developer-postgres-billing-test
+    restart: "no"
+    environment:
+      POSTGRES_USER: pda_test_user
+      POSTGRES_PASSWORD: pda_test_password
+      POSTGRES_DB: personal_developer_billing_test
+    ports:
+      - "55433:5432"
+    volumes:
+      - postgres_billing_test_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_billing_test_data:

@@ -15,6 +15,8 @@ import { ProjectsService } from '../../src/projects/projects.service.js';
 import { BillingFeatureService } from '../../src/billing/feature.service.js';
 import { BillingCatalogService } from '../../src/billing/catalog.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
+import { TenantService } from '../../src/tenants/tenant.service.js';
+import { EmailService } from '../../src/email/email.service.js';
 
 const TEST_DATABASE_URL = process.env.BILLING_TEST_DATABASE_URL;
 
@@ -41,12 +43,16 @@ describe.sequential('Billing concurrency integration', () => {
   let discounts: BillingDiscountService;
   let projects: ProjectsService;
   let catalog: BillingCatalogService;
+  let tenants: TenantService;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
       imports: [BillingModule],
       providers: [ProjectsService, BillingFeatureService],
-    }).compile();
+    })
+      .overrideProvider(EmailService)
+      .useValue({ sendTenantInvitation: async () => undefined })
+      .compile();
 
     prisma = moduleRef.get(PrismaService);
     checkoutSessions = moduleRef.get(BillingCheckoutSessionService);
@@ -56,6 +62,7 @@ describe.sequential('Billing concurrency integration', () => {
     discounts = moduleRef.get(BillingDiscountService);
     projects = moduleRef.get(ProjectsService);
     catalog = moduleRef.get(BillingCatalogService);
+    tenants = moduleRef.get(TenantService);
   });
 
   afterAll(async () => {
@@ -166,6 +173,63 @@ describe.sequential('Billing concurrency integration', () => {
     });
 
     return { userId, tenant, pkg, price, subscription, invoice, payment };
+  }
+
+  async function seedMemberCapacityFixture(limitValue: number) {
+    const owner = await seedUser();
+    const { pkg, price } = await seedPackage();
+    const fixture = await seedTenantWithMember(owner.id, pkg.id, price.id);
+
+    const feature = await prisma.client.orm.public.SubscriptionFeature
+      .where({ code: 'WORKSPACE_MEMBER' })
+      .first();
+
+    const memberFeature = feature ?? await prisma.client.orm.public.SubscriptionFeature.create({
+      code: 'WORKSPACE_MEMBER',
+      name: 'Workspace Member limit test',
+      valueType: 'LIMIT',
+      isActive: true,
+    });
+
+    await prisma.client.orm.public.SubscriptionPackageFeature.create({
+      packageId: pkg.id,
+      featureId: memberFeature.id,
+      enabled: true,
+      limitValue,
+    });
+
+    const now = new Date();
+    const periodEnd = new Date(now);
+    periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+    await prisma.client.orm.public.TenantSubscription.create({
+      tenantId: fixture.tenant.id,
+      packageId: pkg.id,
+      packagePriceId: price.id,
+      status: 'ACTIVE',
+      provider: 'SANDBOX',
+      startedAt: now.toISOString(),
+      currentPeriodStart: now.toISOString(),
+      currentPeriodEnd: periodEnd.toISOString(),
+    });
+
+    const role = await prisma.client.orm.public.TenantCustomRole.create({
+      tenantId: fixture.tenant.id,
+      name: 'Member Test Role',
+      description: 'Concurrency test role',
+      isSystem: false,
+    });
+
+    await prisma.client.orm.public.TenantRolePermission.create({
+      roleId: fixture.role.id,
+      module: 'WORKSPACE_MEMBERS',
+      canCreate: true,
+      canRead: true,
+      canUpdate: true,
+      canDelete: true,
+    });
+
+    return { owner, ...fixture, memberFeature, role };
   }
 
   it('makes concurrent checkout-session succeed calls converge to one billing result', async () => {
@@ -807,5 +871,122 @@ describe.sequential('Billing concurrency integration', () => {
     expect(invoice?.status).toBe('SUCCEEDED');
     expect(subscription?.status).toBe('ACTIVE');
   });
+
+  it('does not allow concurrent direct member creation to exceed workspace member limit', async () => {
+    const fixture = await seedMemberCapacityFixture(2);
+    const userA = await seedUser();
+    const userB = await seedUser();
+
+    const results = await Promise.allSettled([
+      tenants.addMember(fixture.tenant.id, fixture.owner.id, {
+        userId: userA.id,
+        roleId: fixture.role.id,
+      }),
+      tenants.addMember(fixture.tenant.id, fixture.owner.id, {
+        userId: userB.id,
+        roleId: fixture.role.id,
+      }),
+    ]);
+
+    expect(results.filter((item) => item.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((item) => item.status === 'rejected')).toHaveLength(1);
+
+    const members = await prisma.client.orm.public.TenantMember
+      .where({ tenantId: fixture.tenant.id })
+      .all();
+
+    expect(members).toHaveLength(2);
+  });
+
+  it('does not allow concurrent invitations to exceed workspace member reservation limit', async () => {
+    const fixture = await seedMemberCapacityFixture(2);
+    const emailA = \`invite_\${randomUUID()}@example.test\`;
+    const emailB = \`invite_\${randomUUID()}@example.test\`;
+
+    const results = await Promise.allSettled([
+      tenants.createInvitation(fixture.tenant.id, fixture.owner.id, {
+        email: emailA,
+        roleId: fixture.role.id,
+      }),
+      tenants.createInvitation(fixture.tenant.id, fixture.owner.id, {
+        email: emailB,
+        roleId: fixture.role.id,
+      }),
+    ]);
+
+    expect(results.filter((item) => item.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((item) => item.status === 'rejected')).toHaveLength(1);
+
+    const invitations = await prisma.client.orm.public.TenantInvitation
+      .where({ tenantId: fixture.tenant.id })
+      .all();
+
+    const pendingInvitations = invitations.filter(
+      (item) =>
+        !item.acceptedAt &&
+        new Date(item.expiresAt as string | Date).getTime() > Date.now(),
+    );
+
+    const members = await prisma.client.orm.public.TenantMember
+      .where({ tenantId: fixture.tenant.id })
+      .all();
+
+    expect(members.length + pendingInvitations.length).toBeLessThanOrEqual(2);
+    expect(pendingInvitations).toHaveLength(1);
+  });
+
+  it('does not allow concurrent invitation acceptance to exceed workspace member limit', async () => {
+    const fixture = await seedMemberCapacityFixture(3);
+    const userA = await seedUser();
+    const userB = await seedUser();
+
+    const invitationA = await prisma.client.orm.public.TenantInvitation.create({
+      tenantId: fixture.tenant.id,
+      email: userA.email,
+      role: 'MEMBER',
+      roleId: fixture.role.id,
+      token: \`TEST-INVITE-\${randomUUID()}\`,
+      invitedBy: fixture.owner.id,
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+    });
+
+    const invitationB = await prisma.client.orm.public.TenantInvitation.create({
+      tenantId: fixture.tenant.id,
+      email: userB.email,
+      role: 'MEMBER',
+      roleId: fixture.role.id,
+      token: \`TEST-INVITE-\${randomUUID()}\`,
+      invitedBy: fixture.owner.id,
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+    });
+
+    await prisma.client.orm.public.SubscriptionPackageFeature
+      .where({
+        packageId: fixture.pkg.id,
+        featureId: fixture.memberFeature.id,
+      })
+      .update({ limitValue: 2 });
+
+    const results = await Promise.allSettled([
+      tenants.acceptInvitation(invitationA.token, userA.id),
+      tenants.acceptInvitation(invitationB.token, userB.id),
+    ]);
+
+    expect(results.filter((item) => item.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((item) => item.status === 'rejected')).toHaveLength(1);
+
+    const members = await prisma.client.orm.public.TenantMember
+      .where({ tenantId: fixture.tenant.id })
+      .all();
+
+    expect(members).toHaveLength(2);
+
+    const acceptedInvitations = await prisma.client.orm.public.TenantInvitation
+      .where({ tenantId: fixture.tenant.id })
+      .all();
+
+    expect(acceptedInvitations.filter((item) => item.acceptedAt)).toHaveLength(1);
+  });
+
 
 });

@@ -103,7 +103,7 @@ export class BillingPaymentService {
 
         const pending = existing.find((item) => item.status === 'PENDING');
         if (pending) {
-          return pending;
+          return { payment: pending, created: false };
         }
 
         const created = await tx.orm.public.Payment.create({
@@ -123,10 +123,11 @@ export class BillingPaymentService {
           throw new ConflictException('Payment gagal dibuat');
         }
 
-        return created;
+        return { payment: created, created: true };
       });
 
-      await this.auditService.create({
+      if (payment.created) {
+        await this.auditService.create({
         action: 'BILLING.PAYMENT_CREATED',
         entity: 'Payment',
         entityId: payment.id,
@@ -136,11 +137,12 @@ export class BillingPaymentService {
         metadata: {
           invoiceId,
           amountMinor: payment.amountMinor,
-          provider: payment.provider,
+          provider: payment.payment.provider,
         },
       });
+      }
 
-      return this.toResponse(payment);
+      return this.toResponse(payment.payment);
     } catch (error) {
       // A unique provider payment ID may be the winner of a concurrent
       // request. Return that existing payment instead of surfacing a

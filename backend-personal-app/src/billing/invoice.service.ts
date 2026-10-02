@@ -318,6 +318,29 @@ export class BillingInvoiceService {
             throw new ConflictException('Batas penggunaan discount sudah tercapai');
           }
 
+          // The discount definition may have changed after preview/calculate().
+          // Recompute the financial amount from the locked, latest snapshot so
+          // InvoiceDiscount and the invoice total always describe the same rule.
+          let finalDiscountAmountMinor = 0;
+          if (discount.type === 'PERCENTAGE') {
+            finalDiscountAmountMinor = Math.floor(
+              result.originalAmountMinor * Number(discount.percentage) / 100,
+            );
+            if (
+              discount.maxDiscountMinor !== null &&
+              finalDiscountAmountMinor > discount.maxDiscountMinor
+            ) {
+              finalDiscountAmountMinor = discount.maxDiscountMinor;
+            }
+          } else {
+            finalDiscountAmountMinor = Number(discount.valueMinor ?? 0);
+          }
+
+          finalDiscountAmountMinor = Math.min(
+            finalDiscountAmountMinor,
+            result.originalAmountMinor,
+          );
+
           const previousUsages = await tx.orm.public.DiscountUsage
             .where({ discountId: discount.id, tenantId })
             .all();
@@ -348,9 +371,14 @@ export class BillingInvoiceService {
           billingPeriod: result.price.billingPeriod,
           currency: result.price.currency,
           originalAmountMinor: result.originalAmountMinor,
-          discountAmountMinor: result.discountAmountMinor,
+          discountAmountMinor: discount ? finalDiscountAmountMinor : 0,
           taxAmountMinor: result.taxAmountMinor,
-          finalAmountMinor: result.finalAmountMinor,
+          finalAmountMinor: Math.max(
+            result.originalAmountMinor -
+              (discount ? finalDiscountAmountMinor : 0) +
+              result.taxAmountMinor,
+            0,
+          ),
           status: 'PENDING',
           issuedAt: now,
           dueAt: now,
@@ -368,7 +396,7 @@ export class BillingInvoiceService {
             discountType: discount.type,
             discountValueMinor: discount.valueMinor,
             discountPercentage: discount.percentage,
-            amountMinor: result.discountAmountMinor,
+            amountMinor: finalDiscountAmountMinor,
           });
 
           await tx.orm.public.DiscountUsage.create({
@@ -407,7 +435,7 @@ export class BillingInvoiceService {
         metadata: {
           subscriptionId: result.subscription.id,
           packageCode: result.package.code,
-          finalAmountMinor: result.finalAmountMinor,
+          finalAmountMinor: invoice.finalAmountMinor,
         },
       });
 
@@ -421,9 +449,9 @@ export class BillingInvoiceService {
         billingPeriod: result.price.billingPeriod,
         currency: result.price.currency,
         originalAmountMinor: result.originalAmountMinor,
-        discountAmountMinor: result.discountAmountMinor,
-        taxAmountMinor: result.taxAmountMinor,
-        finalAmountMinor: result.finalAmountMinor,
+        discountAmountMinor: invoice.discountAmountMinor,
+        taxAmountMinor: invoice.taxAmountMinor,
+        finalAmountMinor: invoice.finalAmountMinor,
         status: invoice.status,
         issuedAt: invoice.issuedAt,
         dueAt: invoice.dueAt,

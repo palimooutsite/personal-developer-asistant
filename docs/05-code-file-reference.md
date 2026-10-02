@@ -181,6 +181,17 @@ Tenant DTO:
 - `create-tenant-invitation.dto.ts`
 - `accept-tenant-invitation.dto.ts`
 
+## Tenant Roles
+
+| File | Fungsi |
+|---|---|
+| roles/tenant-role.controller.ts | API custom role dan permission workspace |
+| roles/tenant-role.service.ts | create/update/delete/list custom role dan permission |
+| roles/tenant-role.module.ts | module role |
+| roles/permission.constants.ts | daftar module permission |
+| roles/permission.guard.ts | enforcement permission |
+| roles/require-permission.decorator.ts | metadata permission endpoint |
+
 ## Users
 
 | File | Fungsi |

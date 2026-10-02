@@ -717,6 +717,10 @@ model BillingCheckoutSession {
   packagePriceId      String
   workspaceName       String
   discountCode        String?
+  discountId          String?
+  discountType        DiscountType?
+  discountValueMinor  Int?
+  discountPercentage  Int?
   originalAmountMinor Int
   discountAmountMinor Int                          @default(0)
   taxAmountMinor      Int                          @default(0)

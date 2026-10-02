@@ -223,6 +223,45 @@ describe.sequential('Billing concurrency integration', () => {
     expect(subscription?.status).toBe('ACTIVE');
   });
 
+  it('makes concurrent payment creation converge to one pending payment', async () => {
+    const user = await seedUser();
+    const fixture = await seedPendingPayment(user.id);
+
+    await prisma.client.orm.public.Payment
+      .where({ id: fixture.payment.id })
+      .delete();
+
+    const results = await Promise.allSettled([
+      payments.create(
+        fixture.tenant.id,
+        user.id,
+        fixture.invoice.id,
+        BillingPaymentProviderDto.SANDBOX,
+      ),
+      payments.create(
+        fixture.tenant.id,
+        user.id,
+        fixture.invoice.id,
+        BillingPaymentProviderDto.SANDBOX,
+      ),
+    ]);
+
+    const fulfilled = results.filter(
+      (item): item is PromiseFulfilledResult<Awaited<ReturnType<BillingPaymentService['create']>>> =>
+        item.status === 'fulfilled',
+    );
+
+    expect(fulfilled.length).toBe(2);
+    expect(new Set(fulfilled.map((item) => item.value.id)).size).toBe(1);
+
+    const paymentsInDb = await prisma.client.orm.public.Payment
+      .where({ invoiceId: fixture.invoice.id })
+      .all();
+
+    expect(paymentsInDb).toHaveLength(1);
+    expect(paymentsInDb[0]?.status).toBe('PENDING');
+  });
+
   it('keeps payment succeed-vs-fail transitions mutually exclusive', async () => {
     const user = await seedUser();
     const fixture = await seedPendingPayment(user.id);

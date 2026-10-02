@@ -80,7 +80,12 @@ export class BillingSubscriptionService {
     if (subscriptions.length === 0) return null;
 
     const subscription = subscriptions
+      .filter((item) =>
+        ['PENDING', 'TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)),
+      )
       .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
+
+    if (!subscription) return null;
 
     return this.buildDetail(subscription);
   }

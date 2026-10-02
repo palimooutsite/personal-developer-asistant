@@ -9,6 +9,7 @@ import { BillingSubscriptionProviderDto } from '../../src/billing/dto/create-sub
 import { BillingPaymentService } from '../../src/billing/payment.service.js';
 import { BillingInvoiceService } from '../../src/billing/invoice.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
+import { BillingPaymentProviderDto } from '../../src/billing/dto/create-payment.dto.js';
 
 const TEST_DATABASE_URL = process.env.BILLING_TEST_DATABASE_URL;
 

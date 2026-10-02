@@ -34,7 +34,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'3d1e1097c5b4c1ad0136bc88a48fb957b7cfe530d91673339ce1c865a995f69d'>;
+  StorageHashBase<'b48256c471782aeb46223b40d2f2433f513b5488ced4950ffce1f0407ea2d8b6'>;
 export type ExecutionHash =
   ExecutionHashBase<'1abde354c59350a6fc1c951f1aa26e4cfd8ea96631115ee8566e389cfb139a75'>;
 export type ProfileHash =
@@ -319,7 +319,6 @@ export type FieldOutputTypes = {
       readonly tenantId: CodecTypes['pg/text@1']['output'];
       readonly subscriptionId: CodecTypes['pg/text@1']['output'] | null;
       readonly invoiceId: CodecTypes['pg/text@1']['output'] | null;
-      readonly onceUsageKey: CodecTypes['pg/text@1']['output'] | null;
       readonly usedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
     readonly Document: {
@@ -657,7 +656,6 @@ export type FieldInputTypes = {
       readonly tenantId: CodecTypes['pg/text@1']['input'];
       readonly subscriptionId: CodecTypes['pg/text@1']['input'] | null;
       readonly invoiceId: CodecTypes['pg/text@1']['input'] | null;
-      readonly onceUsageKey: CodecTypes['pg/text@1']['input'] | null;
       readonly usedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly Document: {
@@ -993,7 +991,6 @@ export type StorageColumnTypes = {
       readonly discountId: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly invoiceId: CodecTypes['pg/text@1']['output'] | null;
-      readonly onceUsageKey: CodecTypes['pg/text@1']['output'] | null;
       readonly subscriptionId: CodecTypes['pg/text@1']['output'] | null;
       readonly tenantId: CodecTypes['pg/text@1']['output'];
       readonly usedAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -1331,7 +1328,6 @@ export type StorageColumnInputTypes = {
       readonly discountId: CodecTypes['pg/text@1']['input'];
       readonly id: CodecTypes['pg/text@1']['input'];
       readonly invoiceId: CodecTypes['pg/text@1']['input'] | null;
-      readonly onceUsageKey: CodecTypes['pg/text@1']['input'] | null;
       readonly subscriptionId: CodecTypes['pg/text@1']['input'] | null;
       readonly tenantId: CodecTypes['pg/text@1']['input'];
       readonly usedAt: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -2016,7 +2012,6 @@ export namespace Models {
     tenantId: CodecTypes['pg/text@1']['output'];
     subscriptionId: CodecTypes['pg/text@1']['output'] | null;
     invoiceId: CodecTypes['pg/text@1']['output'] | null;
-    onceUsageKey: CodecTypes['pg/text@1']['output'] | null;
     usedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     discount: public_Discount;
     invoice: public_SubscriptionInvoice | null;
@@ -2674,11 +2669,6 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
                 };
-                readonly onceUsageKey: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: true;
-                };
                 readonly usedAt: {
                   readonly nativeType: 'timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -2687,12 +2677,7 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [
-                {
-                  readonly columns: readonly ['onceUsageKey'];
-                  readonly name: 'discount_usage_once_key_uq';
-                },
-              ];
+              uniques: readonly [];
               indexes: readonly [
                 {
                   readonly name: 'discountUsage_discountId_tenantId_idx_6aba352d';
@@ -5616,10 +5601,6 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
-              readonly onceUsageKey: {
-                readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
               readonly usedAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -5687,7 +5668,6 @@ type ContractBase = Omit<
                 readonly tenantId: { readonly column: 'tenantId' };
                 readonly subscriptionId: { readonly column: 'subscriptionId' };
                 readonly invoiceId: { readonly column: 'invoiceId' };
-                readonly onceUsageKey: { readonly column: 'onceUsageKey' };
                 readonly usedAt: { readonly column: 'usedAt' };
               };
             };

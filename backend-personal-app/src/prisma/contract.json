@@ -4,6 +4,10 @@
   "target": "postgres",
   "profileHash": "3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2",
   "roots": {
+    "auditLog": {
+      "model": "AuditLog",
+      "namespace": "public"
+    },
     "billingCheckoutSession": {
       "model": "BillingCheckoutSession",
       "namespace": "public"
@@ -429,6 +433,127 @@
           }
         },
         "models": {
+          "AuditLog": {
+            "fields": {
+              "action": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "description": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "entity": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "entityId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "ipAddress": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "metadata": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "tenantId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "userAgent": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "userId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "action": {
+                  "column": "action"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "description": {
+                  "column": "description"
+                },
+                "entity": {
+                  "column": "entity"
+                },
+                "entityId": {
+                  "column": "entityId"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "ipAddress": {
+                  "column": "ipAddress"
+                },
+                "metadata": {
+                  "column": "metadata"
+                },
+                "tenantId": {
+                  "column": "tenantId"
+                },
+                "userAgent": {
+                  "column": "userAgent"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "auditLog"
+            }
+          },
           "BillingCheckoutSession": {
             "fields": {
               "completedAt": {
@@ -1147,6 +1272,13 @@
                   "kind": "scalar"
                 }
               },
+              "onceUsageKey": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "subscriptionId": {
                 "nullable": true,
                 "type": {
@@ -1245,6 +1377,9 @@
                 },
                 "invoiceId": {
                   "column": "invoiceId"
+                },
+                "onceUsageKey": {
+                  "column": "onceUsageKey"
                 },
                 "subscriptionId": {
                   "column": "subscriptionId"
@@ -4970,6 +5105,122 @@
       "public": {
         "entries": {
           "table": {
+            "auditLog": {
+              "columns": {
+                "action": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "description": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "entity": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "entityId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "ipAddress": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "metadata": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "tenantId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "userAgent": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "userId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "action",
+                    "createdAt"
+                  ],
+                  "name": "auditLog_action_createdAt_idx_a6d20b4b",
+                  "prefix": "auditLog_action_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "createdAt"
+                  ],
+                  "name": "auditLog_createdAt_idx_9575dbd7",
+                  "prefix": "auditLog_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "entity",
+                    "entityId"
+                  ],
+                  "name": "auditLog_entity_entityId_idx_efadd7fc",
+                  "prefix": "auditLog_entity_entityId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenantId",
+                    "createdAt"
+                  ],
+                  "name": "auditLog_tenantId_createdAt_idx_88162366",
+                  "prefix": "auditLog_tenantId_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId",
+                    "createdAt"
+                  ],
+                  "name": "auditLog_userId_createdAt_idx_f726f04a",
+                  "prefix": "auditLog_userId_createdAt_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "billingCheckoutSession": {
               "checks": [
                 {
@@ -5150,7 +5401,15 @@
                   "id"
                 ]
               },
-              "uniques": []
+              "uniques": [
+                {
+                  "columns": [
+                    "provider",
+                    "providerSessionId"
+                  ],
+                  "name": "checkout_provider_session_id_uq"
+                }
+              ]
             },
             "codeSnippet": {
               "columns": {
@@ -5521,6 +5780,11 @@
                   "nativeType": "text",
                   "nullable": true
                 },
+                "onceUsageKey": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "subscriptionId": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -5655,7 +5919,14 @@
                   "id"
                 ]
               },
-              "uniques": []
+              "uniques": [
+                {
+                  "columns": [
+                    "onceUsageKey"
+                  ],
+                  "name": "discount_usage_once_key_uq"
+                }
+              ]
             },
             "document": {
               "columns": {
@@ -6332,7 +6603,15 @@
                   "id"
                 ]
               },
-              "uniques": []
+              "uniques": [
+                {
+                  "columns": [
+                    "provider",
+                    "providerPaymentId"
+                  ],
+                  "name": "payment_provider_payment_id_uq"
+                }
+              ]
             },
             "project": {
               "checks": [
@@ -8701,12 +8980,23 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "c5b8b1c90210c816acd006712c2d8fc56c0f93012ed157775091dc575c6ec97a"
+    "storageHash": "3d1e1097c5b4c1ad0136bc88a48fb957b7cfe530d91673339ce1c865a995f69d"
   },
   "execution": {
-    "executionHash": "b652badb6b30b9663604c20f87afea08e398c5570016c10051f1b1cf75475e31",
+    "executionHash": "1abde354c59350a6fc1c951f1aa26e4cfd8ea96631115ee8566e389cfb139a75",
     "mutations": {
       "defaults": [
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "auditLog"
+          }
+        },
         {
           "onCreate": {
             "id": "uuidv4",

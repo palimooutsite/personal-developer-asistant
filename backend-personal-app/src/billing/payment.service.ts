@@ -209,18 +209,61 @@ export class BillingPaymentService {
 
   async sandboxFail(tenantId: string, userId: string, paymentId: string): Promise<BillingPaymentResponse> {
     await this.ensureMember(tenantId, userId);
-    const payment = await this.prisma.client.orm.public.Payment.where({ id: paymentId, tenantId }).first();
+
+    const payment = await this.prisma.client.orm.public.Payment
+      .where({ id: paymentId, tenantId })
+      .first();
 
     if (!payment) throw new NotFoundException('Payment tidak ditemukan');
-    if (payment.provider !== 'SANDBOX') throw new ConflictException('Simulasi hanya tersedia untuk SANDBOX');
-    if (payment.status !== 'PENDING') throw new ConflictException('Payment tidak dalam status PENDING');
+    if (payment.provider !== 'SANDBOX') {
+      throw new ConflictException('Simulasi hanya tersedia untuk SANDBOX');
+    }
+
+    if (payment.status === 'FAILED') {
+      return this.toResponse(payment);
+    }
+
+    if (payment.status !== 'PENDING') {
+      throw new ConflictException('Payment tidak dalam status PENDING');
+    }
 
     const updatedPayment = await this.prisma.client.orm.public.Payment
-      .where({ id: paymentId })
+      .where({ id: paymentId, tenantId, status: 'PENDING' })
       .update({ status: 'FAILED' });
 
-    if (!updatedPayment) throw new ConflictException('Payment gagal diperbarui');
-    await this.auditService.create({ action: 'BILLING.PAYMENT_FAILED', entity: 'Payment', entityId: updatedPayment.id, tenantId, userId, description: 'Payment gagal', metadata: { invoiceId: payment.invoiceId, subscriptionId: payment.subscriptionId, amountMinor: payment.amountMinor } });
-    return this.toResponse(updatedPayment);
+    if (updatedPayment) {
+      await this.auditService.create({
+        action: 'BILLING.PAYMENT_FAILED',
+        entity: 'Payment',
+        entityId: updatedPayment.id,
+        tenantId,
+        userId,
+        description: 'Payment gagal',
+        metadata: {
+          invoiceId: payment.invoiceId,
+          subscriptionId: payment.subscriptionId,
+          amountMinor: payment.amountMinor,
+        },
+      });
+      return this.toResponse(updatedPayment);
+    }
+
+    const current = await this.prisma.client.orm.public.Payment
+      .where({ id: paymentId, tenantId })
+      .first();
+
+    if (!current) {
+      throw new NotFoundException('Payment tidak ditemukan');
+    }
+
+    if (current.status === 'FAILED') {
+      return this.toResponse(current);
+    }
+
+    if (current.status === 'SUCCEEDED') {
+      throw new ConflictException('Payment sudah berhasil diselesaikan');
+    }
+
+    throw new ConflictException('Payment sedang diproses atau sudah berubah status');
   }
 }

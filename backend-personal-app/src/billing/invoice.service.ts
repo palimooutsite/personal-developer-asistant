@@ -290,6 +290,7 @@ export class BillingInvoiceService {
     try {
       const invoice = await this.prisma.client.transaction(async (tx) => {
         let discount = result.discount;
+        let finalDiscountAmountMinor = 0;
 
         if (discount) {
           // Serialize concurrent consumption attempts for the same discount.
@@ -321,7 +322,6 @@ export class BillingInvoiceService {
           // The discount definition may have changed after preview/calculate().
           // Recompute the financial amount from the locked, latest snapshot so
           // InvoiceDiscount and the invoice total always describe the same rule.
-          let finalDiscountAmountMinor = 0;
           if (discount.type === 'PERCENTAGE') {
             finalDiscountAmountMinor = Math.floor(
               result.originalAmountMinor * Number(discount.percentage) / 100,

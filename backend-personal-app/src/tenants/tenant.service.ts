@@ -39,7 +39,8 @@ export interface TenantMemberListItem {
 }
 export interface TenantResponse extends TenantListItem {}
 
-type TenantTransactionClient = typeof db;
+type TenantOrmClient = Pick<typeof db, 'orm'>;
+type TenantTransactionClient = TenantOrmClient & { execute: (plan: any) => Promise<number> };
 
 @Injectable()
 export class TenantService {
@@ -331,7 +332,7 @@ export class TenantService {
   }
 
   private async assertWorkspaceMemberCapacityWithClient(
-    client: TenantTransactionClient,
+    client: TenantOrmClient,
     tenantId: string,
     excludedInvitationId?: string,
   ): Promise<void> {
@@ -553,7 +554,7 @@ async addMember(
     );
   }
 
-  const member = await this.prisma.client.transaction(async (tx) => {
+  const result = await this.prisma.client.transaction(async (tx) => {
     await this.lockTenantForMemberCapacity(tx, tenantId);
 
     const existingMember = await tx.orm.public.TenantMember
@@ -575,12 +576,16 @@ async addMember(
       throw new ForbiddenException('System role tidak dapat diberikan kepada member biasa');
     }
 
-    return tx.orm.public.TenantMember.create({
+    const member = await tx.orm.public.TenantMember.create({
       tenantId,
       userId: data.userId,
       role: 'MEMBER',
       roleId: data.roleId,
     });
+
+  const { member, customRole } = result;
+
+    return { member, customRole };
   });
 
   if (!member.roleId) {

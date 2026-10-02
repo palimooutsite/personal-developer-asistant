@@ -57,6 +57,19 @@ Query: search, page, limit, excludeUserIds.
 | POST | /tenants/:id/invitations | JWT | create invitation |
 | POST | /tenants/invitations/accept | JWT | accept invitation |
 
+## Tenant roles
+
+Base: `/tenants/:tenantId/roles`
+
+| Method | Endpoint | Permission | Fungsi |
+|---|---|---|---|
+| GET | /tenants/:tenantId/roles | WORKSPACE_SETTINGS:READ | list custom roles |
+| POST | /tenants/:tenantId/roles | WORKSPACE_SETTINGS:CREATE | create role |
+| POST | /tenants/:tenantId/roles/migrate-legacy-members | WORKSPACE_SETTINGS:UPDATE | migrate legacy members |
+| GET | /tenants/:tenantId/roles/:roleId | WORKSPACE_SETTINGS:READ | role detail |
+| PATCH | /tenants/:tenantId/roles/:roleId | WORKSPACE_SETTINGS:UPDATE | update role |
+| DELETE | /tenants/:tenantId/roles/:roleId | WORKSPACE_SETTINGS:DELETE | delete role |
+
 ## Dashboard
 
 GET /dashboard/summary — JWT + Tenant + DASHBOARD:READ.

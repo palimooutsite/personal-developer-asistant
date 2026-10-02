@@ -664,6 +664,7 @@ model DiscountUsage {
   tenantId       String
   subscriptionId String?
   invoiceId      String?
+  onceUsageKey   String?
   usedAt         TimestamptzString @default(now())
 
   discount     Discount             @relation(fields: [discountId], references: [id])
@@ -672,6 +673,7 @@ model DiscountUsage {
   invoice      SubscriptionInvoice? @relation(fields: [invoiceId], references: [id])
 
   @@index([discountId, tenantId])
+  @@unique([onceUsageKey], map: "discount_usage_once_key_uq")
   @@index([tenantId])
 }
 

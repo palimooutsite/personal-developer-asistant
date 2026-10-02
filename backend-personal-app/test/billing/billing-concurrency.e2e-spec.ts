@@ -9,6 +9,8 @@ import { BillingSubscriptionProviderDto } from '../../src/billing/dto/create-sub
 import { BillingPaymentService } from '../../src/billing/payment.service.js';
 import { BillingPaymentProviderDto } from '../../src/billing/dto/create-payment.dto.js';
 import { BillingInvoiceService } from '../../src/billing/invoice.service.js';
+import { ProjectsService } from '../../src/projects/projects.service.js';
+import { BillingFeatureService } from '../../src/billing/feature.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
 
 const TEST_DATABASE_URL = process.env.BILLING_TEST_DATABASE_URL;
@@ -33,10 +35,12 @@ describe.sequential('Billing concurrency integration', () => {
   let subscriptions: BillingSubscriptionService;
   let payments: BillingPaymentService;
   let invoices: BillingInvoiceService;
+  let projects: ProjectsService;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
       imports: [BillingModule],
+      providers: [ProjectsService, BillingFeatureService],
     }).compile();
 
     prisma = moduleRef.get(PrismaService);
@@ -44,6 +48,7 @@ describe.sequential('Billing concurrency integration', () => {
     subscriptions = moduleRef.get(BillingSubscriptionService);
     payments = moduleRef.get(BillingPaymentService);
     invoices = moduleRef.get(BillingInvoiceService);
+    projects = moduleRef.get(ProjectsService);
   });
 
   afterAll(async () => {
@@ -384,6 +389,68 @@ describe.sequential('Billing concurrency integration', () => {
 
     expect(succeeded.length).toBe(1);
     expect(usages).toHaveLength(1);
+  });
+
+  it('does not allow concurrent project creation to exceed a feature limit', async () => {
+    const user = await seedUser();
+    const { pkg, price } = await seedPackage();
+    const fixture = await seedTenantWithMember(user.id, pkg.id, price.id);
+
+    const feature = await prisma.client.orm.public.SubscriptionFeature.create({
+      code: `PROJECT_${randomUUID().replaceAll('-', '')}`,
+      name: 'Project limit test',
+      valueType: 'LIMIT',
+      isActive: true,
+    });
+
+    await prisma.client.orm.public.SubscriptionPackageFeature.create({
+      packageId: pkg.id,
+      featureId: feature.id,
+      enabled: true,
+      limitValue: 1,
+    });
+
+    const now = new Date();
+    const periodEnd = new Date(now);
+    periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+    await prisma.client.orm.public.TenantSubscription.create({
+      tenantId: fixture.tenant.id,
+      packageId: pkg.id,
+      packagePriceId: price.id,
+      status: 'ACTIVE',
+      provider: 'SANDBOX',
+      startedAt: now.toISOString(),
+      currentPeriodStart: now.toISOString(),
+      currentPeriodEnd: periodEnd.toISOString(),
+    });
+
+    const results = await Promise.allSettled([
+      projects.create(
+        { name: 'Concurrent Project A' },
+        user.id,
+        fixture.tenant.id,
+      ),
+      projects.create(
+        { name: 'Concurrent Project B' },
+        user.id,
+        fixture.tenant.id,
+      ),
+    ]);
+
+    expect(results.filter((item) => item.status === 'fulfilled')).toHaveLength(1);
+
+    const rejected = results.filter(
+      (item): item is PromiseRejectedResult => item.status === 'rejected',
+    );
+    expect(rejected).toHaveLength(1);
+    expect(rejected[0]?.reason?.response?.code).toBe('FEATURE_LIMIT_REACHED');
+
+    const projectsInDb = await prisma.client.orm.public.Project
+      .where({ tenantId: fixture.tenant.id })
+      .all();
+
+    expect(projectsInDb).toHaveLength(1);
   });
 
   it('does not allow concurrent cancellation to cancel the same subscription twice', async () => {

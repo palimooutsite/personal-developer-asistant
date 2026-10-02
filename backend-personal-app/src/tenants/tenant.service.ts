@@ -583,10 +583,10 @@ async addMember(
       roleId: data.roleId,
     });
 
-  const { member, customRole } = result;
-
     return { member, customRole };
   });
+
+  const { member, customRole } = result;
 
   if (!member.roleId) {
     throw new ForbiddenException(

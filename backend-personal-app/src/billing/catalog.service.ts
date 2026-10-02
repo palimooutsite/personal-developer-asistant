@@ -420,52 +420,70 @@ export class BillingCatalogService {
   }
 
   async updateFeature(id: string, data: UpdateFeatureDto): Promise<BillingFeatureResponse> {
-    const existing = await this.prisma.client.orm.public.SubscriptionFeature
-      .where({ id })
-      .first();
+    const updated = await this.prisma.client.transaction(async (tx) => {
+      const lockPlan = this.prisma.client.raw.sql`
+        UPDATE "public"."subscriptionFeature"
+        SET "updatedAt" = "updatedAt"
+        WHERE "id" = ${id}
+      `.affectedCount().build();
 
-    if (!existing) throw new NotFoundException('Feature tidak ditemukan');
+      await tx.execute(lockPlan);
 
-    if (
-      data.valueType !== undefined &&
-      data.valueType !== existing.valueType
-    ) {
-      const packageFeatures = await this.prisma.client.orm.public.SubscriptionPackageFeature
-        .where({ featureId: id })
-        .all();
+      const existing = await tx.orm.public.SubscriptionFeature
+        .where({ id })
+        .first();
+
+      if (!existing) throw new NotFoundException('Feature tidak ditemukan');
 
       if (
-        data.valueType === BillingFeatureValueTypeDto.BOOLEAN &&
-        packageFeatures.some((item) => item.limitValue !== null)
+        data.valueType !== undefined &&
+        data.valueType !== existing.valueType
       ) {
-        throw new ConflictException(
-          'Feature tidak dapat diubah menjadi BOOLEAN karena masih memiliki limitValue pada package',
-        );
-      }
+        const packageFeatures = await tx.orm.public.SubscriptionPackageFeature
+          .where({ featureId: id })
+          .all();
 
-      if (data.valueType === BillingFeatureValueTypeDto.LIMIT) {
-        for (const packageFeature of packageFeatures) {
-          if (packageFeature.enabled && packageFeature.limitValue === null) {
-            throw new ConflictException(
-              'Feature tidak dapat diubah menjadi LIMIT karena ada package aktif tanpa limitValue',
-            );
+        if (
+          data.valueType === BillingFeatureValueTypeDto.BOOLEAN &&
+          packageFeatures.some((item) => item.limitValue !== null)
+        ) {
+          throw new ConflictException(
+            'Feature tidak dapat diubah menjadi BOOLEAN karena masih memiliki limitValue pada package',
+          );
+        }
+
+        if (data.valueType === BillingFeatureValueTypeDto.LIMIT) {
+          for (const packageFeature of packageFeatures) {
+            if (packageFeature.enabled && packageFeature.limitValue === null) {
+              throw new ConflictException(
+                'Feature tidak dapat diubah menjadi LIMIT karena ada package aktif tanpa limitValue',
+              );
+            }
           }
         }
       }
-    }
 
-    const updated = await this.prisma.client.orm.public.SubscriptionFeature
-      .where({ id })
-      .update({
-        ...(data.name !== undefined ? { name: data.name.trim() } : {}),
-        ...(data.description !== undefined ? { description: data.description.trim() || null } : {}),
-        ...(data.valueType !== undefined ? { valueType: data.valueType as BillingFeatureValueTypeDto } : {}),
-        ...(data.unit !== undefined ? { unit: data.unit.trim() || null } : {}),
-        ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
-      });
+      const result = await tx.orm.public.SubscriptionFeature
+        .where({ id })
+        .update({
+          ...(data.name !== undefined ? { name: data.name.trim() } : {}),
+          ...(data.description !== undefined ? { description: data.description.trim() || null } : {}),
+          ...(data.valueType !== undefined ? { valueType: data.valueType as BillingFeatureValueTypeDto } : {}),
+          ...(data.unit !== undefined ? { unit: data.unit.trim() || null } : {}),
+          ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
+        });
 
-    if (!updated) throw new NotFoundException('Feature gagal diperbarui');
-    await this.auditService.create({ action: 'BILLING.FEATURE_UPDATED', entity: 'SubscriptionFeature', entityId: id, description: `Feature ${updated.code} diperbarui`, metadata: data });
+      if (!result) throw new NotFoundException('Feature gagal diperbarui');
+      return result;
+    });
+
+    await this.auditService.create({
+      action: 'BILLING.FEATURE_UPDATED',
+      entity: 'SubscriptionFeature',
+      entityId: id,
+      description: `Feature ${updated.code} diperbarui`,
+      metadata: data,
+    });
     return updated;
   }
 
@@ -618,60 +636,74 @@ export class BillingCatalogService {
     featureId: string,
     data: SetPackageFeatureDto,
   ): Promise<BillingPackageFeatureResponse> {
-    const [pkg, feature] = await Promise.all([
-      this.prisma.client.orm.public.SubscriptionPackage.where({ id: packageId }).first(),
-      this.prisma.client.orm.public.SubscriptionFeature.where({ id: featureId }).first(),
-    ]);
+    const result = await this.prisma.client.transaction(async (tx) => {
+      const featureLock = this.prisma.client.raw.sql`
+        UPDATE "public"."subscriptionFeature"
+        SET "updatedAt" = "updatedAt"
+        WHERE "id" = ${featureId}
+      `.affectedCount().build();
 
-    if (!pkg) throw new NotFoundException('Package tidak ditemukan');
-    if (!feature) throw new NotFoundException('Feature tidak ditemukan');
+      await tx.execute(featureLock);
 
-    if (feature.valueType === 'BOOLEAN' && data.limitValue !== undefined) {
-      throw new ConflictException('Feature BOOLEAN tidak boleh memiliki limitValue');
-    }
+      const [pkg, feature] = await Promise.all([
+        tx.orm.public.SubscriptionPackage.where({ id: packageId }).first(),
+        tx.orm.public.SubscriptionFeature.where({ id: featureId }).first(),
+      ]);
 
-    if (feature.valueType === 'LIMIT' && data.enabled && data.limitValue === undefined) {
-      throw new ConflictException('Feature LIMIT yang aktif wajib memiliki limitValue');
-    }
+      if (!pkg) throw new NotFoundException('Package tidak ditemukan');
+      if (!feature) throw new NotFoundException('Feature tidak ditemukan');
 
-    const existing = await this.prisma.client.orm.public.SubscriptionPackageFeature
-      .where({ packageId, featureId })
-      .first();
+      if (feature.valueType === 'BOOLEAN' && data.limitValue !== undefined) {
+        throw new ConflictException('Feature BOOLEAN tidak boleh memiliki limitValue');
+      }
 
-    if (existing) {
-      const updated = await this.prisma.client.orm.public.SubscriptionPackageFeature
+      if (feature.valueType === 'LIMIT' && data.enabled && data.limitValue === undefined) {
+        throw new ConflictException('Feature LIMIT yang aktif wajib memiliki limitValue');
+      }
+
+      const existing = await tx.orm.public.SubscriptionPackageFeature
         .where({ packageId, featureId })
-        .update({
+        .first();
+
+      if (existing) {
+        const updated = await tx.orm.public.SubscriptionPackageFeature
+          .where({ packageId, featureId })
+          .update({
+            enabled: data.enabled,
+            limitValue: data.limitValue ?? null,
+          });
+
+        if (!updated) {
+          throw new NotFoundException('Konfigurasi feature package gagal diperbarui');
+        }
+
+        return updated;
+      }
+
+      try {
+        const created = await tx.orm.public.SubscriptionPackageFeature.create({
+          packageId,
+          featureId,
           enabled: data.enabled,
           limitValue: data.limitValue ?? null,
         });
 
-      if (!updated) {
-        throw new NotFoundException('Konfigurasi feature package gagal diperbarui');
+        if (!created) {
+          throw new ConflictException('Konfigurasi feature package gagal dibuat');
+        }
+
+        return created;
+      } catch (error) {
+        if (isUniqueViolation(error)) {
+          return (await tx.orm.public.SubscriptionPackageFeature
+            .where({ packageId, featureId })
+            .first()) ?? (() => { throw new ConflictException('Feature sudah terpasang pada package'); })();
+        }
+        throw error;
       }
+    });
 
-      return updated;
-    }
-
-    try {
-      const created = await this.prisma.client.orm.public.SubscriptionPackageFeature.create({
-        packageId,
-        featureId,
-        enabled: data.enabled,
-        limitValue: data.limitValue ?? null,
-      });
-
-      if (!created) {
-        throw new ConflictException('Konfigurasi feature package gagal dibuat');
-      }
-
-      return created;
-    } catch (error) {
-      if (isUniqueViolation(error)) {
-        throw new ConflictException('Feature sudah terpasang pada package');
-      }
-      throw error;
-    }
+    return result;
   }
 
   async removePackageFeature(packageId: string, featureId: string): Promise<BillingMessageResponse> {

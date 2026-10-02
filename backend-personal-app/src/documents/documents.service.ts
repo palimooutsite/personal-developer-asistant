@@ -44,20 +44,24 @@ export class DocumentsService {
     tenantId: string,
     data: CreateDocumentDto,
   ): Promise<DocumentResponse> {
-      const currentUsage = (await this.prisma.client.orm.public.Document.where({ tenantId }).select('id').all()).length;
-      await this.billingFeatureService.assertWithinLimit(tenantId, userId, 'DOCUMENT', currentUsage);
-
-
-    return this.prisma.client.orm.public.Document.create({
-      title: data.title,
-      description: data.description,
-      fileName: data.fileName,
-      filePath: data.filePath,
-      mimeType: data.mimeType,
-      fileSize: data.fileSize,
-      createdBy: userId,
+    return this.billingFeatureService.withLimitLock(
       tenantId,
-    });
+      userId,
+      'DOCUMENT',
+      async (client) =>
+        (await client.orm.public.Document.where({ tenantId }).select('id').all()).length,
+      async (tx) =>
+        tx.orm.public.Document.create({
+          title: data.title,
+          description: data.description,
+          fileName: data.fileName,
+          filePath: data.filePath,
+          mimeType: data.mimeType,
+          fileSize: data.fileSize,
+          createdBy: userId,
+          tenantId,
+        }),
+    );
   }
 
   async upload(

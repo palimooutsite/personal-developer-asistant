@@ -5,6 +5,7 @@ import { BillingModule } from '../../src/billing/billing.module.js';
 import { BillingCheckoutSessionService } from '../../src/billing/checkout-session.service.js';
 import { BillingCheckoutSessionProviderDto } from '../../src/billing/dto/create-checkout-session.dto.js';
 import { BillingSubscriptionService } from '../../src/billing/subscription.service.js';
+import { BillingSubscriptionProviderDto } from '../../src/billing/dto/create-subscription.dto.js';
 import { BillingPaymentService } from '../../src/billing/payment.service.js';
 import { BillingInvoiceService } from '../../src/billing/invoice.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
@@ -306,12 +307,12 @@ describe.sequential('Billing concurrency integration', () => {
       subscriptions.create(fixture.tenant.id, user.id, {
         packageId: pkg.id,
         packagePriceId: price.id,
-        provider: 'SANDBOX',
+        provider: BillingSubscriptionProviderDto.SANDBOX,
       }),
       subscriptions.create(fixture.tenant.id, user.id, {
         packageId: pkg.id,
         packagePriceId: price.id,
-        provider: 'SANDBOX',
+        provider: BillingSubscriptionProviderDto.SANDBOX,
       }),
     ]);
 

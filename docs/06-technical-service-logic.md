@@ -1,147 +1,417 @@
 # 06 — Technical Service Logic
 
-Dokumen ini menjelaskan logic service utama berdasarkan source code branch dev/project-members-api.
+Dokumen ini menjelaskan logic service backend utama berdasarkan source code branch `dev/project-members-api`.
 
 ## 1. Prinsip umum
 
-HTTP → Controller → Guard → DTO/request → Service → Prisma Contract ORM → PostgreSQL
+HTTP → Controller → Guard → DTO/request → Service → Prisma Contract ORM → PostgreSQL.
 
 Controller menangani HTTP boundary. Guard memvalidasi authentication, tenant context atau permission. Service menjalankan business rule dan persistence.
 
 ## 2. AuthService
 
-File: src/auth/auth.service.ts
+File: `src/auth/auth.service.ts`
 
 ### register()
-Argon2 melakukan hashing password, kemudian UsersService.createUser() menyimpan user. Response hanya mengembalikan id, username, email dan name.
+Argon2 melakukan hashing password, kemudian UsersService.createUser() menyimpan user. Public response tidak mengembalikan password hash.
 
 ### login()
-Flow: findByEmail → verifikasi Argon2 → buat JWT → audit LOGIN_SUCCESS → accessToken. Jika user tidak ditemukan atau password salah, dibuat audit AUTH.LOGIN_FAILED dan request berakhir Unauthorized.
+Flow: findByEmail → Argon2 verify → JWT → AUTH.LOGIN_SUCCESS → accessToken. User tidak ditemukan atau password salah menghasilkan AUTH.LOGIN_FAILED dan UnauthorizedException.
 
-JWT payload saat ini memuat sub=user id, username dan isPlatformAdmin.
+JWT payload memuat user id, username dan `isPlatformAdmin`.
 
 ### changePassword()
-Service mengambil password hash, memverifikasi password lama dengan Argon2, melakukan hash password baru, lalu menyimpannya.
+Verifikasi password lama dengan Argon2, hash password baru, lalu update password hash.
 
 ### Avatar
-updateAvatar/removeAvatar mendelegasikan perubahan profile ke UsersService. Controller menangani upload file.
+Update/remove avatar didelegasikan ke UsersService; controller menangani upload.
 
-## 3. TenantService
+## 3. UsersService
 
-File: src/tenants/tenant.service.ts
+File: `src/users/user.service.ts`
+
+### createUser()
+Menyimpan username, email, passwordHash dan name.
+
+### findByEmail()
+Email dinormalisasi trim/lowercase. Digunakan AuthService untuk login dan mengambil passwordHash serta isPlatformAdmin.
+
+### findById()
+Mengembalikan id, username, email, name, avatarUrl dan isPlatformAdmin.
+
+### searchUsers()
+Requester harus menjadi member workspace dan OWNER/ADMIN. Service mengecualikan user yang sudah menjadi member workspace, melakukan filter username/email/name, excludeUserIds dan pagination maksimum 10.
+
+Response memiliki data dan meta page/limit/total/totalPages.
+
+### Profile/password/avatar mutation
+UsersService menyediakan updateProfile, updatePassword dan updateAvatar.
+
+## 4. TenantService
+
+File: `src/tenants/tenant.service.ts`
 
 ### create()
-Create Tenant dilakukan dalam transaction, kemudian membuat system Owner role, seluruh permission module untuk Owner, TenantMember OWNER, dan audit WORKSPACE.CREATED.
+Transaction membuat Tenant, Owner role, permissions, TenantMember OWNER dan audit WORKSPACE.CREATED.
 
 ### findAll()
-Mengambil membership user, resolve Tenant dan nama custom role, lalu mengembalikan daftar workspace.
+Mengambil workspace melalui TenantMember user.
 
 ### getPermissions()
-Mengambil membership, custom role dan TenantRolePermission, lalu membentuk matrix module dengan canCreate/canRead/canUpdate/canDelete.
+Mengambil role dan TenantRolePermission lalu membentuk permission matrix.
 
 ### assertWorkspaceMemberCapacity()
-Business rule kapasitas member menghitung active members + pending invitations dan membandingkannya dengan limit feature WORKSPACE_MEMBER pada subscription TRIAL, ACTIVE atau PAST_DUE. Jika penuh, service mengembalikan ConflictException dengan code WORKSPACE_MEMBER_LIMIT_REACHED serta currentMembers, pendingInvitations, limit dan remaining.
+Menghitung active members + pending invitations lalu membandingkannya dengan feature WORKSPACE_MEMBER. Subscription yang dihitung: TRIAL, ACTIVE, PAST_DUE.
+
+Jika penuh: `WORKSPACE_MEMBER_LIMIT_REACHED`, dengan currentMembers, pendingInvitations, limit dan remaining.
 
 ### addMember()
-Validasi berurutan: membership current user, permission WORKSPACE_MEMBERS:CREATE, target user, duplicate membership, capacity, custom role dan larangan system role. Setelah TenantMember dibuat, audit WORKSPACE.MEMBER_ADDED dibuat.
+Validasi membership requester, permission, target user, duplicate membership, capacity, role dan system-role restriction. Setelah create TenantMember, audit WORKSPACE.MEMBER_ADDED.
 
 ### updateMemberRole()
-Memastikan target member ada, Owner system role tidak dapat diubah, permission UPDATE tersedia, role berasal dari workspace, lalu roleId diperbarui.
+Owner system role tidak dapat diubah. Role target harus valid untuk workspace.
 
 ### removeMember()
-Memastikan requester mempunyai membership dan permission DELETE. System Owner tidak dapat dihapus. Setelah member dihapus, audit WORKSPACE.MEMBER_REMOVED dibuat.
+Owner system role tidak dapat dihapus. Setelah delete dibuat audit WORKSPACE.MEMBER_REMOVED.
 
 ### Invitation
-Invitation menggunakan token unik dan expiration. Acceptance membuat TenantMember dengan role invitation dan menghasilkan audit WORKSPACE.MEMBER_ADDED.
+Create menggunakan token dan expiration. Acceptance membuat TenantMember berdasarkan role invitation dan menghasilkan WORKSPACE.MEMBER_ADDED.
 
-## 4. BillingSubscriptionService
+## 5. TenantRoleService
 
-File: src/billing/subscription.service.ts
+File: `src/tenants/roles/tenant-role.service.ts`
 
-### getCurrent()
-Validasi membership → ambil subscription tenant → pilih subscription terbaru berdasarkan createdAt → resolve package dan price → return detail.
+### ensureSystemRoles()
+Memastikan Owner, Admin dan Member tersedia. System role diberi full permission seluruh PERMISSION_MODULES.
 
-### create()
-Validasi membership, tidak ada subscription PENDING/TRIAL/ACTIVE/PAST_DUE, package dan price tersedia serta aktif, price cocok dengan package, dan provider harus SANDBOX. Period end dihitung +1 bulan untuk MONTHLY atau +1 tahun untuk YEARLY. Subscription dibuat PENDING dan dicatat audit.
+### migrateLegacyMembers()
+Member lama tanpa roleId dipetakan OWNER → Owner, ADMIN → Admin, lainnya → Member. Response mencatat totalMembers, migrated dan alreadyMigrated.
 
-### cancel()
-Mencari subscription terbaru dengan status TRIAL/ACTIVE/PAST_DUE, mengubahnya menjadi CANCELLED dan mengisi cancelledAt.
+### list/create/findOne/update/remove()
+Custom role dikelola per tenant. Nama role harus unik. System role tidak boleh diubah/dihapus. Role yang masih dipakai member tidak boleh dihapus.
 
-## 5. BillingInvoiceService
+### replacePermissions()
+Permission dinormalisasi per module. Existing rows di-update, missing rows dibuat. Implementasi menghindari delete-all/create-all untuk mengurangi race condition unique constraint roleId + module.
 
-File: src/billing/invoice.service.ts
+### hasPermission()
+Membership → roleId → TenantRolePermission → module/action → boolean. Tanpa roleId atau permission, hasil false.
 
-Invoice membuat snapshot nilai komersial: originalAmountMinor, discountAmountMinor, taxAmountMinor dan finalAmountMinor. Snapshot juga menyimpan packageCode, packageName, billingPeriod dan currency.
+## 6. ProjectsService
 
-Discount yang diterapkan dicatat pada InvoiceDiscount. Penggunaan discount dicatat pada DiscountUsage dan usageCount discount dinaikkan. Invoice creation menghasilkan BILLING.INVOICE_CREATED.
-
-## 6. BillingPaymentService
-
-File: src/billing/payment.service.ts
+File: `src/projects/projects.service.ts`
 
 ### create()
-Validasi tenant member, invoice tenant dan invoice PENDING. Provider harus SANDBOX. Jika sudah ada payment PENDING untuk invoice, payment tersebut digunakan kembali. Payment baru memakai providerPaymentId SANDBOX-{invoiceId}, checkoutUrl sandbox://payment/{invoiceId}, expiry +24 jam dan amount invoice.finalAmountMinor.
+Hitung project tenant → BillingFeatureService.assertWithinLimit(PROJECT) → transaction create Project + ProjectMember OWNER.
 
-### sandboxSucceed()
-Payment PENDING menjadi SUCCEEDED, invoice menjadi SUCCEEDED, subscription menjadi ACTIVE, kemudian audit BILLING.PAYMENT_SUCCEEDED dibuat.
+### findAll()/findOne()
+Project hanya dikembalikan jika requester memiliki ProjectMember dan project berada pada tenant aktif.
 
-### sandboxFail()
-Payment PENDING menjadi FAILED dan audit BILLING.PAYMENT_FAILED dibuat.
+### getMembership()
+Security helper memastikan project berada pada tenant dan requester adalah ProjectMember.
 
-## 7. BillingCheckoutSessionService
+### update()
+Hanya OWNER/ADMIN project. Update name, description dan status.
 
-File: src/billing/checkout-session.service.ts
+### remove()
+Hanya OWNER. ProjectMember dan Project dihapus dalam transaction.
 
-Checkout session menyimpan userId, packageId, packagePriceId, workspaceName, discount, tax, final amount, provider, provider identifiers, status dan expiry.
+### addMember()/addMembers()
+Requester harus OWNER/ADMIN. Target harus user valid, TenantMember workspace aktif dan belum ProjectMember. Bulk melakukan deduplikasi userId.
 
-Pada sandboxSucceed, session divalidasi lalu jalur provisioning dapat membuat Tenant, Owner role + permissions, TenantMember OWNER, TenantSubscription, SubscriptionInvoice dan Payment, kemudian checkout session ditandai SUCCEEDED dan lifecycle dicatat ke audit.
+### updateMemberRole()
+OWNER tidak dapat diubah. OWNER/ADMIN dapat mengubah role member.
 
-## 8. AuditService
+### removeMember()
+OWNER/ADMIN dapat menghapus member selain OWNER.
 
-File: src/audit/audit.service.ts
+## 7. TasksService
+
+File: `src/tasks/tasks.service.ts`
 
 ### create()
-Input audit mencakup userId, tenantId, action, entity, entityId, description, metadata, ipAddress dan userAgent. Metadata diserialisasi sebagai JSON string.
+requireMutationAccess → validasi project/tenant → hitung usage → assertWithinLimit(TASK) → create Task. Default priority MEDIUM.
 
-Audit write dibungkus try/catch. Jika persistence audit gagal, error dicatat ke server log dan tidak dilempar kembali ke business operation.
+### requireProjectMembership()
+Requester harus ProjectMember pada project tenant aktif.
+
+### requireMutationAccess()
+Mutation task dibatasi role OWNER, ADMIN atau DEVELOPER.
 
 ### findAll()
-Filter tersedia q, action, entity, tenantId dan userId. Service melakukan enrichment user name/email dan workspace name, parse metadata JSON, lalu mengurutkan newest-first.
+Mengambil task project/tenant dan resolve assignee. Jika all=false, pagination limit maksimum 50; jika all=true seluruh result dikembalikan.
 
-### findOne()
-Mencari log berdasarkan id dari hasil findAll().
+### findOne/update/remove()
+Memastikan project membership dan task berada pada project + tenant yang benar. Mutation memerlukan mutation role.
 
-## 9. Security model
+### Assignee
+Tambah/remove assignee dilakukan setelah validasi membership/project sesuai business rule service.
 
-Tenant-scoped flow: JWT → TenantContextGuard → Controller → service membership check → tenant-scoped query.
+## 8. KnowledgeService
 
-Validasi membership di service memberikan defense-in-depth walaupun controller telah menggunakan TenantContextGuard.
+File: `src/knowledge/knowledge.service.ts`
 
-Platform Admin service memakai scope global dan dilindungi JwtAuthGuard + PlatformAdminGuard.
+Article selalu tenant-scoped. Create memvalidasi tenant, slug uniqueness per tenant dan feature limit KNOWLEDGE. Find/update/remove tetap menggunakan tenant boundary.
 
-## 10. Error pattern
+## 9. TagsService
 
-UnauthorizedException digunakan untuk authentication gagal; ForbiddenException untuk authorization; NotFoundException untuk resource yang tidak ditemukan; ConflictException untuk state/business rule yang tidak valid.
+File: `src/knowledge/tags.service.ts`
 
-Contoh member limit: WORKSPACE_MEMBER_LIMIT_REACHED.
+Tag tenant-scoped. Create memvalidasi uniqueness nama dalam tenant. Find/update/remove menggunakan tenantId.
 
-## 11. Audit event mapping
+## 10. ArticleTagsService
 
-| Area | Event |
+File: `src/knowledge/article-tags.service.ts`
+
+Mengelola KnowledgeArticle ↔ Tag. Add melakukan article tenant check, tag tenant check dan duplicate relation check sebelum create mapping.
+
+## 11. SnippetsService
+
+File: `src/snippets/snippets.service.ts`
+
+CodeSnippet tenant-scoped. Create mengecek feature limit CODE_SNIPPET. Find/update/remove menggunakan tenant boundary dan query DTO.
+
+## 12. SnippetTagsService
+
+File: `src/snippets/snippet-tags.service.ts`
+
+Mengelola CodeSnippet ↔ Tag dengan validasi tenant untuk kedua resource dan duplicate mapping protection.
+
+## 13. DocumentsService
+
+File: `src/documents/documents.service.ts`
+
+Document mempunyai dua persistence layer: metadata di PostgreSQL dan binary di filesystem.
+
+### create/upload
+Memvalidasi tenant/user, file type, file size dan storage path. Feature DOCUMENT digunakan sebagai limit.
+
+### findAll/findOne
+Query menggunakan createdBy + tenantId sehingga document user lain tidak ikut terbaca.
+
+### getFile
+findOne → cek filePath dengan filesystem → jika file hilang NotFoundException → controller mengirim file.
+
+### update
+Saat ini mengubah metadata title dan description, bukan binary file.
+
+### remove
+Delete metadata lalu unlink file. Kegagalan unlink tidak membatalkan delete database.
+
+## 14. DashboardService
+
+File: `src/dashboard/dashboard.service.ts`
+
+getSummary adalah aggregate read service.
+
+Project dihitung dari project membership user dalam tenant. Task dihitung dari task project yang user ikuti. Knowledge dan snippet dihitung berdasarkan tenant + createdBy. Tag dihitung berdasarkan tenant.
+
+Output:
+- projects total/byStatus
+- tasks total/byStatus/byPriority
+- knowledge total
+- snippets total/byLanguage
+- tags total
+
+Catatan: dashboard saat ini tidak menghitung semua resource tenant secara universal; sebagian aggregate mengikuti ownership/relationship user.
+
+## 15. BillingFeatureService
+
+File: `src/billing/feature.service.ts`
+
+Menjadi enforcement layer package feature.
+
+Flow assertWithinLimit:
+subscription → package → feature → limitValue → compare currentUsage.
+
+Feature resource:
+PROJECT, TASK, KNOWLEDGE, CODE_SNIPPET, DOCUMENT, WORKSPACE_MEMBER.
+
+Feature dapat BOOLEAN atau LIMIT.
+
+## 16. BillingCatalogService
+
+File: `src/billing/catalog.service.ts`
+
+Mengelola package, feature, price dan package-feature mapping.
+
+Package: code, name, description, sortOrder, active.
+
+Feature: code, name, description, valueType, unit, active.
+
+Price: billing period, amountMinor, currency, version, active.
+
+PackageFeature: enabled dan limitValue.
+
+Mutation catalog menghasilkan audit BILLING events.
+
+## 17. BillingDiscountService
+
+File: `src/billing/discount.service.ts`
+
+Mendukung PERCENTAGE/FIXED_AMOUNT dan duration ONCE/RECURRING_CYCLES/FOREVER.
+
+Rule dapat mencakup minimum amount, maximum discount, usage limit, validity dan package assignment.
+
+DiscountPackage menentukan package yang eligible. Usage dicatat melalui DiscountUsage sesuai invoice flow.
+
+## 18. BillingSubscriptionService
+
+File: `src/billing/subscription.service.ts`
+
+getCurrent: validasi membership → subscription terbaru → package + price.
+
+create: validasi member, existing subscription state, package/price aktif dan cocok, provider SANDBOX → hitung period → create PENDING subscription → audit.
+
+MONTHLY = +1 bulan. YEARLY = +1 tahun.
+
+cancel: subscription terbaru TRIAL/ACTIVE/PAST_DUE dapat menjadi CANCELLED.
+
+## 19. BillingInvoiceService
+
+File: `src/billing/invoice.service.ts`
+
+Invoice adalah historical snapshot.
+
+Formula:
+originalAmountMinor - discountAmountMinor + taxAmountMinor = finalAmountMinor.
+
+Invoice menyimpan package snapshot, billing period, currency dan nilai tagihan. InvoiceDiscount menyimpan discount yang diterapkan. Invoice creation menghasilkan BILLING.INVOICE_CREATED.
+
+## 20. BillingPaymentService
+
+File: `src/billing/payment.service.ts`
+
+create: validasi tenant member, invoice ownership, invoice PENDING dan provider SANDBOX. Pending payment dapat digunakan kembali.
+
+Sandbox payment menggunakan providerPaymentId SANDBOX-{invoiceId}, checkoutUrl sandbox://payment/{invoiceId} dan expiry +24 jam.
+
+sandboxSucceed: Payment PENDING → SUCCEEDED → Invoice SUCCEEDED → Subscription ACTIVE → audit.
+
+sandboxFail: Payment PENDING → FAILED → audit.
+
+## 21. BillingCheckoutService
+
+File: `src/billing/checkout.service.ts`
+
+Untuk tenant yang sudah ada.
+
+Flow:
+tenant → package/price → optional discount → calculation → subscription/invoice/payment flow.
+
+Service memvalidasi package, price, provider dan tenant context.
+
+## 22. BillingCheckoutSessionService
+
+File: `src/billing/checkout-session.service.ts`
+
+Untuk pre-tenant checkout. Session menyimpan userId, packageId, packagePriceId, workspaceName, discount, tax, final amount, provider, identifiers, status dan expiry.
+
+sandboxSucceed dapat melakukan provisioning:
+Tenant → Owner role + permissions → TenantMember OWNER → TenantSubscription → SubscriptionInvoice → Payment → session SUCCEEDED → audit.
+
+## 23. Platform Admin Billing Services
+
+### BillingAdminSubscriptionService
+File: `src/billing/admin-subscription.service.ts`
+
+Global read service. Enrich subscription dengan workspace, package dan price. Read-only.
+
+### BillingAdminInvoiceService
+File: `src/billing/admin-invoice.service.ts`
+
+Global invoice read service. Enrich workspace, package dan latest payment status. Read-only.
+
+### BillingAdminPaymentService
+File: `src/billing/admin-payment.service.ts`
+
+Global payment read service. Enrich workspace, subscription dan invoice/package. Read-only.
+
+Ketiganya memakai global scope dan PlatformAdminGuard pada controller.
+
+## 24. AuditService
+
+File: `src/audit/audit.service.ts`
+
+create menerima userId, tenantId, action, entity, entityId, description, metadata, ipAddress dan userAgent. Metadata diserialisasi sebagai JSON.
+
+Audit write bersifat non-blocking: failure dicatat server log dan tidak dilempar kembali ke business operation.
+
+findAll mendukung q, action, entity, tenantId dan userId; service melakukan enrichment actor/workspace, parse metadata dan sort newest-first.
+
+findOne mengambil detail audit berdasarkan id.
+
+## 25. Cross-service dependencies
+
+```
+AuthService
+ ├── UsersService
+ └── AuditService
+
+TenantService
+ ├── BillingFeatureService
+ ├── TenantRoleService
+ └── AuditService
+
+ProjectsService
+ └── BillingFeatureService
+
+TasksService
+ └── BillingFeatureService
+
+KnowledgeService
+ └── BillingFeatureService
+
+SnippetsService
+ └── BillingFeatureService
+
+DocumentsService
+ └── BillingFeatureService
+
+Billing services
+ └── AuditService
+
+DashboardService
+ └── PrismaService
+```
+
+## 26. Security model
+
+Tenant resource:
+JWT → TenantContextGuard → Controller → service membership/resource validation → tenant-scoped query.
+
+Platform Admin:
+JWT → PlatformAdminGuard → global admin service → database.
+
+Frontend permission hanya UX; backend tetap source of truth authorization.
+
+## 27. Error pattern
+
+- UnauthorizedException — authentication
+- ForbiddenException — authorization/tenant/project membership
+- NotFoundException — resource tidak ditemukan
+- ConflictException — duplicate/business state conflict
+
+## 28. Audit event mapping
+
+| Service | Event |
 |---|---|
-| Auth | AUTH.LOGIN_SUCCESS |
-| Auth | AUTH.LOGIN_FAILED |
-| Workspace | WORKSPACE.CREATED |
-| Workspace | WORKSPACE.MEMBER_ADDED |
-| Workspace | WORKSPACE.MEMBER_REMOVED |
-| Catalog | BILLING.PACKAGE_CREATED / UPDATED |
-| Catalog | BILLING.FEATURE_CREATED / UPDATED |
-| Catalog | BILLING.PRICE_CREATED / UPDATED |
-| Discount | BILLING.DISCOUNT_CREATED / UPDATED |
-| Subscription | BILLING.SUBSCRIPTION_CREATED / CANCELLED |
-| Invoice | BILLING.INVOICE_CREATED |
-| Payment | BILLING.PAYMENT_CREATED / SUCCEEDED / FAILED |
+| AuthService | AUTH.LOGIN_SUCCESS / AUTH.LOGIN_FAILED |
+| TenantService | WORKSPACE.CREATED / MEMBER_ADDED / MEMBER_REMOVED |
+| CatalogService | BILLING.PACKAGE_CREATED / UPDATED |
+| CatalogService | BILLING.FEATURE_CREATED / UPDATED |
+| CatalogService | BILLING.PRICE_CREATED / UPDATED |
+| DiscountService | BILLING.DISCOUNT_CREATED / UPDATED |
+| SubscriptionService | BILLING.SUBSCRIPTION_CREATED / CANCELLED |
+| InvoiceService | BILLING.INVOICE_CREATED |
+| PaymentService | BILLING.PAYMENT_CREATED / SUCCEEDED / FAILED |
+| CheckoutSessionService | workspace/billing lifecycle events |
 
-## 12. Implementation notes
+## 29. Important implementation notes
 
-Dokumen ini menggambarkan implementation source saat ini. Provider MIDTRANS/XENDIT sudah tersedia sebagai enum, tetapi flow payment aktif saat ini adalah SANDBOX.
+1. Prisma Contract API adalah persistence abstraction source saat ini.
+2. TenantId adalah isolation boundary utama resource workspace.
+3. Billing amount menggunakan minor unit.
+4. Payment flow aktif saat ini adalah SANDBOX.
+5. AuditLog adalah business traceability, bukan pengganti operational logging.
+6. Flow yang membuat resource secara langsung harus tetap menerapkan business rule dan audit yang relevan.
+7. Jika business rule service berubah, dokumentasi ini harus diperbarui bersama source.

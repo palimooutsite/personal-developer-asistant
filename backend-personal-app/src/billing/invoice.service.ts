@@ -301,10 +301,7 @@ export class BillingInvoiceService {
             WHERE "id" = ${discount.id}
           `.affectedCount().build();
 
-          const lockResult = await tx.execute(lockPlan);
-          if (lockResult.affectedRows !== 1) {
-            throw new NotFoundException('Discount tidak ditemukan');
-          }
+          await tx.execute(lockPlan);
 
           discount = await tx.orm.public.Discount
             .where({ id: result.discount.id })

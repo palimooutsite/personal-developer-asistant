@@ -240,6 +240,63 @@ describe.sequential('Billing concurrency integration', () => {
     return { owner, pkg, price, ...fixture, memberFeature, role };
   }
 
+  it('menggunakan currentPeriodEnd yang dihitung dari saat initial payment berhasil', async () => {
+    const user = await seedUser();
+    const { pkg, price } = await seedPackage();
+    const fixture = await seedTenantWithMember(user.id, pkg.id, price.id);
+
+    const checkout = await legacyCheckout.create(
+      fixture.tenant.id,
+      user.id,
+      {
+        packageId: pkg.id,
+        packagePriceId: price.id,
+        provider: BillingPaymentProviderDto.SANDBOX,
+      },
+    );
+
+    const subscription = await prisma.client.orm.public.TenantSubscription
+      .where({ id: checkout.subscription.id })
+      .first();
+
+    expect(subscription?.status).toBe('ACTIVE');
+
+    const periodStart = new Date(String(subscription?.currentPeriodStart));
+    const periodEnd = new Date(String(subscription?.currentPeriodEnd));
+
+    const expectedEnd = new Date(periodStart);
+    expectedEnd.setMonth(expectedEnd.getMonth() + 1);
+
+    expect(periodEnd.getTime()).toBe(expectedEnd.getTime());
+  });
+
+  it('menolak pembuatan invoice ketika currentPeriodEnd subscription sudah terlewati', async () => {
+    const user = await seedUser();
+    const fixture = await seedPendingPayment(user.id);
+
+    await prisma.client.orm.public.TenantSubscription
+      .where({ id: fixture.subscription.id })
+      .update({
+        status: 'ACTIVE',
+        currentPeriodEnd: new Date(Date.now() - 1000).toISOString(),
+      });
+
+    await expect(
+      invoices.create(fixture.tenant.id, user.id, {}),
+    ).rejects.toMatchObject({
+      response: {
+        message: 'Workspace belum memiliki subscription aktif',
+      },
+    });
+
+    const invoicesInDb = await prisma.client.orm.public.SubscriptionInvoice
+      .where({ tenantId: fixture.tenant.id })
+      .all();
+
+    expect(invoicesInDb).toHaveLength(1);
+    expect(invoicesInDb[0]?.id).toBe(fixture.invoice.id);
+  });
+
   it('tidak menganggap subscription ACTIVE yang periodenya sudah berakhir sebagai subscription aktif', async () => {
     const user = await seedUser();
     const { pkg, price } = await seedPackage();

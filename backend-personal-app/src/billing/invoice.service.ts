@@ -41,8 +41,23 @@ export class BillingInvoiceService {
       .where({ tenantId })
       .all();
 
+    const now = Date.now();
+
     const active = subscriptions
-      .filter((item) => ['PENDING', 'TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)))
+      .filter((item) => {
+        if (!['PENDING', 'TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status))) {
+          return false;
+        }
+
+        if (item.status === 'PENDING') {
+          return true;
+        }
+
+        return (
+          item.currentPeriodEnd !== null &&
+          new Date(String(item.currentPeriodEnd)).getTime() > now
+        );
+      })
       .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
 
     if (!active) throw new ConflictException('Workspace belum memiliki subscription aktif');

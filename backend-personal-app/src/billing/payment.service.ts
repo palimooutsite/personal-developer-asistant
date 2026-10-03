@@ -160,9 +160,21 @@ export class BillingPaymentService {
 
       return this.toResponse(payment.payment);
     } catch (error) {
-      // A unique provider payment ID may be the winner of a concurrent
-      // request. Return that existing payment instead of surfacing a
-      // duplicate-key failure to the caller.
+      // Only recover from a unique-constraint race. Validation failures
+      // (for example, an invoice whose subscription is CANCELLED) must
+      // propagate to the caller instead of being masked by an existing
+      // pending payment.
+      const sqlState =
+        typeof error === 'object' &&
+        error !== null &&
+        'sqlState' in error
+          ? String((error as { sqlState?: unknown }).sqlState)
+          : '';
+
+      if (sqlState !== '23505') {
+        throw error;
+      }
+
       const existing = await this.prisma.client.orm.public.Payment
         .where({ invoiceId, tenantId })
         .all();

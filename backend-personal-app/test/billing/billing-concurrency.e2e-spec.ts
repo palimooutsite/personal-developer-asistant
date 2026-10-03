@@ -1331,4 +1331,80 @@ describe.sequential('Billing concurrency integration', () => {
   });
 
 
+  it('menolak cancellation pada subscription PENDING agar payment awal tetap dapat diselesaikan', async () => {
+    const user = await seedUser();
+    const fixture = await seedPendingPayment(user.id);
+
+    await expect(
+      subscriptions.cancel(fixture.tenant.id, user.id),
+    ).rejects.toMatchObject({
+      response: {
+        message: 'Tidak ada subscription aktif untuk workspace',
+      },
+    });
+
+    const before = await prisma.client.orm.public.TenantSubscription
+      .where({ id: fixture.subscription.id })
+      .first();
+
+    expect(before?.status).toBe('PENDING');
+
+    await expect(
+      payments.sandboxSucceed(
+        fixture.tenant.id,
+        user.id,
+        fixture.payment.id,
+      ),
+    ).resolves.toMatchObject({
+      status: 'SUCCEEDED',
+    });
+
+    const after = await prisma.client.orm.public.TenantSubscription
+      .where({ id: fixture.subscription.id })
+      .first();
+
+    expect(after?.status).toBe('ACTIVE');
+  });
+
+  it('tidak dapat mengaktifkan kembali subscription CANCELLED melalui payment PENDING', async () => {
+    const user = await seedUser();
+    const fixture = await seedPendingPayment(user.id);
+
+    await prisma.client.orm.public.TenantSubscription
+      .where({ id: fixture.subscription.id })
+      .update({
+        status: 'CANCELLED',
+        cancelledAt: new Date().toISOString(),
+      });
+
+    await expect(
+      payments.sandboxSucceed(
+        fixture.tenant.id,
+        user.id,
+        fixture.payment.id,
+      ),
+    ).rejects.toMatchObject({
+      response: {
+        message: 'Subscription terkait payment tidak dalam status PENDING',
+      },
+    });
+
+    const [payment, invoice, subscription] = await Promise.all([
+      prisma.client.orm.public.Payment
+        .where({ id: fixture.payment.id })
+        .first(),
+      prisma.client.orm.public.SubscriptionInvoice
+        .where({ id: fixture.invoice.id })
+        .first(),
+      prisma.client.orm.public.TenantSubscription
+        .where({ id: fixture.subscription.id })
+        .first(),
+    ]);
+
+    expect(payment?.status).toBe('PENDING');
+    expect(invoice?.status).toBe('PENDING');
+    expect(subscription?.status).toBe('CANCELLED');
+  });
+
+
 });

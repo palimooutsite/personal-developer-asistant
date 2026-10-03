@@ -242,21 +242,16 @@ describe.sequential('Billing concurrency integration', () => {
 
   it('menggunakan currentPeriodEnd yang dihitung dari saat initial payment berhasil', async () => {
     const user = await seedUser();
-    const { pkg, price } = await seedPackage();
-    const fixture = await seedTenantWithMember(user.id, pkg.id, price.id);
+    const fixture = await seedPendingPayment(user.id);
 
-    const checkout = await legacyCheckout.create(
+    await payments.sandboxSucceed(
       fixture.tenant.id,
       user.id,
-      {
-        packageId: pkg.id,
-        packagePriceId: price.id,
-        provider: BillingPaymentProviderDto.SANDBOX,
-      },
+      fixture.payment.id,
     );
 
     const subscription = await prisma.client.orm.public.TenantSubscription
-      .where({ id: checkout.subscription.id })
+      .where({ id: fixture.subscription.id })
       .first();
 
     expect(subscription?.status).toBe('ACTIVE');

@@ -977,8 +977,11 @@ describe.sequential('Billing concurrency integration', () => {
       tenants.acceptInvitation(invitationB.token, userB.id),
     ]);
 
-    expect(results.filter((item) => item.status === 'fulfilled')).toHaveLength(1);
-    expect(results.filter((item) => item.status === 'rejected')).toHaveLength(1);
+    // Pending invitations are reservations. This fixture intentionally seeds
+    // an already-over-reserved workspace to verify acceptance cannot consume
+    // another reservation and push the member count beyond the package limit.
+    expect(results.filter((item) => item.status === 'fulfilled')).toHaveLength(0);
+    expect(results.filter((item) => item.status === 'rejected')).toHaveLength(2);
 
     const members = await prisma.client.orm.public.TenantMember
       .where({ tenantId: fixture.tenant.id })
@@ -986,11 +989,19 @@ describe.sequential('Billing concurrency integration', () => {
 
     expect(members).toHaveLength(2);
 
-    const acceptedInvitations = await prisma.client.orm.public.TenantInvitation
+    const invitations = await prisma.client.orm.public.TenantInvitation
       .where({ tenantId: fixture.tenant.id })
       .all();
 
-    expect(acceptedInvitations.filter((item) => item.acceptedAt)).toHaveLength(1);
+    expect(invitations.filter((item) => item.acceptedAt)).toHaveLength(0);
+    expect(
+      members.length +
+        invitations.filter(
+          (item) =>
+            !item.acceptedAt &&
+            new Date(item.expiresAt as string | Date).getTime() > Date.now(),
+        ).length,
+    ).toBe(4);
   });
 
 

@@ -155,12 +155,20 @@ describe.sequential('Billing renewal integration', () => {
       new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
     );
 
+    const gracePeriodMs = 3 * 24 * 60 * 60 * 1000;
+    const now = new Date(fixture.periodEnd.getTime() + gracePeriodMs + 1);
+
     const result = await renewal.processDue(
       fixture.subscription.id,
-      new Date(fixture.periodEnd.getTime() + 1),
+      now,
     );
 
     expect(result.status).toBe('EXPIRED');
+
+    const persisted = await prisma.client.orm.public.TenantSubscription
+      .where({ id: fixture.subscription.id })
+      .first();
+    expect(persisted?.status).toBe('EXPIRED');
   });
 
   it('tidak mengubah EXPIRED kembali menjadi PAST_DUE', async () => {

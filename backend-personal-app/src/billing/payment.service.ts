@@ -97,6 +97,22 @@ export class BillingPaymentService {
           throw new ConflictException('Invoice tidak dalam status PENDING');
         }
 
+        const subscription = await tx.orm.public.TenantSubscription
+          .where({ id: invoice.subscriptionId, tenantId })
+          .first();
+
+        if (!subscription) {
+          throw new ConflictException(
+            'Subscription terkait invoice tidak ditemukan',
+          );
+        }
+
+        if (!['PENDING', 'TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(subscription.status))) {
+          throw new ConflictException(
+            'Subscription terkait invoice tidak dapat menerima payment',
+          );
+        }
+
         const existing = await tx.orm.public.Payment
           .where({ invoiceId })
           .all();

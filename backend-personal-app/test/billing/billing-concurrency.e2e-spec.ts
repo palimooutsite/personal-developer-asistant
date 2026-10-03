@@ -238,7 +238,7 @@ describe.sequential('Billing concurrency integration', () => {
     return { owner, pkg, price, ...fixture, memberFeature, role };
   }
 
-  it('does not create a payment for an invoice whose subscription is cancelled', async () => {
+  it('tidak membuat payment untuk invoice yang subscription-nya sudah dibatalkan', async () => {
     const user = await seedUser();
     const fixture = await seedPendingPayment(user.id);
 
@@ -267,7 +267,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(paymentsInDb[0]?.status).toBe('PENDING');
   });
 
-  it('does not leave an invoice when legacy payment creation fails', async () => {
+  it('tidak meninggalkan invoice ketika pembuatan payment pada legacy checkout gagal', async () => {
     const user = await seedUser();
     const { pkg, price } = await seedPackage();
     const fixture = await seedTenantWithMember(user.id, pkg.id, price.id);
@@ -303,7 +303,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(persistedInvoices[0]?.subscriptionId).toBe(persistedSubscriptions[0]?.id);
   });
 
-  it('does not leave a subscription when legacy invoice creation fails', async () => {
+  it('tidak meninggalkan subscription ketika pembuatan invoice pada legacy checkout gagal', async () => {
     const user = await seedUser();
     const { pkg, price } = await seedPackage();
     const fixture = await seedTenantWithMember(user.id, pkg.id, price.id);
@@ -337,7 +337,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(persistedInvoices).toHaveLength(0);
   });
 
-  it('does not create two active-ish subscriptions under concurrent legacy checkout', async () => {
+  it('tidak membuat dua subscription aktif saat legacy checkout dijalankan bersamaan', async () => {
     const user = await seedUser();
     const { pkg, price } = await seedPackage();
     const fixture = await seedTenantWithMember(user.id, pkg.id, price.id);
@@ -382,7 +382,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(paymentsInDb).toHaveLength(1);
   });
 
-  it('does not allow legacy checkout through another user who is not a tenant member', async () => {
+  it('menolak legacy checkout dari user yang bukan member tenant', async () => {
     const owner = await seedUser();
     const attacker = await seedUser();
     const { pkg, price } = await seedPackage();
@@ -407,7 +407,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(subscriptionsInDb).toHaveLength(0);
   });
 
-  it('does not allow another user to complete a checkout session', async () => {
+  it('menolak user lain menyelesaikan checkout session', async () => {
     const owner = await seedUser();
     const attacker = await seedUser();
     const { pkg, price } = await seedPackage();
@@ -455,7 +455,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(payments).toHaveLength(0);
   });
 
-  it('makes concurrent checkout-session succeed calls converge to one billing result', async () => {
+  it('membuat request succeed checkout session yang bersamaan menghasilkan satu hasil billing', async () => {
     const user = await seedUser();
     const { pkg, price } = await seedPackage();
 
@@ -491,7 +491,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(tenants).toHaveLength(1);
   });
 
-  it('does not complete an expired checkout session after the lifecycle race', async () => {
+  it('tidak menyelesaikan checkout session yang sudah kedaluwarsa saat terjadi race lifecycle', async () => {
     const user = await seedUser();
     const { pkg, price } = await seedPackage();
 
@@ -527,7 +527,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(tenants).toHaveLength(0);
   });
 
-  it('makes concurrent payment succeed calls idempotent', async () => {
+  it('membuat request payment succeed yang bersamaan tetap idempotent', async () => {
     const user = await seedUser();
     const fixture = await seedPendingPayment(user.id);
 
@@ -559,7 +559,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(subscription?.status).toBe('ACTIVE');
   });
 
-  it('does not succeed a payment after its expiry time', async () => {
+  it('menolak payment yang sudah kedaluwarsa untuk menjadi SUCCEEDED', async () => {
     const user = await seedUser();
     const fixture = await seedPendingPayment(user.id);
 
@@ -594,7 +594,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(subscription?.status).toBe('PENDING');
   });
 
-  it('makes concurrent payment creation converge to one pending payment', async () => {
+  it('membuat pembuatan payment yang bersamaan menghasilkan satu payment PENDING', async () => {
     const user = await seedUser();
     const fixture = await seedPendingPayment(user.id);
 
@@ -633,7 +633,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(paymentsInDb[0]?.status).toBe('PENDING');
   });
 
-  it('rejects payment success when invoice and subscription are already inconsistent', async () => {
+  it('menolak payment success ketika invoice dan subscription sudah tidak konsisten', async () => {
     const user = await seedUser();
     const fixture = await seedPendingPayment(user.id);
 
@@ -655,7 +655,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(payment?.status).toBe('PENDING');
   });
 
-  it('rejects payment success when payment amount differs from invoice', async () => {
+  it('menolak payment success ketika nominal payment berbeda dari invoice', async () => {
     const user = await seedUser();
     const fixture = await seedPendingPayment(user.id);
 
@@ -677,7 +677,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(payment?.status).toBe('PENDING');
   });
 
-  it('keeps payment succeed-vs-fail transitions mutually exclusive', async () => {
+  it('memastikan transisi payment succeed dan fail tidak dapat terjadi bersamaan', async () => {
     const user = await seedUser();
     const fixture = await seedPendingPayment(user.id);
 
@@ -712,7 +712,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(results.some((item) => item.status === 'fulfilled')).toBe(true);
   });
 
-  it('uses the latest locked discount definition for the created invoice', async () => {
+  it('menggunakan definisi discount terbaru yang sudah di-lock saat membuat invoice', async () => {
     const user = await seedUser();
     const fixture = await seedPendingPayment(user.id);
     const suffix = randomUUID().replaceAll('-', '');
@@ -760,7 +760,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(snapshot?.amountMinor).toBe(invoice.discountAmountMinor);
   });
 
-  it('keeps checkout-session discount pricing as a snapshot when the definition changes', async () => {
+  it('mempertahankan harga discount checkout session sebagai snapshot meskipun definisinya berubah', async () => {
     const user = await seedUser();
     const { pkg, price } = await seedPackage();
     const suffix = randomUUID().replaceAll('-', '');
@@ -807,7 +807,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(snapshot?.amountMinor).toBe(Math.floor(price.amountMinor * 10 / 100));
   });
 
-  it('does not allow financial discount definition changes after first usage', async () => {
+  it('menolak perubahan finansial discount setelah discount pernah digunakan', async () => {
     const user = await seedUser();
     const fixture = await seedPendingPayment(user.id);
     const suffix = randomUUID().replaceAll('-', '');
@@ -860,7 +860,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(persisted?.usageCount).toBe(1);
   });
 
-  it('does not allow a one-use discount to be consumed twice by concurrent invoices', async () => {
+  it('mencegah discount sekali pakai digunakan dua kali oleh invoice yang dibuat bersamaan', async () => {
     const user = await seedUser();
     const fixture = await seedPendingPayment(user.id);
     const suffix = randomUUID().replaceAll('-', '');
@@ -900,7 +900,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(usages).toHaveLength(1);
   });
 
-  it('allocates unique sequential price versions when price creation races', async () => {
+  it('mengalokasikan versi harga berurutan dan unik saat pembuatan harga mengalami race', async () => {
     const { pkg } = await seedPackage();
 
     const results = await Promise.all([
@@ -926,7 +926,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(prices.map((item) => item.version).sort((a, b) => a - b)).toEqual([1, 2, 3]);
   });
 
-  it('does not allow concurrent project creation to exceed a feature limit', async () => {
+  it('mencegah pembuatan project bersamaan melampaui batas feature', async () => {
     const user = await seedUser();
     const { pkg, price } = await seedPackage();
     const fixture = await seedTenantWithMember(user.id, pkg.id, price.id);
@@ -996,7 +996,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(projectsInDb).toHaveLength(1);
   });
 
-  it('does not allow concurrent cancellation to cancel the same subscription twice', async () => {
+  it('mencegah cancellation bersamaan membatalkan subscription yang sama dua kali', async () => {
     const user = await seedUser();
     const fixture = await seedPendingPayment(user.id);
 
@@ -1019,7 +1019,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(subscription?.status).toBe('CANCELLED');
   });
 
-  it('does not create two active-ish subscriptions when creation races', async () => {
+  it('tidak membuat dua subscription aktif saat pembuatan subscription mengalami race', async () => {
     const user = await seedUser();
     const { pkg, price } = await seedPackage();
     const fixture = await seedTenantWithMember(user.id, pkg.id, price.id);
@@ -1052,7 +1052,7 @@ describe.sequential('Billing concurrency integration', () => {
     ).toHaveLength(1);
   });
 
-  it('does not allow payment failure when invoice and subscription are inconsistent', async () => {
+  it('menolak payment failure ketika invoice dan subscription tidak konsisten', async () => {
     const user = await seedUser();
     const fixture = await seedPendingPayment(user.id);
 
@@ -1089,7 +1089,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(payment?.status).toBe('PENDING');
   });
 
-  it('preserves the checkout session financial invariant across completed billing records', async () => {
+  it('mempertahankan invariant finansial checkout session pada seluruh billing record yang selesai', async () => {
     const user = await seedUser();
     const { pkg, price } = await seedPackage();
 
@@ -1130,7 +1130,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(subscription?.status).toBe('ACTIVE');
   });
 
-  it('does not allow concurrent direct member creation to exceed workspace member limit', async () => {
+  it('mencegah pembuatan member langsung secara bersamaan melampaui limit member workspace', async () => {
     const fixture = await seedMemberCapacityFixture(2);
     const userA = await seedUser();
     const userB = await seedUser();
@@ -1156,7 +1156,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(members).toHaveLength(2);
   });
 
-  it('does not allow concurrent invitations to exceed workspace member reservation limit', async () => {
+  it('mencegah invitation bersamaan melampaui limit reservasi member workspace', async () => {
     const fixture = await seedMemberCapacityFixture(2);
     const emailA = `invite_${randomUUID()}@example.test`;
     const emailB = `invite_${randomUUID()}@example.test`;
@@ -1193,7 +1193,7 @@ describe.sequential('Billing concurrency integration', () => {
     expect(pendingInvitations).toHaveLength(1);
   });
 
-  it('does not allow concurrent invitation acceptance to exceed workspace member limit', async () => {
+  it('mencegah penerimaan invitation bersamaan melampaui limit member workspace', async () => {
     const fixture = await seedMemberCapacityFixture(3);
     const existingMemberUser = await seedUser();
 

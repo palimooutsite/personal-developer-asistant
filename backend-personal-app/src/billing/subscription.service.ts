@@ -94,10 +94,22 @@ export class BillingSubscriptionService {
       )
       .all();
 
+    const now = Date.now();
+
     const current = subscriptions
-      .filter((item) =>
-        ['PENDING', 'TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)),
-      )
+      .filter((item) => {
+        if (!['PENDING', 'TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status))) {
+          return false;
+        }
+
+        // PENDING subscription belum memiliki lifecycle period yang aktif.
+        // Untuk TRIAL/ACTIVE/PAST_DUE, currentPeriodEnd adalah batas validitas.
+        if (item.status === 'PENDING') {
+          return true;
+        }
+
+        return new Date(String(item.currentPeriodEnd)).getTime() > now;
+      })
       .sort((a, b) =>
         String(b.createdAt).localeCompare(String(a.createdAt)),
       )[0];

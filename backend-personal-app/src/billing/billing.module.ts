@@ -22,6 +22,7 @@ import { BillingCheckoutController } from './checkout.controller.js';
 import { BillingCheckoutService } from './checkout.service.js';
 import { BillingCheckoutSessionController } from './checkout-session.controller.js';
 import { BillingCheckoutSessionService } from './checkout-session.service.js';
+import { BillingRenewalService } from './renewal.service.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { TenantModule } from '../tenants/tenant.module.js';
 import { AuditModule } from '../audit/audit.module.js';
@@ -53,6 +54,7 @@ import { AuditModule } from '../audit/audit.module.js';
     BillingFeatureService,
     BillingCheckoutService,
     BillingCheckoutSessionService,
+    BillingRenewalService,
   ],
   exports: [
     BillingCatalogService,
@@ -61,6 +63,7 @@ import { AuditModule } from '../audit/audit.module.js';
     BillingInvoiceService,
     BillingPaymentService,
     BillingFeatureService,
+    BillingRenewalService,
   ],
 })
 export class BillingModule {}

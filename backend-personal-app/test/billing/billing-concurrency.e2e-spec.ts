@@ -3,6 +3,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import { BillingModule } from '../../src/billing/billing.module.js';
 import { BillingCheckoutSessionService } from '../../src/billing/checkout-session.service.js';
+import { BillingCheckoutService } from '../../src/billing/checkout.service.js';
 import { BillingCheckoutSessionProviderDto } from '../../src/billing/dto/create-checkout-session.dto.js';
 import { BillingSubscriptionService } from '../../src/billing/subscription.service.js';
 import { BillingSubscriptionProviderDto } from '../../src/billing/dto/create-subscription.dto.js';
@@ -38,6 +39,7 @@ describe.sequential('Billing concurrency integration', () => {
   let moduleRef: TestingModule;
   let prisma: PrismaService;
   let checkoutSessions: BillingCheckoutSessionService;
+  let legacyCheckout: BillingCheckoutService;
   let subscriptions: BillingSubscriptionService;
   let payments: BillingPaymentService;
   let invoices: BillingInvoiceService;
@@ -59,6 +61,7 @@ describe.sequential('Billing concurrency integration', () => {
 
     prisma = moduleRef.get(PrismaService);
     checkoutSessions = moduleRef.get(BillingCheckoutSessionService);
+    legacyCheckout = moduleRef.get(BillingCheckoutService);
     subscriptions = moduleRef.get(BillingSubscriptionService);
     payments = moduleRef.get(BillingPaymentService);
     invoices = moduleRef.get(BillingInvoiceService);
@@ -234,6 +237,146 @@ describe.sequential('Billing concurrency integration', () => {
 
     return { owner, pkg, price, ...fixture, memberFeature, role };
   }
+
+  it('does not leave an invoice when legacy payment creation fails', async () => {
+    const user = await seedUser();
+    const { pkg, price } = await seedPackage();
+    const fixture = await seedTenantWithMember(user.id, pkg.id, price.id);
+
+    const originalPaymentCreate = payments.create;
+    payments.create = async () => {
+      throw new Error('Simulated payment creation failure');
+    };
+
+    try {
+      await expect(
+        legacyCheckout.create(fixture.tenant.id, user.id, {
+          packageId: pkg.id,
+          packagePriceId: price.id,
+          provider: BillingPaymentProviderDto.SANDBOX,
+        }),
+      ).rejects.toThrow('Simulated payment creation failure');
+    } finally {
+      payments.create = originalPaymentCreate;
+    }
+
+    const persistedSubscriptions = await prisma.client.orm.public.TenantSubscription
+      .where({ tenantId: fixture.tenant.id })
+      .all();
+    const persistedInvoices = await prisma.client.orm.public.SubscriptionInvoice
+      .where({ tenantId: fixture.tenant.id })
+      .all();
+
+    expect(persistedSubscriptions).toHaveLength(1);
+    expect(persistedSubscriptions[0]?.status).toBe('CANCELLED');
+    expect(persistedInvoices).toHaveLength(1);
+    expect(persistedInvoices[0]?.status).toBe('PENDING');
+    expect(persistedInvoices[0]?.subscriptionId).toBe(persistedSubscriptions[0]?.id);
+  });
+
+  it('does not leave a subscription when legacy invoice creation fails', async () => {
+    const user = await seedUser();
+    const { pkg, price } = await seedPackage();
+    const fixture = await seedTenantWithMember(user.id, pkg.id, price.id);
+
+    const originalInvoiceCreate = invoices.create;
+    invoices.create = async () => {
+      throw new Error('Simulated invoice creation failure');
+    };
+
+    try {
+      await expect(
+        legacyCheckout.create(fixture.tenant.id, user.id, {
+          packageId: pkg.id,
+          packagePriceId: price.id,
+          provider: BillingPaymentProviderDto.SANDBOX,
+        }),
+      ).rejects.toThrow('Simulated invoice creation failure');
+    } finally {
+      invoices.create = originalInvoiceCreate;
+    }
+
+    const persistedSubscriptions = await prisma.client.orm.public.TenantSubscription
+      .where({ tenantId: fixture.tenant.id })
+      .all();
+    const persistedInvoices = await prisma.client.orm.public.SubscriptionInvoice
+      .where({ tenantId: fixture.tenant.id })
+      .all();
+
+    expect(persistedSubscriptions).toHaveLength(1);
+    expect(persistedSubscriptions[0]?.status).toBe('CANCELLED');
+    expect(persistedInvoices).toHaveLength(0);
+  });
+
+  it('does not create two active-ish subscriptions under concurrent legacy checkout', async () => {
+    const user = await seedUser();
+    const { pkg, price } = await seedPackage();
+    const fixture = await seedTenantWithMember(user.id, pkg.id, price.id);
+
+    const results = await Promise.allSettled([
+      legacyCheckout.create(fixture.tenant.id, user.id, {
+        packageId: pkg.id,
+        packagePriceId: price.id,
+        provider: BillingPaymentProviderDto.SANDBOX,
+      }),
+      legacyCheckout.create(fixture.tenant.id, user.id, {
+        packageId: pkg.id,
+        packagePriceId: price.id,
+        provider: BillingPaymentProviderDto.SANDBOX,
+      }),
+    ]);
+
+    const fulfilled = results.filter((item) => item.status === 'fulfilled');
+    const rejected = results.filter((item) => item.status === 'rejected');
+
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+
+    const subscriptionsInDb = await prisma.client.orm.public.TenantSubscription
+      .where({ tenantId: fixture.tenant.id })
+      .all();
+    const invoicesInDb = await prisma.client.orm.public.SubscriptionInvoice
+      .where({ tenantId: fixture.tenant.id })
+      .all();
+    const paymentsInDb = await prisma.client.orm.public.Payment
+      .where({ tenantId: fixture.tenant.id })
+      .all();
+
+    expect(
+      subscriptionsInDb.filter((item) =>
+        ['PENDING', 'TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)),
+      ),
+    ).toHaveLength(0);
+
+    expect(subscriptionsInDb).toHaveLength(2);
+    expect(invoicesInDb).toHaveLength(1);
+    expect(paymentsInDb).toHaveLength(1);
+  });
+
+  it('does not allow legacy checkout through another user who is not a tenant member', async () => {
+    const owner = await seedUser();
+    const attacker = await seedUser();
+    const { pkg, price } = await seedPackage();
+    const fixture = await seedTenantWithMember(owner.id, pkg.id, price.id);
+
+    await expect(
+      legacyCheckout.create(fixture.tenant.id, attacker.id, {
+        packageId: pkg.id,
+        packagePriceId: price.id,
+        provider: BillingPaymentProviderDto.SANDBOX,
+      }),
+    ).rejects.toMatchObject({
+      response: {
+        message: 'Workspace tidak ditemukan atau Anda bukan member workspace',
+      },
+    });
+
+    const subscriptionsInDb = await prisma.client.orm.public.TenantSubscription
+      .where({ tenantId: fixture.tenant.id })
+      .all();
+
+    expect(subscriptionsInDb).toHaveLength(0);
+  });
 
   it('does not allow another user to complete a checkout session', async () => {
     const owner = await seedUser();

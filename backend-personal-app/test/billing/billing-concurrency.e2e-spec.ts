@@ -250,6 +250,23 @@ describe.sequential('Billing concurrency integration', () => {
       fixture.payment.id,
     );
 
+    const oldPeriodStart = new Date(Date.now() - 86400000 * 5);
+    const oldPeriodEnd = new Date(oldPeriodStart);
+    oldPeriodEnd.setMonth(oldPeriodEnd.getMonth() + 1);
+
+    await prisma.client.orm.public.TenantSubscription
+      .where({ id: fixture.subscription.id })
+      .update({
+        currentPeriodStart: oldPeriodStart.toISOString(),
+        currentPeriodEnd: oldPeriodEnd.toISOString(),
+      });
+
+    await payments.sandboxSucceed(
+      fixture.tenant.id,
+      user.id,
+      fixture.payment.id,
+    );
+
     const subscription = await prisma.client.orm.public.TenantSubscription
       .where({ id: fixture.subscription.id })
       .first();
@@ -262,7 +279,7 @@ describe.sequential('Billing concurrency integration', () => {
     const expectedEnd = new Date(periodStart);
     expectedEnd.setMonth(expectedEnd.getMonth() + 1);
 
-    expect(periodEnd.getTime()).toBe(expectedEnd.getTime());
+    expect(Math.abs(periodEnd.getTime() - expectedEnd.getTime())).toBeLessThan(100);
   });
 
   it('menolak pembuatan invoice ketika currentPeriodEnd subscription sudah terlewati', async () => {

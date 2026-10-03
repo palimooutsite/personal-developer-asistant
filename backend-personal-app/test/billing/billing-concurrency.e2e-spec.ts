@@ -47,6 +47,7 @@ describe.sequential('Billing concurrency integration', () => {
   let projects: ProjectsService;
   let catalog: BillingCatalogService;
   let tenants: TenantService;
+  let featureService: BillingFeatureService;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
@@ -69,6 +70,7 @@ describe.sequential('Billing concurrency integration', () => {
     projects = moduleRef.get(ProjectsService);
     catalog = moduleRef.get(BillingCatalogService);
     tenants = moduleRef.get(TenantService);
+    featureService = moduleRef.get(BillingFeatureService);
   });
 
   afterAll(async () => {
@@ -237,6 +239,75 @@ describe.sequential('Billing concurrency integration', () => {
 
     return { owner, pkg, price, ...fixture, memberFeature, role };
   }
+
+  it('tidak menganggap subscription ACTIVE yang periodenya sudah berakhir sebagai subscription aktif', async () => {
+    const user = await seedUser();
+    const { pkg, price } = await seedPackage();
+    const fixture = await seedTenantWithMember(user.id, pkg.id, price.id);
+    const now = new Date();
+    const periodStart = new Date(now.getTime() - 86400000 * 31);
+    const periodEnd = new Date(now.getTime() - 1000);
+
+    await prisma.client.orm.public.TenantSubscription.create({
+      tenantId: fixture.tenant.id,
+      packageId: pkg.id,
+      packagePriceId: price.id,
+      status: 'ACTIVE',
+      provider: 'SANDBOX',
+      startedAt: periodStart.toISOString(),
+      currentPeriodStart: periodStart.toISOString(),
+      currentPeriodEnd: periodEnd.toISOString(),
+    });
+
+    await expect(
+      subscriptions.getCurrent(fixture.tenant.id, user.id),
+    ).resolves.toBeNull();
+  });
+
+  it('menolak akses feature ketika subscription ACTIVE sudah melewati currentPeriodEnd', async () => {
+    const user = await seedUser();
+    const { pkg, price } = await seedPackage();
+    const fixture = await seedTenantWithMember(user.id, pkg.id, price.id);
+    const feature = await prisma.client.orm.public.SubscriptionFeature
+      .where({ code: 'PROJECT' })
+      .first();
+    const projectFeature = feature ?? await prisma.client.orm.public.SubscriptionFeature.create({
+      code: 'PROJECT',
+      name: 'Project limit test',
+      valueType: 'LIMIT',
+      isActive: true,
+    });
+
+    await prisma.client.orm.public.SubscriptionPackageFeature.create({
+      packageId: pkg.id,
+      featureId: projectFeature.id,
+      enabled: true,
+      limitValue: 10,
+    });
+
+    const now = new Date();
+    const periodStart = new Date(now.getTime() - 86400000 * 31);
+    const periodEnd = new Date(now.getTime() - 1000);
+
+    await prisma.client.orm.public.TenantSubscription.create({
+      tenantId: fixture.tenant.id,
+      packageId: pkg.id,
+      packagePriceId: price.id,
+      status: 'ACTIVE',
+      provider: 'SANDBOX',
+      startedAt: periodStart.toISOString(),
+      currentPeriodStart: periodStart.toISOString(),
+      currentPeriodEnd: periodEnd.toISOString(),
+    });
+
+    await expect(
+      featureService.check(fixture.tenant.id, user.id, 'PROJECT', 0),
+    ).rejects.toMatchObject({
+      response: {
+        message: 'Workspace belum memiliki subscription aktif',
+      },
+    });
+  });
 
   it('tidak membuat payment untuk invoice yang subscription-nya sudah dibatalkan', async () => {
     const user = await seedUser();

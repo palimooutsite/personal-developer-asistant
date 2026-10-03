@@ -238,6 +238,35 @@ describe.sequential('Billing concurrency integration', () => {
     return { owner, pkg, price, ...fixture, memberFeature, role };
   }
 
+  it('does not create a payment for an invoice whose subscription is cancelled', async () => {
+    const user = await seedUser();
+    const fixture = await seedPendingPayment(user.id);
+
+    await prisma.client.orm.public.TenantSubscription
+      .where({ id: fixture.subscription.id })
+      .update({ status: 'CANCELLED', cancelledAt: new Date().toISOString() });
+
+    await expect(
+      payments.create(
+        fixture.tenant.id,
+        user.id,
+        fixture.invoice.id,
+        BillingPaymentProviderDto.SANDBOX,
+      ),
+    ).rejects.toMatchObject({
+      response: {
+        message: 'Subscription terkait invoice tidak dapat menerima payment',
+      },
+    });
+
+    const paymentsInDb = await prisma.client.orm.public.Payment
+      .where({ invoiceId: fixture.invoice.id })
+      .all();
+
+    expect(paymentsInDb).toHaveLength(1);
+    expect(paymentsInDb[0]?.status).toBe('PENDING');
+  });
+
   it('does not leave an invoice when legacy payment creation fails', async () => {
     const user = await seedUser();
     const { pkg, price } = await seedPackage();

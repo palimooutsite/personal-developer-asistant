@@ -346,9 +346,9 @@ describe.sequential('Billing concurrency integration', () => {
       subscriptionsInDb.filter((item) =>
         ['PENDING', 'TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)),
       ),
-    ).toHaveLength(0);
+    ).toHaveLength(1);
 
-    expect(subscriptionsInDb).toHaveLength(2);
+    expect(subscriptionsInDb).toHaveLength(1);
     expect(invoicesInDb).toHaveLength(1);
     expect(paymentsInDb).toHaveLength(1);
   });

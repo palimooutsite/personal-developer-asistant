@@ -32,8 +32,16 @@ export class BillingFeatureService {
       .where({ tenantId })
       .all();
 
+    const now = Date.now();
+
     const subscription = subscriptions
-      .filter((item) => ['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)))
+      .filter((item) => {
+        if (!['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status))) {
+          return false;
+        }
+
+        return new Date(String(item.currentPeriodEnd)).getTime() > now;
+      })
       .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
 
     if (!subscription) {
@@ -264,8 +272,16 @@ export class BillingFeatureService {
     const subscriptions = await client.orm.public.TenantSubscription
       .where({ tenantId })
       .all();
+    const now = Date.now();
+
     const subscription = subscriptions
-      .filter((item) => ['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status)))
+      .filter((item) => {
+        if (!['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(String(item.status))) {
+          return false;
+        }
+
+        return new Date(String(item.currentPeriodEnd)).getTime() > now;
+      })
       .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
     if (!subscription) throw new ConflictException('Workspace belum memiliki subscription aktif');
 

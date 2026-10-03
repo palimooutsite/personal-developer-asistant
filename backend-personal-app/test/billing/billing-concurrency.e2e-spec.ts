@@ -235,6 +235,54 @@ describe.sequential('Billing concurrency integration', () => {
     return { owner, pkg, price, ...fixture, memberFeature, role };
   }
 
+  it('does not allow another user to complete a checkout session', async () => {
+    const owner = await seedUser();
+    const attacker = await seedUser();
+    const { pkg, price } = await seedPackage();
+
+    const session = await checkoutSessions.create(owner.id, {
+      packageId: pkg.id,
+      packagePriceId: price.id,
+      workspaceName: 'Cross User Checkout Workspace',
+      provider: BillingCheckoutSessionProviderDto.SANDBOX,
+    });
+
+    await expect(
+      checkoutSessions.sandboxSucceed(attacker.id, session.id),
+    ).rejects.toMatchObject({
+      response: {
+        message: 'Checkout session tidak ditemukan',
+      },
+    });
+
+    await expect(
+      checkoutSessions.sandboxFail(attacker.id, session.id),
+    ).rejects.toMatchObject({
+      response: {
+        message: 'Checkout session tidak ditemukan',
+      },
+    });
+
+    const persistedSession = await prisma.client.orm.public.BillingCheckoutSession
+      .where({ id: session.id })
+      .first();
+
+    expect(persistedSession?.userId).toBe(owner.id);
+    expect(persistedSession?.status).toBe('PENDING');
+
+    const createdTenants = await prisma.client.orm.public.Tenant
+      .where({ createdBy: owner.id })
+      .all();
+
+    expect(createdTenants).toHaveLength(0);
+
+    const payments = await prisma.client.orm.public.Payment
+      .where({ providerPaymentId: `SANDBOX-SESSION-${session.id}` })
+      .all();
+
+    expect(payments).toHaveLength(0);
+  });
+
   it('makes concurrent checkout-session succeed calls converge to one billing result', async () => {
     const user = await seedUser();
     const { pkg, price } = await seedPackage();

@@ -249,6 +249,13 @@ export class BillingPaymentService {
         throw new ConflictException('Payment tidak dalam status PENDING');
       }
 
+      if (
+        currentPayment.expiresAt &&
+        new Date(String(currentPayment.expiresAt)).getTime() <= Date.now()
+      ) {
+        throw new ConflictException('Payment sudah kedaluwarsa');
+      }
+
       const invoice = await tx.orm.public.SubscriptionInvoice
         .where({ id: currentPayment.invoiceId, tenantId })
         .first();

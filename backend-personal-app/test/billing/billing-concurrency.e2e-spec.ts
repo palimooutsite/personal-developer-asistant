@@ -272,14 +272,21 @@ describe.sequential('Billing concurrency integration', () => {
 
   it('menolak pembuatan invoice ketika currentPeriodEnd subscription sudah terlewati', async () => {
     const user = await seedUser();
-    const fixture = await seedPendingPayment(user.id);
+    const { pkg, price } = await seedPackage();
+    const fixture = await seedTenantWithMember(user.id, pkg.id, price.id);
+    const now = new Date();
+    const expiredAt = new Date(now.getTime() - 1000).toISOString();
 
-    await prisma.client.orm.public.TenantSubscription
-      .where({ id: fixture.subscription.id })
-      .update({
-        status: 'ACTIVE',
-        currentPeriodEnd: new Date(Date.now() - 1000).toISOString(),
-      });
+    const subscription = await prisma.client.orm.public.TenantSubscription.create({
+      tenantId: fixture.tenant.id,
+      packageId: pkg.id,
+      packagePriceId: price.id,
+      status: 'ACTIVE',
+      provider: 'SANDBOX',
+      startedAt: new Date(now.getTime() - 86400000 * 31).toISOString(),
+      currentPeriodStart: new Date(now.getTime() - 86400000 * 31).toISOString(),
+      currentPeriodEnd: expiredAt,
+    });
 
     await expect(
       invoices.create(fixture.tenant.id, user.id, {}),
@@ -293,8 +300,8 @@ describe.sequential('Billing concurrency integration', () => {
       .where({ tenantId: fixture.tenant.id })
       .all();
 
-    expect(invoicesInDb).toHaveLength(1);
-    expect(invoicesInDb[0]?.id).toBe(fixture.invoice.id);
+    expect(invoicesInDb).toHaveLength(0);
+    expect(subscription.status).toBe('ACTIVE');
   });
 
   it('tidak menganggap subscription ACTIVE yang periodenya sudah berakhir sebagai subscription aktif', async () => {

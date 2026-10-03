@@ -559,6 +559,41 @@ describe.sequential('Billing concurrency integration', () => {
     expect(subscription?.status).toBe('ACTIVE');
   });
 
+  it('does not succeed a payment after its expiry time', async () => {
+    const user = await seedUser();
+    const fixture = await seedPendingPayment(user.id);
+
+    await prisma.client.orm.public.Payment
+      .where({ id: fixture.payment.id })
+      .update({ expiresAt: new Date(Date.now() - 1000).toISOString() });
+
+    await expect(
+      payments.sandboxSucceed(
+        fixture.tenant.id,
+        user.id,
+        fixture.payment.id,
+      ),
+    ).rejects.toMatchObject({
+      response: {
+        message: 'Payment sudah kedaluwarsa',
+      },
+    });
+
+    const payment = await prisma.client.orm.public.Payment
+      .where({ id: fixture.payment.id })
+      .first();
+    const invoice = await prisma.client.orm.public.SubscriptionInvoice
+      .where({ id: fixture.invoice.id })
+      .first();
+    const subscription = await prisma.client.orm.public.TenantSubscription
+      .where({ id: fixture.subscription.id })
+      .first();
+
+    expect(payment?.status).toBe('PENDING');
+    expect(invoice?.status).toBe('PENDING');
+    expect(subscription?.status).toBe('PENDING');
+  });
+
   it('makes concurrent payment creation converge to one pending payment', async () => {
     const user = await seedUser();
     const fixture = await seedPendingPayment(user.id);
